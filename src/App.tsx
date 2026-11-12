@@ -11,6 +11,8 @@ import HomePage from './pages/Home';
 import NotFoundPage from './pages/NotFound';
 import RecentPage from './pages/Recent';
 import ToolPage from './pages/ToolPage';
+import ResourcesPage from './pages/Resources';
+import WorkspacesPage from './pages/Workspaces';
 
 export default function App() {
   return (
@@ -22,6 +24,8 @@ export default function App() {
         <Route path="category/:categoryId" element={<BrowsePage />} />
         <Route path="favorites" element={<FavoritesPage />} />
         <Route path="recent" element={<RecentPage />} />
+        <Route path="resources" element={<ResourcesPage />} />
+        <Route path="workspaces" element={<WorkspacesPage />} />
         <Route path="about" element={<AboutPage />} />
         <Route path="privacy" element={<Legal />} />
         <Route path="contact" element={<Legal />} />

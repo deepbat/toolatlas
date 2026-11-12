@@ -5,7 +5,7 @@ import ToolCard from '../components/ToolCard';
 import { Icon } from '../components/Icon';
 import { EmptyState } from '../components/ui';
 import { CATEGORIES, CATEGORY_MAP, TOOLS, toolsByCategory } from '../lib/catalog';
-import { searchTools } from '../lib/search';
+import { searchTools, suggestQuery } from '../lib/search';
 import type { CategoryId, ToolMeta } from '../lib/types';
 import { cn, tint } from '../lib/utils';
 
@@ -154,11 +154,16 @@ export default function BrowsePage() {
           <EmptyState
             icon="Search"
             title="No tools found"
-            description="Try a different keyword, or clear the filters to see the whole atlas."
+            description={suggestQuery(query) ? undefined : 'Try a different keyword, or clear the filters to see the whole atlas.'}
             action={
-              <Link to="/tools" className="bg-accent px-4 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-label text-on-accent">
-                Show all tools
-              </Link>
+              <div className="flex flex-col items-center gap-3">
+                {suggestQuery(query) && (
+                  <p className="text-sm text-muted">Did you mean <Link className="text-accent underline" to={`/tools?q=${encodeURIComponent(suggestQuery(query)!)}`} data-testid="did-you-mean">{suggestQuery(query)}</Link>?</p>
+                )}
+                <Link to="/tools" className="bg-accent px-4 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-label text-on-accent">
+                  Show all tools
+                </Link>
+              </div>
             }
           />
         ) : (

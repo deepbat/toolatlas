@@ -12,6 +12,8 @@ const SYNONYMS: Record<string, string[]> = {
   words: ['text', 'character'], text: ['words', 'writing'], qr: ['barcode', 'code'],
   developer: ['code', 'json', 'formatter'], excel: ['csv', 'spreadsheet', 'xlsx'],
   spreadsheet: ['csv', 'xlsx', 'excel'], invoice: ['bill', 'quotation', 'gst'],
+  paisa: ['money', 'finance'], vetan: ['salary'], tankhwah: ['salary'], byaj: ['interest', 'loan'], karj: ['loan', 'emi'], tasveer: ['image', 'photo'], kagaz: ['pdf', 'document'], dastavez: ['pdf', 'document'], hisab: ['calculator'],
+  ctc: ['salary'], inhand: ['salary'], bill: ['invoice', 'gst'], receipt: ['invoice', 'rent'], petty: ['expense'], cashbook: ['expense'],
   pdf: ['document'], document: ['pdf', 'file'], background: ['remove background'],
 };
 
@@ -88,4 +90,31 @@ export function searchTools(query: string, source: ToolMeta[] = TOOLS): ToolMeta
     .filter((entry) => entry.score >= 0)
     .sort((a, b) => b.score - a.score || a.tool.name.localeCompare(b.tool.name))
     .map((entry) => entry.tool);
+}
+
+let vocabulary: string[] | null = null;
+function vocab(): string[] {
+  if (!vocabulary) {
+    const set = new Set<string>(Object.keys(SYNONYMS));
+    TOOLS.forEach((t) => toolFields(t).all.forEach((w) => set.add(w)));
+    vocabulary = [...set].filter((w) => w.length >= 4);
+  }
+  return vocabulary;
+}
+
+/** When nothing matches, offer the nearest real words as a corrected query ("Did you mean"). */
+export function suggestQuery(query: string): string | null {
+  const terms = tokens(query);
+  if (!terms.length || searchTools(query).length > 0) return null;
+  const fixed = terms.map((term) => {
+    if (term.length < 4) return term;
+    let best = term, bestD = 3;
+    for (const word of vocab()) {
+      const d = editDistance(term, word, 2);
+      if (d < bestD) { best = word; bestD = d; if (d === 0) break; }
+    }
+    return bestD <= 2 ? best : term;
+  });
+  const out = fixed.join(' ');
+  return out !== terms.join(' ') && searchTools(out).length > 0 ? out : null;
 }

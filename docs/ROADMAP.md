@@ -56,7 +56,7 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 - [ ] Tool-to-tool handoff using typed, in-memory data contracts.
 - [ ] Named workflows for photo preparation, invoice creation and PDF submission packs.
 - [ ] Personal dashboard with pinned tools and configurable shortcuts.
-- [ ] Local workspaces with export/import. Do not imply sync or encryption unless implemented and tested.
+- [x] Local workspaces with export/import. Do not imply sync or encryption: the page says plainly that nothing syncs or is encrypted.
 - [ ] Reusable clipboard and history with explicit clear controls.
 - [ ] Workflow templates with visible steps and clear output destinations.
 
@@ -97,3 +97,8 @@ Current release contains 120 tools in 13 categories (Studio batch 1 added 14 PDF
 ## PDF editor responsiveness
 
 - Done: page content streams are tokenised once and indexed, so tapping text to edit no longer re-parses the page for every text item. Zoom re-renders after 250 ms and the canvas is capped at 8 megapixels. Background colour sampling reads two strips instead of many single pixels. Covered by a unit test of 400 lookups and the PDF editor suite (`npm run test:pdf-editor`). Timing on a physical low-end phone has not been measured yet.
+
+## Platform progress
+
+- Done: Workspaces page (`/workspaces`) with named tool sets, reorder, JSON export and a validated import. Free apps page (`/resources`) with 25 links that were opened and checked, each marked with its licence. Search suggests a correction when nothing matches and understands a few Hindi words (for example vetan, byaj, kagaz).
+- Pending: workspace tool chaining as a guided flow, a reusable clipboard history, a customisable pinned dashboard on Home, Hindi and Punjabi navigation, offline install help, selective offline downloads.

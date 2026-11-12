@@ -39,6 +39,7 @@ ToolAtlas is a growing collection of free, privacy-first browser utilities — c
 - **Every tool has its own URL** (`/tools/<id>`) so it can be linked, bookmarked and shared.
 - **Global search** — typo-tolerant matching and practical synonyms; press `⌘K` / `Ctrl+K` (or `/`) from anywhere.
 - **Favourites and recently used** tools, stored in your browser only.
+- **Workspaces**: named sets of tools with export and import, kept in your browser only. A **Free apps** page lists 25 checked open-source and free programs for bigger jobs.
 - **Library filters** for category, popularity, name, relevance and tools added in the last 30 days.
 - **Local data controls** — versioned backup/restore, confirmed clear-data action and a privacy-conscious technical diagnostic export.
 - **Light and dark themes**, applied before first paint so there is no flash.
