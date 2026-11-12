@@ -1039,7 +1039,7 @@ jobs:
           git config user.name "toolatlas-bot"
           git config user.email "toolatlas-bot@users.noreply.github.com"
           git checkout -b feature/studio-batch-1
-          git add -A -- . ':!test-artifacts' ':!dist'
+          git add -A
           git commit -m "Add Studio batch 1: 7 PDF tools and 7 image tools, tests and docs"
           git push origin feature/studio-batch-1
       - name: Open pull request
