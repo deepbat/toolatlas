@@ -41,8 +41,14 @@ jobs:
       - name: Run search regression tests
         run: npm run test:search
 
+      - name: Run unit checks
+        run: npm run test:unit
+
       - name: Run expanded browser regression suite
         run: npm run test:expanded
+
+      - name: Run studio browser tests
+        run: npm run test:studio
 
       - name: Upload browser evidence and report
         if: always()
