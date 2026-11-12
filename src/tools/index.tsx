@@ -87,6 +87,6 @@ const REGISTRY = {
  * literal shape is kept internally for the compile-time sync check in
  * `src/tools/registry.check.ts`.
  */
-export const TOOL_COMPONENTS: Record<string, LazyExoticComponent<ComponentType>> = {...REGISTRY, ...Object.fromEntries(EXTRA_TOOLS.map(t=>[t.id,lazy(()=>import('./expanded/UtilityApp'))])), ...Object.fromEntries(MEDIA_TOOLS.map(t=>[t.id,lazy(t.category==='image'?()=>import('./expanded/ImageTools'):t.category==='pdf'?()=>import('./expanded/PDFTools'):t.id==='markdown-preview'?()=>import('./expanded/Markdown'):t.id==='stopwatch'?()=>import('./expanded/Stopwatch'):()=>import('./expanded/Invoice'))]))};
+export const TOOL_COMPONENTS: Record<string, LazyExoticComponent<ComponentType>> = {...REGISTRY, ...Object.fromEntries(EXTRA_TOOLS.map(t=>[t.id,lazy(()=>import('./expanded/UtilityApp'))])), ...Object.fromEntries(MEDIA_TOOLS.map(t=>[t.id,lazy(t.id==='image-contact-sheet'?()=>import('./expanded/ImageContactSheet'):t.category==='image'?()=>import('./expanded/ImageTools'):t.category==='pdf'?()=>import('./expanded/PDFTools'):t.id==='markdown-preview'?()=>import('./expanded/Markdown'):t.id==='stopwatch'?()=>import('./expanded/Stopwatch'):()=>import('./expanded/Invoice'))]))};
 
 export default TOOL_COMPONENTS;
