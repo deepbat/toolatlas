@@ -2,6 +2,7 @@ import SEO from '../lib/seo';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import OfflineBanner from './OfflineBanner';
+import { LANGS, useT, type Lang } from '../lib/i18n';
 import { Github, Menu, Moon, Search, Sun, X } from 'lucide-react';
 import { CATEGORIES, TOOLS } from '../lib/catalog';
 import { useApp } from '../lib/store';
@@ -48,6 +49,7 @@ function ThemeToggle() {
 }
 
 function Footer() {
+  const { t } = useT();
   const year = new Date().getFullYear();
   return (
     <footer className="border-t border-line bg-surface/40">
@@ -67,13 +69,13 @@ function Footer() {
           <div>
             <h3 className="label text-accent">Explore</h3>
             <ul className="mt-4 space-y-2.5 text-sm text-muted">
-              <li><Link className="transition hover:text-accent" to="/tools">All tools</Link></li>
-              <li><Link className="transition hover:text-accent" to="/categories">Categories</Link></li>
-              <li><Link className="transition hover:text-accent" to="/favorites">Favourites</Link></li>
-              <li><Link className="transition hover:text-accent" to="/recent">Recently used</Link></li>
-              <li><Link className="transition hover:text-accent" to="/workspaces">Workspaces</Link></li>
-              <li><Link className="transition hover:text-accent" to="/resources">Free apps</Link></li>
-              <li><Link className="transition hover:text-accent" to="/offline">Offline and install</Link></li>
+              <li><Link className="transition hover:text-accent" to="/tools">{t('allTools')}</Link></li>
+              <li><Link className="transition hover:text-accent" to="/categories">{t('categories')}</Link></li>
+              <li><Link className="transition hover:text-accent" to="/favorites">{t('favourites')}</Link></li>
+              <li><Link className="transition hover:text-accent" to="/recent">{t('recent')}</Link></li>
+              <li><Link className="transition hover:text-accent" to="/workspaces">{t('workspaces')}</Link></li>
+              <li><Link className="transition hover:text-accent" to="/resources">{t('freeApps')}</Link></li>
+              <li><Link className="transition hover:text-accent" to="/offline">{t('offline')}</Link></li>
             </ul>
           </div>
 
@@ -128,6 +130,7 @@ function Footer() {
 }
 
 export default function Layout() {
+  const { t, lang, setLang } = useT();
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
@@ -173,16 +176,16 @@ export default function Layout() {
 
           <nav className="ml-2 hidden items-center gap-6 md:flex" aria-label="Primary">
             <NavLink to="/tools" className={navClass} end>
-              All tools
+              {t('allTools')}
             </NavLink>
             <NavLink to="/categories" className={navClass}>
-              Categories
+              {t('categories')}
             </NavLink>
             <NavLink to="/favorites" className={navClass}>
-              Favourites
+              {t('favourites')}
             </NavLink>
             <NavLink to="/about" className={navClass}>
-              About
+              {t('about')}
             </NavLink>
           </nav>
 
@@ -199,7 +202,7 @@ export default function Layout() {
               aria-label="Search tools"
             >
               <Search className="h-3.5 w-3.5" />
-              <span className="hidden lg:inline">Search</span>
+              <span className="hidden lg:inline">{t('search')}</span>
               <span className="kbd hidden lg:inline-flex">⌘K</span>
             </button>
             <button
@@ -210,6 +213,15 @@ export default function Layout() {
             >
               <Search className="h-3.5 w-3.5" />
             </button>
+            <select
+              value={lang}
+              onChange={(e) => setLang(e.target.value as Lang)}
+              aria-label={t('language')}
+              data-testid="lang-select"
+              className="hidden h-8 border border-line bg-bg px-1.5 font-mono text-[10px] text-muted transition hover:border-accent hover:text-accent sm:block"
+            >
+              {LANGS.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
+            </select>
             <ThemeToggle />
             <a
               href={GITHUB_URL}
@@ -236,14 +248,14 @@ export default function Layout() {
           <div className="border-t border-line bg-bg/95 px-5 py-4 backdrop-blur animate-fade-in md:hidden">
             <nav className="grid gap-1" aria-label="Mobile">
               {[
-                { to: '/tools', label: 'All tools' },
-                { to: '/categories', label: 'Categories' },
-                { to: '/favorites', label: 'Favourites' },
-                { to: '/recent', label: 'Recently used' },
-                { to: '/workspaces', label: 'Workspaces' },
-                { to: '/resources', label: 'Free apps' },
-                { to: '/offline', label: 'Offline and install' },
-                { to: '/about', label: 'About' },
+                { to: '/tools', label: t('allTools') },
+                { to: '/categories', label: t('categories') },
+                { to: '/favorites', label: t('favourites') },
+                { to: '/recent', label: t('recent') },
+                { to: '/workspaces', label: t('workspaces') },
+                { to: '/resources', label: t('freeApps') },
+                { to: '/offline', label: t('offline') },
+                { to: '/about', label: t('about') },
               ].map((item, index) => (
                 <NavLink
                   key={item.to}
@@ -260,6 +272,12 @@ export default function Layout() {
                 </NavLink>
               ))}
             </nav>
+            <label className="mt-3 flex items-center gap-3 px-2 font-mono text-[11px] uppercase tracking-label text-muted">
+              {t('language')}
+              <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} data-testid="lang-select-mobile" className="h-9 border border-line bg-bg px-2 text-fg">
+                {LANGS.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
+              </select>
+            </label>
           </div>
         )}
       </header>

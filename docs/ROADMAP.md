@@ -101,4 +101,9 @@ Current release contains 120 tools in 13 categories (Studio batch 1 added 14 PDF
 ## Platform progress
 
 - Done: Workspaces page (`/workspaces`) with named tool sets, reorder, JSON export and a validated import. Free apps page (`/resources`) with 25 links that were opened and checked, each marked with its licence. Search suggests a correction when nothing matches and understands a few Hindi words (for example vetan, byaj, kagaz).
-- Pending: workspace tool chaining as a guided flow, a reusable clipboard history, a customisable pinned dashboard on Home, Hindi and Punjabi navigation, selective offline downloads.
+- Pending: workspace tool chaining as a guided flow, a reusable clipboard history, a customisable pinned dashboard on Home, Hindi and Punjabi tool names and descriptions, selective offline downloads.
+
+## Language support
+
+- Done: English, Hindi and Punjabi navigation labels (header, mobile menu, footer) with a language selector that remembers your choice and sets the page language. Search understands common Hindi and Punjabi words in Devanagari and Gurmukhi script.
+- Pending: Hindi and Punjabi tool names, descriptions and tool screens. Only Latin font subsets are bundled, so Hindi and Punjabi text uses your device fonts. Translations should be reviewed by a native speaker before they are treated as final.

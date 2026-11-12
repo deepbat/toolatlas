@@ -4,6 +4,7 @@ import { incomeTax, gst, tds, gratuity, hra, rd, fd, loan, workingDays, addWorki
 import { ppf, cagr, invoiceTotals, parseInvoiceLines, summarise, textPdf } from '../src/lib/office';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { locateSourceEdit } from '../src/tools/pdf-editor/streamEdit';
+import { TRANSLATION_KEYS, translation } from '../src/lib/i18n';
 import { crc32, makeZip } from '../src/lib/zip';
 import { parseExif, stripJpeg, stripPng } from '../src/lib/exif';
 import { parseCsv, toCsv, safeCell } from '../src/lib/csvtools';
@@ -108,5 +109,14 @@ await t('pdf editor: 400 lookups on one page stay fast and unambiguous', async (
   const ms = Date.now() - t0;
   assert.equal(hits, 400);
   assert.ok(ms < 1500, 'lookups took ' + ms + 'ms');
+});
+await t('every translation key has Hindi and Punjabi text', () => {
+  for (const k of TRANSLATION_KEYS) {
+    const en = translation(k, 'en');
+    for (const l of ['hi', 'pa'] as const) {
+      const v = translation(k, l);
+      assert.ok(v && v.trim() && v !== en && !/[A-Za-z]{3,}/.test(v), k + ' ' + l);
+    }
+  }
 });
 console.log(`\n${n} unit checks passed`);
