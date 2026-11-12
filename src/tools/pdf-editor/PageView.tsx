@@ -4,6 +4,8 @@ import { Ann, FormFieldInfo, TextItemRect, annBBox, uid } from './model';
 import type { ToolId } from './Toolbar';
 import type { ShapeKind } from './model';
 
+const cssFont = (family?: string) => family === 'Times' ? '"Times New Roman", serif' : family === 'Courier' ? '"Courier New", monospace' : 'Helvetica, Arial, sans-serif';
+
 interface PendingImage {
   dataUrl: string;
   w: number;
@@ -154,20 +156,43 @@ export default function PageView(props: PageViewProps) {
     }
 
     if (tool === 'edit') {
+      const existing = hitTest(x, y);
+      if (existing?.kind === 'text') { props.onSelect(existing.id); return; }
       void (async () => {
         const items = await props.getTextItems(pageIndex);
-        const item = items.find((it) => x >= it.x - 2 && x <= it.x + it.w + 2 && y >= it.y - 2 && y <= it.y + it.h + 2);
-        if (!item) return;
-        const white: Ann = {
-          kind: 'rect', id: uid(), mode: 'whiteout',
-          x: item.x - 1, y: item.y - 1, w: item.w + 2, h: item.h + 2, color: '#ffffff',
-        };
-        const size = Math.max(6, item.size * 0.85);
+        const item = items.filter(it => x >= it.x - 2 && x <= it.x + it.w + 2 && y >= it.y - 2 && y <= it.y + it.h + 2)
+          .sort((a, b) => a.w * a.h - b.w * b.h)[0];
+        if (!item || !item.editable) return;
+        const previous = props.annots.find(a => a.kind === 'text' && a.source?.key === item.key);
+        if (previous) { props.onSelect(previous.id); return; }
+        // Sample the modal colour just outside the ink. This preserves the
+        // paper colour on receipts instead of introducing a white sticker.
+        let background = '#ffffff';
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext('2d')!;
+          const ratio = canvas.width / info.viewW;
+          const counts = new Map<string, number>();
+          const points: [number, number][] = [];
+          for (let dx = 0; dx <= item.w; dx += Math.max(1, item.w / 40)) {
+            points.push([item.x + dx, item.y - 0.7], [item.x + dx, item.y + item.h + 0.7]);
+          }
+          for (const [px, py] of points) {
+            const sx = Math.min(canvas.width - 1, Math.max(0, Math.round(px * ratio)));
+            const sy = Math.min(canvas.height - 1, Math.max(0, Math.round(py * ratio)));
+            const rgba = ctx.getImageData(sx, sy, 1, 1).data;
+            const hex = '#' + Array.from(rgba).slice(0, 3).map(n => n.toString(16).padStart(2, '0')).join('');
+            counts.set(hex, (counts.get(hex) ?? 0) + 1);
+          }
+          background = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? background;
+        }
         const text: Ann = {
-          kind: 'text', id: uid(), x: item.x, y: item.y + item.h * 0.08,
-          text: item.str, size, color: props.textColor, bold: false,
+          kind: 'text', id: uid(), x: item.x, y: item.baseline - item.size * 0.78,
+          text: item.str, size: item.size, color: item.color, bold: item.bold,
+          italic: item.italic, fontFamily: item.fontFamily,
+          source: { key: item.key, x: item.x - 0.4, y: item.y - 0.3, w: item.w + 0.8, h: item.h + 0.6, background, edit: item.edit },
         };
-        props.onAddAnns(pageIndex, [white, text], text.id);
+        props.onAddAnns(pageIndex, [text], text.id);
       })();
       return;
     }
@@ -305,6 +330,10 @@ export default function PageView(props: PageViewProps) {
         aria-hidden="true"
       >
         {props.annots.map((a) => {
+          if (a.kind === 'text' && a.source) {
+            const r = a.source;
+            return <rect key={a.id} data-kind="replacement-cover" x={r.x} y={r.y} width={r.w} height={r.h} fill={r.background} />;
+          }
           if (a.kind === 'rect') {
             if (a.mode === 'underline' || a.mode === 'strike') {
               const y = a.mode === 'underline' ? a.y + a.h - Math.max(1.5, a.h * 0.08) : a.y + a.h / 2;
@@ -380,9 +409,15 @@ export default function PageView(props: PageViewProps) {
         const style: React.CSSProperties = {
           left: a.x * scale, top: a.y * scale,
           fontSize: a.size * scale, lineHeight: 1.2,
+          fontStyle: a.italic ? 'italic' : 'normal',
+          padding: 0, border: 0,
           color: a.color, fontWeight: a.bold ? 700 : 400,
-          fontFamily: 'Helvetica, Arial, sans-serif',
+          fontFamily: cssFont(a.fontFamily),
+          transform: a.source ? 'translateY(-0.14em)' : undefined,
         };
+        const measure = document.createElement('canvas').getContext('2d')!;
+        measure.font = `${a.italic ? 'italic ' : ''}${a.bold ? 'bold ' : ''}${a.size * scale}px ${cssFont(a.fontFamily)}`;
+        const width = Math.max(20 * scale, ...a.text.split('\n').map(line => measure.measureText(line).width + 8 * scale));
         return isSel ? (
           <textarea
             key={a.id}
@@ -391,9 +426,9 @@ export default function PageView(props: PageViewProps) {
             wrap="off"
             rows={Math.max(1, a.text.split('\n').length)}
             className="absolute z-20 resize-none overflow-hidden border border-dashed border-accent-2 bg-white/60 px-0.5 outline-none"
-            style={{ ...style, minWidth: 60 * scale }}
+            style={{ ...style, width, minWidth: 20 * scale, background: a.source?.background ?? 'rgba(255,255,255,.6)', outline: '1px dashed #007d92', borderRadius: 0 }}
             value={a.text}
-            onFocus={() => props.onTextFocus()}
+            onFocus={(e) => { props.onTextFocus(); e.currentTarget.select(); }}
             onChange={(e) => props.onTextChange(pageIndex, a.id, e.target.value)}
             onBlur={() => props.onTextBlur(pageIndex, a.id)}
           />

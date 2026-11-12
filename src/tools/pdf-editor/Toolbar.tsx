@@ -91,7 +91,7 @@ export function ToolButton({
       )}
     >
       {children}
-      <span className="hidden sm:inline">{label}</span>
+      <span className={label === 'Edit text' || label === 'Add text' ? 'inline' : 'hidden sm:inline'}>{label}</span>
     </button>
   );
 }

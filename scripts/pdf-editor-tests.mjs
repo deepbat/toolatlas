@@ -119,7 +119,7 @@ try {
     const ta = page.locator('textarea[data-testid^=ann-]');
     await ta.waitFor();
     check('prefilled original', (await ta.inputValue()) === 'Amount due: 1180 INR');
-    const white = page.locator('[data-kind=whiteout]');
+    const white = page.locator('[data-kind=replacement-cover]');
     check('whiteout created', (await white.count()) === 1);
     const box = await white.first().evaluate((e) => ({ x: +e.getAttribute('x'), y: +e.getAttribute('y'), w: +e.getAttribute('width'), h: +e.getAttribute('height') }));
     check('whiteout covers text line', Math.abs(box.x - 71) < 4 && Math.abs(box.y - 141) < 6 && box.w > 80 && box.h > 8 && box.h < 20);
@@ -138,7 +138,7 @@ try {
     check('highlight on target line', Math.abs(box.y - 167) < 8 && box.h < 20);
   });
 
-  for (const [mode, x1, y1, x2, y2, want] of [['underline', 68, 155, 300, 172, 1], ['strike', 68, 155, 300, 172, 1], ['whiteout', 400, 600, 500, 640, 2], ['redact', 400, 650, 500, 690, 1]]) {
+  for (const [mode, x1, y1, x2, y2, want] of [['underline', 68, 155, 300, 172, 1], ['strike', 68, 155, 300, 172, 1], ['whiteout', 400, 600, 500, 640, 1], ['redact', 400, 650, 500, 690, 1]]) {
     await test(mode + ' tool', async () => {
       await page.locator('[data-testid=tool-' + mode + ']').click();
       await scrollToPoint(1, y1);

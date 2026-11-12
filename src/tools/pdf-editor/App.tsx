@@ -10,6 +10,8 @@ import { TOOL_DEFS, ToolButton, IconBtn, type ToolId } from './Toolbar';
 import { Minus, Plus, Undo2, Redo2, Download } from './Toolbar';
 import { Ann, AnnMap, FormFieldInfo, TextItemRect, type ShapeKind } from './model';
 import { exportEditedPdf } from './exportPdf';
+import { PDFDocument } from 'pdf-lib';
+import { locateSourceEdit, type TextRun } from './streamEdit';
 
 const MAX_BYTES = 40 * 1024 * 1024;
 const MAX_PAGES = 200;
@@ -34,7 +36,7 @@ export default function PdfEditor() {
   const futureRef = useRef<AnnMap[]>([]);
   const [histVersion, setHistVersion] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
-  const [tool, setTool] = useState<ToolId>('select');
+  const [tool, setTool] = useState<ToolId>('edit');
   const [color, setColor] = useState('#ffe359');
   const [textColor, setTextColor] = useState('#111111');
   const [fontSize, setFontSize] = useState(16);
@@ -52,6 +54,7 @@ export default function PdfEditor() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [matchIdx, setMatchIdx] = useState(0);
   const [findFlash, setFindFlash] = useState<(Match & { key: number }) | null>(null);
+  const sourceDocRef = useRef<Promise<PDFDocument> | null>(null);
   const textCacheRef = useRef<Record<number, TextItemRect[]>>({});
   const [sigOpen, setSigOpen] = useState(false);
   const [pendingImage, setPendingImage] = useState<{ dataUrl: string; w: number; h: number; label: string } | null>(null);
@@ -195,6 +198,8 @@ export default function PdfEditor() {
       pdfDocRef.current = doc;
       viewportsRef.current = vps;
       textCacheRef.current = {};
+      sourceDocRef.current = PDFDocument.load(bytes, { ignoreEncryption: true });
+      setTool('edit');
       historyRef.current = [];
       futureRef.current = [];
       setPages(infos);
@@ -231,30 +236,57 @@ export default function PdfEditor() {
     const page = await doc.getPage(pageIdx + 1);
     const vp = viewportsRef.current[pageIdx];
     const tc = await page.getTextContent();
+    const ops = await page.getOperatorList();
+    const runs: (TextRun & { color: string })[] = [];
+    let fill = '#000000';
+    const fillStack: string[] = [];
+    for (let i = 0; i < ops.fnArray.length; i++) {
+      const op = ops.fnArray[i], args = ops.argsArray[i];
+      if (op === lib.OPS.save) fillStack.push(fill);
+      if (op === lib.OPS.restore && fillStack.length) fill = fillStack.pop()!;
+      if (op === lib.OPS.setFillRGBColor) fill = '#' + Array.from(args as number[]).map((n: number) => Math.round(n).toString(16).padStart(2, '0')).join('');
+      if (op !== lib.OPS.showText) continue;
+      const glyphs = args[0].filter((g: any) => typeof g !== 'number');
+      runs.push({ text: glyphs.map((g: any) => g.unicode).join(''), codes: glyphs.map((g: any) => g.originalCharCode),
+        width: glyphs.reduce((n: number, g: any) => n + g.width, 0), spaces: glyphs.filter((g: any) => g.isSpace).length, color: fill });
+    }
+    let sourcePage: any;
+    try { sourcePage = (await sourceDocRef.current)?.getPages()[pageIdx]; } catch { /* visual fallback */ }
     const items: TextItemRect[] = [];
-    for (const item of tc.items as any[]) {
+    for (let index = 0; index < tc.items.length; index++) {
+      const item = tc.items[index];
       if (!item.str || !item.str.trim() || !item.width) continue;
       const tx = lib.Util.transform(vp.transform, item.transform);
       const fontH = Math.hypot(tx[2], tx[3]);
       if (!fontH) continue;
-      const ascent = fontH * (item.ascent ?? 0.8);
-      const ux = tx[0], uy = tx[1];
-      const ul = Math.hypot(ux, uy) || 1;
-      const dx = ux / ul, dy = uy / ul; // text direction in view space
-      const nx = -dy, ny = dx; // text "up" in view space
-      const o = [tx[4], tx[5]];
+      const style = tc.styles[item.fontName] ?? {};
+      const ascent = fontH * (style.ascent ?? 0.8);
+      const descent = fontH * Math.abs(style.descent ?? -0.2);
+      const horizontal = Math.abs(tx[1]) < 0.01 && tx[0] > 0;
+      // Rotated/vertical runs remain searchable but are not offered as editable.
+      let fontName = style.fontFamily ?? '';
+      try { fontName += ' ' + page.commonObjs.get(item.fontName)?.name; } catch { /* use generic */ }
+      const family = /courier|mono/i.test(fontName) ? 'Courier' : /times|serif/i.test(fontName) && !/sans/i.test(fontName) ? 'Times' : 'Helvetica';
+      const matchingRuns = runs.filter(r => r.text === item.str);
+      const run = matchingRuns.length === 1 ? matchingRuns[0] : undefined;
+      const edit = horizontal && sourcePage && run ? locateSourceEdit(sourcePage, run) : undefined;
+      const width = item.width * (vp.scale ?? 1);
+      const ul = Math.hypot(tx[0], tx[1]) || 1;
+      const dx = tx[0] / ul, dy = tx[1] / ul;
+      const nx = -dy, ny = dx;
       const corners = [
-        [o[0] - nx * ascent, o[1] - ny * ascent],
-        [o[0] + dx * item.width - nx * ascent, o[1] + dy * item.width - ny * ascent],
-        [o[0] + dx * item.width + nx * (fontH - ascent), o[1] + dy * item.width + ny * (fontH - ascent)],
-        [o[0] + nx * (fontH - ascent), o[1] + ny * (fontH - ascent)],
+        [tx[4] - nx * ascent, tx[5] - ny * ascent],
+        [tx[4] + dx * width - nx * ascent, tx[5] + dy * width - ny * ascent],
+        [tx[4] + dx * width + nx * descent, tx[5] + dy * width + ny * descent],
+        [tx[4] + nx * descent, tx[5] + ny * descent],
       ];
-      const xs = corners.map((c) => c[0]);
-      const ys = corners.map((c) => c[1]);
+      const xs = corners.map(c => c[0]), ys = corners.map(c => c[1]);
       items.push({
         x: Math.min(...xs), y: Math.min(...ys),
         w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys),
-        size: fontH, str: item.str,
+        size: fontH, str: item.str, key: String(index), baseline: tx[5], editable: horizontal,
+        fontFamily: family, bold: /bold|black|heavy/i.test(fontName), italic: /italic|oblique/i.test(fontName),
+        color: run?.color ?? '#000000', edit,
       });
     }
     textCacheRef.current[pageIdx] = items;
@@ -388,7 +420,7 @@ export default function PdfEditor() {
       const ann = (annotsRef.current[page] ?? []).find((a) => a.id === id);
       const snap = textSnapRef.current;
       textSnapRef.current = null;
-      if (ann && ann.kind === 'text' && !ann.text.trim()) {
+      if (ann && ann.kind === 'text' && !ann.text.trim() && !ann.source) {
         // empty text: drop it and rewind history to before it was added
         const base = snap ?? annotsRef.current;
         const next = structuredClone(base);
@@ -485,6 +517,7 @@ export default function PdfEditor() {
     setBusy(true);
     setError('');
     try {
+      const visual = Object.values(annotsRef.current).flat().filter(a => a.kind === 'text' && a.source && !a.source.edit).length;
       const out = await exportEditedPdf({
         bytes: bytesRef.current,
         viewports: viewportsRef.current,
@@ -495,7 +528,7 @@ export default function PdfEditor() {
       });
       const base = fileName.replace(/\.pdf$/i, '') || 'document';
       downloadBlob(`${base}-edited.pdf`, new Blob([out as unknown as BlobPart], { type: 'application/pdf' }));
-      setNotice('Edited PDF downloaded. Open it to check the result before sharing.');
+      setNotice(`Edited PDF downloaded.${visual ? ` ${visual} visual replacement(s): original text remains in the file. Do not use for secrets.` : ''} Open it to check the result before sharing.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Export failed. Try removing the last change.');
     } finally {
@@ -528,7 +561,7 @@ export default function PdfEditor() {
             <li>Add text, highlights, underlines, strikeouts, whiteout and redaction boxes.</li>
             <li>Draw freehand, add shapes and arrows, insert images and signatures.</li>
             <li>Fill AcroForm fields: text inputs, checkboxes, radio buttons and dropdowns.</li>
-            <li>Cover and replace existing text, add clickable links, search the document.</li>
+            <li>Click existing text to replace it, add clickable links, search the document.</li>
             <li>Undo and redo every change, then download the flattened PDF.</li>
           </ul>
         </Panel>
@@ -538,6 +571,22 @@ export default function PdfEditor() {
 
   const colorTools: ToolId[] = ['highlight', 'underline', 'strike', 'pen', 'shape'];
   const selAnn = selected ? Object.values(annots).flat().find((a) => a.id === selected) : undefined;
+  const selectedText = selAnn?.kind === 'text' ? selAnn : undefined;
+  const changeTextStyle = (patch: { size?: number; color?: string; bold?: boolean }) => {
+    if (patch.size !== undefined) setFontSize(patch.size);
+    if (patch.color !== undefined) setTextColor(patch.color);
+    if (patch.bold !== undefined) setBold(patch.bold);
+    if (!selectedText) return;
+    applyChange(m => {
+      for (const list of Object.values(m)) {
+        const i = list.findIndex(a => a.id === selectedText.id);
+        if (i < 0) continue;
+        const a = list[i];
+        if (a.kind !== 'text') continue;
+        list[i] = { ...a, ...patch, y: a.source && patch.size ? a.y + (a.size - patch.size) * 0.78 : a.y };
+      }
+    });
+  };
 
   return (
     <div className="space-y-4" data-testid="pdf-editor">
@@ -667,23 +716,24 @@ export default function PdfEditor() {
             <>
               <label className="flex items-center gap-1.5">
                 Color
-                <input aria-label="Text color" type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="h-7 w-9 cursor-pointer border border-line bg-transparent" />
+                <input aria-label="Text color" type="color" value={selectedText?.color ?? textColor} onChange={(e) => changeTextStyle({ color: e.target.value })} className="h-7 w-9 cursor-pointer border border-line bg-transparent" />
               </label>
               <label className="flex items-center gap-1.5">
                 Size
-                <Input aria-label="Text size" type="number" min={6} max={96} value={fontSize} onChange={(e) => setFontSize(Math.min(96, Math.max(6, Number(e.target.value) || 16)))} className="w-16 px-2 py-1" />
+                <Input aria-label="Text size" type="number" min={6} max={96} value={selectedText?.size ?? fontSize} onChange={(e) => changeTextStyle({ size: Math.min(96, Math.max(6, Number(e.target.value) || 16)) })} className="w-16 px-2 py-1" />
               </label>
               <label className="flex cursor-pointer items-center gap-1.5">
-                <input type="checkbox" checked={bold} onChange={(e) => setBold(e.target.checked)} aria-label="Bold text" />
+                <input type="checkbox" checked={selectedText?.bold ?? bold} onChange={(e) => changeTextStyle({ bold: e.target.checked })} aria-label="Bold text" />
                 Bold
               </label>
-              <span>{tool === 'edit' ? 'Click existing text to cover and replace it.' : 'Click the page to place text.'}</span>
+              <span>{tool === 'edit' ? 'Tap the words already on the page. Their current text opens for editing.' : 'Add text creates a NEW text box. To change existing words, choose Edit text.'}</span>
             </>
           )}
           {tool === 'select' && !selAnn && <span>Tap an annotation to select, drag to move. Tap a form field to fill it.</span>}
           {selAnn && (
             <>
-              <span className="font-mono uppercase tracking-label">Selected: {selAnn.kind}</span>
+              <span className="font-mono uppercase tracking-label">Selected: {selAnn.kind === 'text' && selAnn.source ? 'replacement' : selAnn.kind}</span>
+              {selAnn.kind === 'text' && selAnn.source && <span data-testid="replacement-method">{selAnn.source.edit ? 'Original text removed on export' : 'Visual replacement only: original remains in file'}</span>}
               <Button variant="danger" size="sm" onClick={deleteSelected} data-testid="delete-ann" className="gap-1">
                 <Trash2 className="h-3 w-3" /> Delete
               </Button>
@@ -815,10 +865,11 @@ export default function PdfEditor() {
       <Panel title="How this editor works">
         <div className="space-y-3 text-sm leading-relaxed text-muted">
           <p>
-            Like other browser-based editors (Sejda, Smallpdf), your additions are drawn as a new layer on top of the
-            original page, then flattened into the file you download. "Edit text" covers the original words with a
-            white box and places your new text over it; the page is not re-typeset, so long replacements can overflow
-            their original space.
+            Start with Edit text: tap a word or line, change the prefilled text, then tap outside it.
+            Add text creates a separate text box instead. Original text is removed from supported PDF text
+            operators on export; complex or ambiguous runs use a background-matched visual replacement.
+            Each selected replacement tells you which method is being used. The page is not re-typeset,
+            so longer replacements may need a smaller size or shorter wording. Rotated and vertical text is not yet editable.
           </p>
           <p>
             Whiteout and redact cover content visually. The covered text can still exist inside the file, so do not

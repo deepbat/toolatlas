@@ -14,6 +14,7 @@ import {
   hexToRgb01,
   winAnsiOffenders,
 } from './model';
+import { removeSourceTexts } from './streamEdit';
 
 interface ExportOptions {
   bytes: ArrayBuffer;
@@ -44,7 +45,11 @@ export async function exportEditedPdf(opts: ExportOptions): Promise<Uint8Array> 
 
   const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
   const helv = await doc.embedFont(StandardFonts.Helvetica);
-  const helvBold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const fonts = {
+    Helvetica: [await doc.embedFont(StandardFonts.Helvetica), await doc.embedFont(StandardFonts.HelveticaBold), await doc.embedFont(StandardFonts.HelveticaOblique), await doc.embedFont(StandardFonts.HelveticaBoldOblique)],
+    Times: [await doc.embedFont(StandardFonts.TimesRoman), await doc.embedFont(StandardFonts.TimesRomanBold), await doc.embedFont(StandardFonts.TimesRomanItalic), await doc.embedFont(StandardFonts.TimesRomanBoldItalic)],
+    Courier: [await doc.embedFont(StandardFonts.Courier), await doc.embedFont(StandardFonts.CourierBold), await doc.embedFont(StandardFonts.CourierOblique), await doc.embedFont(StandardFonts.CourierBoldOblique)],
+  };
   const docPages = doc.getPages();
 
   for (const [key, list] of Object.entries(annots)) {
@@ -69,6 +74,8 @@ export async function exportEditedPdf(opts: ExportOptions): Promise<Uint8Array> 
       };
     };
 
+    const edits = list.flatMap(a => a.kind === 'text' && a.source?.edit ? [a.source.edit] : []);
+    if (edits.length) removeSourceTexts(page, edits);
     for (const a of list) {
       if (a.kind === 'rect') {
         const r = rectToPdf(a.x, a.y, a.w, a.h);
@@ -142,7 +149,12 @@ export async function exportEditedPdf(opts: ExportOptions): Promise<Uint8Array> 
           }
         }
       } else if (a.kind === 'text') {
-        const font = a.bold ? helvBold : helv;
+        if (a.source && !a.source.edit) {
+          const r = rectToPdf(a.source.x, a.source.y, a.source.w, a.source.h);
+          const [r1, g1, b1] = hexToRgb01(a.source.background);
+          page.drawRectangle({ x: r.x, y: r.y, width: r.w, height: r.h, color: rgb(r1, g1, b1) });
+        }
+        const font = fonts[a.fontFamily ?? 'Helvetica'][(a.bold ? 1 : 0) + (a.italic ? 2 : 0)];
         const [cr, cg, cb] = hexToRgb01(a.color);
         const lines = a.text.split('\n');
         lines.forEach((line, li) => {
