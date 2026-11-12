@@ -39,6 +39,7 @@ ToolAtlas is a growing collection of free, privacy-first browser utilities — c
 - **Every tool has its own URL** (`/tools/<id>`) so it can be linked, bookmarked and shared.
 - **Global search** — press `⌘K` / `Ctrl+K` (or `/`) from anywhere.
 - **Favourites and recently used** tools, stored in your browser only.
+- **Local data backup and restore** for favourites, recent history, theme, notes and tasks, with versioned JSON validation.
 - **Light and dark themes**, applied before first paint so there is no flash.
 - **Fully local processing** — files, text and numbers never leave your device.
 - **No registration**, no accounts, no telemetry.
@@ -248,7 +249,7 @@ Because the tokens swap under the `.dark` class, every tool supports both themes
 
 - **All processing is local.** Images are resized with `Canvas`, PDFs are assembled with `pdf-lib`, hashes are computed with the Web Crypto API, QR codes are rendered with `qrcode` — all inside your browser.
 - **Nothing is uploaded.** There is no backend, no database and no analytics.
-- **Your preferences stay yours.** Theme, favourites, recent history and tool-specific state (your task list, your notes) live in `localStorage` under `toolatlas:*` keys.
+- **Your preferences stay yours.** Theme, favourites, recent history and tool-specific state (your task list, your notes) live in `localStorage` under `toolatlas:*` keys. Export a backup from [Data & Settings](https://deepbat.github.io/toolatlas/settings/) before clearing browser data or moving devices.
 - **No accounts.** Nothing to sign up for, nothing to leak.
 
 ---
