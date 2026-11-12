@@ -50,6 +50,7 @@ const REGISTRY = {
   // PDF & documents
   'image-to-pdf': lazy(() => import('./image-to-pdf/App')),
   'pdf-merge': lazy(() => import('./pdf-merge/App')),
+  'pdf-editor': lazy(() => import('./pdf-editor/App')),
 
   // Image & media
   'image-compressor': lazy(() => import('./image-compressor/App')),
