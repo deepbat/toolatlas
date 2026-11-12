@@ -8,13 +8,11 @@ export function pageRange(input: string, total: number): number[] {
   if (!input.trim()) return Array.from({ length: total }, (_, i) => i);
   const pages: number[] = [];
   for (const part of input.split(',')) {
-    if (!/^\\s*\\d+(\\s*-\\s*\\d+)?\\s*$/.test(part)) {
-      throw Error('Use page ranges like 1-3,5.');
-    }
-    const [start, endValue] = part.trim().split(/\\s*-\\s*/).map(Number);
+    if (!/^\s*\d+(\s*-\s*\d+)?\s*$/.test(part)) throw Error('Use page ranges like 1-3,5.');
+    const [start, endValue] = part.trim().split(/\s*-\s*/).map(Number);
     const end = endValue ?? start;
     if (start < 1 || end < start || end > total) {
-      throw Error(`Pages must be between 1 and ${total}, in ascending ranges.`);
+      throw Error('Pages must be between 1 and ' + total + ', in ascending ranges.');
     }
     for (let page = start; page <= end; page++) pages.push(page - 1);
   }
@@ -25,13 +23,13 @@ export function pageOrder(input: string, total: number): number[] {
   if (!input.trim()) return Array.from({ length: total }, (_, i) => i);
   const pages: number[] = [];
   for (const part of input.split(',')) {
-    if (!/^\\s*\\d+(\\s*-\\s*\\d+)?\\s*$/.test(part)) {
+    if (!/^\s*\d+(\s*-\s*\d+)?\s*$/.test(part)) {
       throw Error('Use a page order like 3,1,2 or ranges like 1-3,5.');
     }
-    const [start, endValue] = part.trim().split(/\\s*-\\s*/).map(Number);
+    const [start, endValue] = part.trim().split(/\s*-\s*/).map(Number);
     const end = endValue ?? start;
     if (start < 1 || end < start || end > total) {
-      throw Error(`Page numbers must be between 1 and ${total}; ranges must ascend.`);
+      throw Error('Page numbers must be between 1 and ' + total + '; ranges must ascend.');
     }
     for (let page = start; page <= end; page++) pages.push(page - 1);
   }
@@ -58,9 +56,7 @@ export default function PDFTools() {
     setOutput(null);
     setBusy(true);
     try {
-      if (file.size > 50 * 1024 * 1024) {
-        throw Error('Choose a PDF under 50 MB to protect phone memory.');
-      }
+      if (file.size > 50 * 1024 * 1024) throw Error('Choose a PDF under 50 MB to protect phone memory.');
       const src = await PDFDocument.load(await file.arrayBuffer());
       const count = src.getPageCount();
       let doc = src;
@@ -85,9 +81,7 @@ export default function PDFTools() {
 
       if (toolId === 'pdf-watermark') {
         if (!text.trim()) throw Error('Enter watermark text.');
-        if (!/^[\\x20-\\x7e]+$/.test(text)) {
-          throw Error('This PDF watermark uses a standard Latin font. Use ASCII text.');
-        }
+        if (!/^[\x20-\x7e]+$/.test(text)) throw Error('This PDF watermark uses a standard Latin font. Use ASCII text.');
         const font = await doc.embedFont(StandardFonts.HelveticaBold);
         for (const page of doc.getPages()) {
           const { width, height } = page.getSize();
@@ -102,7 +96,7 @@ export default function PDFTools() {
       if (toolId === 'pdf-page-numbers') {
         const font = await doc.embedFont(StandardFonts.Helvetica);
         doc.getPages().forEach((page, index) => {
-          const label = `${index + 1} / ${count}`;
+          const label = (index + 1) + ' / ' + count;
           page.drawText(label, {
             x: Math.max(10, (page.getWidth() - font.widthOfTextAtSize(label, 10)) / 2),
             y: 18, size: 10, font, color: rgb(0.25, 0.25, 0.25),
@@ -123,7 +117,7 @@ export default function PDFTools() {
 
       const bytes = await doc.save();
       setOutput(new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' }));
-      setInfo(`${doc.getPageCount()} pages processed. Original: ${count} pages, ${formatBytes(file.size)}.`);
+      setInfo(doc.getPageCount() + ' pages processed. Original: ' + count + ' pages, ' + formatBytes(file.size) + '.');
     } catch (cause) {
       setError(cause instanceof Error
         ? cause.message
@@ -188,7 +182,7 @@ export default function PDFTools() {
         {info && <p role="status" className="mt-4 text-sm">{info}</p>}
         {output && (
           <div className="mt-4 flex flex-wrap gap-3">
-            <Button onClick={() => downloadBlob(`toolatlas-${toolId}.pdf`, output)}>
+            <Button onClick={() => downloadBlob('toolatlas-' + toolId + '.pdf', output)}>
               Download PDF ({formatBytes(output.size)})
             </Button>
           </div>
