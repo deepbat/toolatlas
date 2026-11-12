@@ -51,8 +51,14 @@ type Drag =
   | { kind: 'move'; id: string; x0: number; y0: number; ox: number; oy: number }
   | { kind: 'resize'; id: string; x0: number; y0: number; ow: number; oh: number };
 
+let sharedMeasure: CanvasRenderingContext2D | null = null;
+const measureCtx = () => (sharedMeasure ??= document.createElement('canvas').getContext('2d')!);
+
 export default function PageView(props: PageViewProps) {
   const { pdfDoc, pageIndex, info, scale, tool } = props;
+  // Re-render the bitmap 250 ms after zoom settles; the old canvas is CSS-stretched meanwhile.
+  const [renderScale, setRenderScale] = useState(scale);
+  useEffect(() => { const t = setTimeout(() => setRenderScale(scale), 250); return () => clearTimeout(t); }, [scale]);
   const containerRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -84,7 +90,8 @@ export default function PageView(props: PageViewProps) {
         const page = await pdfDoc.getPage(pageIndex + 1);
         if (cancelled) return;
         const dpr = Math.min(2, window.devicePixelRatio || 1);
-        const vp = page.getViewport({ scale: scale * dpr });
+        const cap = Math.sqrt(8_000_000 / Math.max(1, info.viewW * info.viewH));
+        const vp = page.getViewport({ scale: Math.min(renderScale * dpr, cap) });
         const canvas = canvasRef.current;
         if (!canvas) return;
         canvas.width = Math.floor(vp.width);
@@ -105,7 +112,7 @@ export default function PageView(props: PageViewProps) {
         task?.cancel();
       } catch { /* noop */ }
     };
-  }, [inView, pdfDoc, pageIndex, scale]);
+  }, [inView, pdfDoc, pageIndex, renderScale, info.viewW, info.viewH]);
 
   const toView = (e: React.PointerEvent) => {
     const r = containerRef.current!.getBoundingClientRect();
@@ -173,16 +180,16 @@ export default function PageView(props: PageViewProps) {
           const ctx = canvas.getContext('2d')!;
           const ratio = canvas.width / info.viewW;
           const counts = new Map<string, number>();
-          const points: [number, number][] = [];
-          for (let dx = 0; dx <= item.w; dx += Math.max(1, item.w / 40)) {
-            points.push([item.x + dx, item.y - 0.7], [item.x + dx, item.y + item.h + 0.7]);
-          }
-          for (const [px, py] of points) {
-            const sx = Math.min(canvas.width - 1, Math.max(0, Math.round(px * ratio)));
+          // Two one-pixel strips (above and below the text) instead of ~80 single reads.
+          const sx0 = Math.min(canvas.width - 1, Math.max(0, Math.floor(item.x * ratio)));
+          const sw = Math.max(1, Math.min(canvas.width - sx0, Math.ceil(item.w * ratio)));
+          for (const py of [item.y - 0.7, item.y + item.h + 0.7]) {
             const sy = Math.min(canvas.height - 1, Math.max(0, Math.round(py * ratio)));
-            const rgba = ctx.getImageData(sx, sy, 1, 1).data;
-            const hex = '#' + Array.from(rgba).slice(0, 3).map(n => n.toString(16).padStart(2, '0')).join('');
-            counts.set(hex, (counts.get(hex) ?? 0) + 1);
+            const row = ctx.getImageData(sx0, sy, sw, 1).data;
+            for (let i = 0; i < sw; i += Math.max(1, Math.floor(sw / 40))) {
+              const hex = '#' + [row[i * 4], row[i * 4 + 1], row[i * 4 + 2]].map(n => n.toString(16).padStart(2, '0')).join('');
+              counts.set(hex, (counts.get(hex) ?? 0) + 1);
+            }
           }
           background = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? background;
         }
@@ -415,7 +422,7 @@ export default function PageView(props: PageViewProps) {
           fontFamily: cssFont(a.fontFamily),
           transform: a.source ? 'translateY(-0.14em)' : undefined,
         };
-        const measure = document.createElement('canvas').getContext('2d')!;
+        const measure = measureCtx();
         measure.font = `${a.italic ? 'italic ' : ''}${a.bold ? 'bold ' : ''}${a.size * scale}px ${cssFont(a.fontFamily)}`;
         const width = Math.max(20 * scale, ...a.text.split('\n').map(line => measure.measureText(line).width + 8 * scale));
         return isSel ? (

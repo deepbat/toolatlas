@@ -77,10 +77,16 @@ export function streamText(stream: PDFRawStream): string {
   return Array.from(decodePDFRawStream(stream).decode(), n => String.fromCharCode(n)).join('');
 }
 
-// A selected PDF.js item is removable only if it maps to one complete show
-// operator and exactly one source operator contains those encoded glyphs.
-export function locateSourceEdit(page: any, run: TextRun): SourceEdit | undefined {
-  const candidates: SourceEdit[] = [];
+interface ShowOp { stream: number; start: number; end: number; op: string; fontSize: number; cs: number; ws: number; nums: number[]; kern: number }
+interface PageIndex { byCodes: Map<string, ShowOp[]>; shared: Map<number, boolean> }
+const INDEXES = new WeakMap<object, PageIndex>();
+
+// Tokenise each content stream once per page and index the show operators by
+// their encoded bytes, so each lookup is a Map read instead of a full re-parse.
+function indexPage(page: any): PageIndex {
+  const hit = INDEXES.get(page);
+  if (hit) return hit;
+  const byCodes = new Map<string, ShowOp[]>();
   let fontSize = 0, charSpace = 0, wordSpace = 0;
   const stack: number[][] = [];
   pageStreams(page).forEach((stream, streamIndex) => {
@@ -101,17 +107,12 @@ export function locateSourceEdit(page: any, run: TextRun): SourceEdit | undefine
         if (t.raw === 'Tw') wordSpace = nums[0];
         if (['Tj', 'TJ', "'", '"'].includes(t.raw) && fontSize > 0) {
           const encoded = operands.flatMap(o => o.bytes ?? []);
-          const codeVariants = [run.codes, run.codes.flatMap(n => [n >> 8, n & 255])];
-          const matches = codeVariants.some(codes => codes.length === encoded.length && codes.every((n, i) => n === encoded[i]));
-          if (matches && encoded.length) {
-            let cs = charSpace, ws = wordSpace;
-            let prefix = '';
-            if (t.raw === '"') { ws = nums[0]; cs = nums[1]; prefix = `${ws} Tw ${cs} Tc T* `; }
-            if (t.raw === "'") prefix = 'T* ';
-            // Existing TJ kerning remains in effect even when the glyphs go.
+          if (encoded.length) {
             const kern = t.raw === 'TJ' ? operands.filter(o => !o.bytes && /^[-+.\d]+$/.test(o.raw)).reduce((n, o) => n + Number(o.raw), 0) : 0;
-            const advance = run.width + (run.codes.length * cs + run.spaces * ws) * 1000 / fontSize - kern;
-            candidates.push({ stream: streamIndex, start: operands[0].start, end: t.end, replacement: `${prefix}[${(-advance).toFixed(6)}] TJ` });
+            const key = encoded.join(',');
+            const list = byCodes.get(key) ?? [];
+            list.push({ stream: streamIndex, start: operands[0].start, end: t.end, op: t.raw, fontSize, cs: charSpace, ws: wordSpace, nums, kern });
+            byCodes.set(key, list);
           }
           if (t.raw === '"') { wordSpace = nums[0]; charSpace = nums[1]; }
         }
@@ -121,12 +122,31 @@ export function locateSourceEdit(page: any, run: TextRun): SourceEdit | undefine
       if (t.raw === '>>') dictDepth--;
     }
   });
-  if (candidates.length !== 1) return undefined;
-  const selected = candidates[0];
+  const idx: PageIndex = { byCodes, shared: new Map() };
+  INDEXES.set(page, idx);
+  return idx;
+}
+
+// A selected PDF.js item is removable only if it maps to one complete show
+// operator and exactly one source operator contains those encoded glyphs.
+export function locateSourceEdit(page: any, run: TextRun): SourceEdit | undefined {
+  const idx = indexPage(page);
+  const found = new Set<ShowOp>();
+  for (const codes of [run.codes, run.codes.flatMap(n => [n >> 8, n & 255])]) {
+    if (!codes.length) continue;
+    (idx.byCodes.get(codes.join(',')) ?? []).forEach(o => found.add(o));
+  }
+  if (found.size !== 1) return undefined;
+  const o = [...found][0];
+  let cs = o.cs, ws = o.ws, prefix = '';
+  if (o.op === '"') { ws = o.nums[0]; cs = o.nums[1]; prefix = `${ws} Tw ${cs} Tc T* `; }
+  if (o.op === "'") prefix = 'T* ';
+  const advance = run.width + (run.codes.length * cs + run.spaces * ws) * 1000 / o.fontSize - o.kern;
+  const selected: SourceEdit = { stream: o.stream, start: o.start, end: o.end, replacement: `${prefix}[${(-advance).toFixed(6)}] TJ` };
   const target = pageStreams(page)[selected.stream];
   // Never mutate a shared stream used by another page.
-  if (page.doc.getPages().filter((p: any) => pageStreams(p).includes(target)).length !== 1) return undefined;
-  return selected;
+  if (!idx.shared.has(selected.stream)) idx.shared.set(selected.stream, page.doc.getPages().filter((p: any) => pageStreams(p).includes(target)).length !== 1);
+  return idx.shared.get(selected.stream) ? undefined : selected;
 }
 
 export function removeSourceTexts(page: any, edits: SourceEdit[]): void {
