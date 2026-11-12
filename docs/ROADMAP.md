@@ -38,7 +38,7 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 ### Image Studio
 - [ ] Batch resize and convert with per-file output.
 - [ ] Passport/photo-print layouts with configurable dimensions.
-- [ ] Collage and contact-sheet maker.
+- [x] Collage and contact-sheet maker.
 - [ ] Screenshot annotation and crop handles.
 - [ ] EXIF and metadata viewer, plus clear-metadata export.
 - [ ] Optional background removal and upscaling only after model size, device performance, licence and privacy review. Show download size and ask before downloading.
