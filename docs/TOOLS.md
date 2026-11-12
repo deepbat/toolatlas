@@ -1,6 +1,6 @@
 # The ToolAtlas catalogue
 
-103 applications, 13 categories. Every tool runs entirely in your browser and works offline once loaded.
+113 applications, 13 categories. Every tool runs entirely in your browser and works offline once loaded.
 
 ---
 
@@ -191,3 +191,13 @@ All of these run in the browser. Files are not uploaded. Outputs can be passed t
 - **Bulk Image Resizer and Converter** (`/tools/image-bulk-convert`): up to 100 images to JPEG, PNG, WebP or AVIF. AVIF saving depends on the browser.
 - **Passport Photo Maker, India** (`/tools/passport-photo`): 35 x 45 mm, PAN 25 x 35 mm, 2 x 2 inch and custom sizes at 300 dpi, plus a print sheet. Always check the current rules of the office you apply to.
 - **Collage Maker** (`/tools/image-collage`), **Image Annotator and Editor** (`/tools/image-annotate`), **Image Metadata Viewer and Remover** (`/tools/image-metadata`).
+
+## Studio batch 2: India finance and date tools (added 12 November 2026)
+
+Each tool shows the financial year it uses, links its sources and says it is an estimate, not tax, legal or payroll advice. Rules were reviewed in November 2026.
+
+- **Income Tax Calculator** (`/tools/income-tax-india`): FY 2025-26 and 2026-27, new and old regime, age bands, 87A rebate, surcharge, cess and a side-by-side other-regime total.
+- **TDS Calculator** (`/tools/tds-calculator`): common sections with 1961 numbering and the 2025 Act reference.
+- **EPF Calculator** (`/tools/epf-calculator`), **Gratuity Calculator** (`/tools/gratuity-calculator`), **HRA Exemption Calculator** (`/tools/hra-calculator`, metro list depends on the FY).
+- **FD and RD Calculator** (`/tools/fd-rd-calculator`), **Loan Amortisation Schedule** (`/tools/loan-schedule`), **Working Days Calculator** (`/tools/working-days`).
+- **Number to Words, Rupees** (`/tools/number-to-words-inr`), **GSTIN, PAN and IFSC Checker** (`/tools/gst-pan-validator`, format checks only, no registry lookup).

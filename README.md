@@ -2,7 +2,7 @@
 
 ## Release 2
 
-**103 tools. 13 categories. Small jobs. Sorted.**
+**113 tools. 13 categories. Small jobs. Sorted.**
 
 The original foundation is preserved and expanded with 51 new browser-only tools, static deep-link pages, full-release offline caching, six practical guides, local fonts, policy/support pages and inert ad spaces. No ad network is active and no revenue is promised. See [release notes and monetization checklist](docs/RELEASE-2.md), [research](docs/RESEARCH.md), and `npm run test:expanded`.
 
@@ -35,7 +35,7 @@ ToolAtlas is a growing collection of free, privacy-first browser utilities — c
 
 ## Highlights
 
-- **103 fully functional tools** across **13 categories** — no placeholders, no dead buttons.
+- **113 fully functional tools** across **13 categories** — no placeholders, no dead buttons.
 - **Every tool has its own URL** (`/tools/<id>`) so it can be linked, bookmarked and shared.
 - **Global search** — typo-tolerant matching and practical synonyms; press `⌘K` / `Ctrl+K` (or `/`) from anywhere.
 - **Favourites and recently used** tools, stored in your browser only.
@@ -52,7 +52,7 @@ ToolAtlas is a growing collection of free, privacy-first browser utilities — c
 
 ## The tools
 
-The current catalogue contains **103 tools across 13 categories**. The compact category list below describes the original foundation; the generated catalogue at [docs/TOOLS.md](docs/TOOLS.md) is the complete reference for Release 2.
+The current catalogue contains **113 tools across 13 categories**. The compact category list below describes the original foundation; the generated catalogue at [docs/TOOLS.md](docs/TOOLS.md) is the complete reference for Release 2.
 
 Browse the [live tool library](https://deepbat.github.io/toolatlas/tools/) or open a category from the website. New tools are added only after implementation and verification.
 
