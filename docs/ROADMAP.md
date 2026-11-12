@@ -26,7 +26,8 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 ## Phase 2: High-value tool collections
 
 ### PDF Studio
-- [x] PDF page organiser with custom page order, page removal and duplication.\n- [ ] PDF compression with quality and size preview.
+- [x] PDF page organiser with custom page order, page removal and duplication.
+- [ ] PDF compression with quality and size preview.
 - [ ] PDF-to-image export with page selection and resolution controls.
 - [ ] Batch image-to-PDF ordering, page size, margins and orientation.
 - [ ] PDF form filling where browser-compatible.
