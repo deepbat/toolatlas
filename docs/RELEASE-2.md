@@ -1,6 +1,6 @@
 # ToolAtlas 2: Small jobs. Sorted.
 
-86 working tools across 13 categories. The original 35 modules are preserved, with 51 additions.
+87 working tools across 13 categories. The original 35 modules are preserved, with 51 additions.
 
 ## Product decisions
 
@@ -36,7 +36,7 @@ No physical Android or iPhone test has been performed. Automated Chromium tests 
 ## Verification
 
 - `npm run build`: typecheck, production bundle, static-page generation.
-- `npm run test:expanded`: functional, file-output, 86-route mobile layout, offline and SEO assertions. Installs a local preview server and cleans it up.
+- `npm run test:expanded`: functional, file-output, 87-route mobile layout, offline and SEO assertions. Installs a local preview server and cleans it up.
 - `npm run test:e2e`: original CDP suite. Requires a running preview and CHROME_PATH if Chrome is not installed in a default path.
 - `npm audit`: zero known dependency vulnerabilities at release preparation.
 
