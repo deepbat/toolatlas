@@ -35,7 +35,7 @@ ToolAtlas is a growing collection of free, privacy-first browser utilities — c
 
 ## Highlights
 
-- **35 fully functional tools** across **13 categories** — no placeholders, no dead buttons.
+- **86 fully functional tools** across **13 categories** — no placeholders, no dead buttons.
 - **Every tool has its own URL** (`/tools/<id>`) so it can be linked, bookmarked and shared.
 - **Global search** — press `⌘K` / `Ctrl+K` (or `/`) from anywhere.
 - **Favourites and recently used** tools, stored in your browser only.
@@ -129,7 +129,8 @@ The dev server prints a local URL (default <http://localhost:5173/toolatlas/>).
 | `npm run build` | Type-check (`tsc --noEmit`) and build to `dist/` |
 | `npm run preview` | Serve the production build locally |
 | `npm run typecheck` | Type-check only |
-| `npm run test:e2e` | Run the headless-Chrome functional suite (needs a running `preview` server) |
+| `npm run test:e2e` | Run the original headless-Chrome suite (needs a running `preview` server) |
+| `npm run test:expanded` | Run expanded browser, file-output, mobile, offline and SEO checks |
 
 ### Serving from a different path
 
@@ -312,7 +313,7 @@ npm run preview          # in one terminal
 npm run test:e2e         # in another
 ```
 
-The suite covers 35 tool routes, search, the ⌘K dialog, favourites, recent history, theming, the 404 page and the catalogue/registry sync.
+The suite covers 86 tool routes, search, the ⌘K dialog, favourites, recent history, theming, the 404 page and the catalogue/registry sync.
 
 ---
 
@@ -330,7 +331,7 @@ The architecture already leaves room for these without a rewrite:
 
 ## Contributing
 
-Issues and pull requests are welcome. Please read [`docs/ADDING_A_TOOL.md`](docs/ADDING_A_TOOL.md) first, and make sure `npm run build` and `npm run test:e2e` pass before opening a pull request.
+Issues and pull requests are welcome. Read [`docs/ADDING_A_TOOL.md`](docs/ADDING_A_TOOL.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md) first. Before opening a pull request, run `npm ci`, `npm run build`, and `npm run test:expanded`. GitHub Actions repeats build and expanded browser checks automatically.
 
 ---
 
