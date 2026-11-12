@@ -93,3 +93,7 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 
 ## Current scope
 Current release contains 120 tools in 13 categories (Studio batch 1 added 14 PDF and image tools, batch 3 added 7 office and finance tools (salary structure, PPF, CAGR, rent receipt, GST invoice, expense tracker, CSV and Excel utilities), batch 2 added 10 India finance and date tools). This roadmap is a plan, not a claim that unchecked features are already available.
+
+## PDF editor responsiveness
+
+- Done: page content streams are tokenised once and indexed, so tapping text to edit no longer re-parses the page for every text item. Zoom re-renders after 250 ms and the canvas is capped at 8 megapixels. Background colour sampling reads two strips instead of many single pixels. Covered by a unit test of 400 lookups and the PDF editor suite (`npm run test:pdf-editor`). Timing on a physical low-end phone has not been measured yet.

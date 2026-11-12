@@ -2,6 +2,8 @@
 import assert from 'node:assert/strict';
 import { incomeTax, gst, tds, gratuity, hra, rd, fd, loan, workingDays, addWorkingDays, rupeesInWords, checkGstin, gstinCheckChar, checkPan, checkIfsc, epf, salaryStructure, parseAmount, type TaxInput } from '../src/lib/india';
 import { ppf, cagr, invoiceTotals, parseInvoiceLines, summarise, textPdf } from '../src/lib/office';
+import { PDFDocument, StandardFonts } from 'pdf-lib';
+import { locateSourceEdit } from '../src/tools/pdf-editor/streamEdit';
 import { crc32, makeZip } from '../src/lib/zip';
 import { parseExif, stripJpeg, stripPng } from '../src/lib/exif';
 import { parseCsv, toCsv, safeCell } from '../src/lib/csvtools';
@@ -88,5 +90,23 @@ await t('expense summary', () => {
   const s = summarise([{ id: '1', date: '2026-01-01', kind: 'in', category: 'x', note: '', amount: 500 }, { id: '2', date: '2026-01-02', kind: 'out', category: 'Food', note: '', amount: 120 }], 100);
   assert.equal(s.balance, 480);
   assert.deepEqual(s.byCat, [['Food', 120]]);
+});
+await t('pdf editor: 400 lookups on one page stay fast and unambiguous', async () => {
+  const d = await PDFDocument.create();
+  const f = await d.embedFont(StandardFonts.Helvetica);
+  const pg = d.addPage([600, 800]);
+  for (let i = 0; i < 400; i++) pg.drawText('Line' + String(i).padStart(4, '0'), { x: 20 + (i % 5) * 100, y: 780 - Math.floor(i / 5) * 9, size: 6, font: f });
+  const reloaded = await PDFDocument.load(await d.save());
+  const page = reloaded.getPage(0);
+  const t0 = Date.now();
+  let hits = 0;
+  for (let i = 0; i < 400; i++) {
+    const text = 'Line' + String(i).padStart(4, '0');
+    const e = locateSourceEdit(page, { text, codes: [...text].map((c) => c.charCodeAt(0)), width: 3000, spaces: 0 });
+    if (e) hits++;
+  }
+  const ms = Date.now() - t0;
+  assert.equal(hits, 400);
+  assert.ok(ms < 1500, 'lookups took ' + ms + 'ms');
 });
 console.log(`\n${n} unit checks passed`);
