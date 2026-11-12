@@ -2,7 +2,7 @@
 
 ## Release 2
 
-**86 tools. 13 categories. Small jobs. Sorted.**
+**87 tools. 13 categories. Small jobs. Sorted.**
 
 The original foundation is preserved and expanded with 51 new browser-only tools, static deep-link pages, full-release offline caching, six practical guides, local fonts, policy/support pages and inert ad spaces. No ad network is active and no revenue is promised. See [release notes and monetization checklist](docs/RELEASE-2.md), [research](docs/RESEARCH.md), and `npm run test:expanded`.
 
@@ -35,7 +35,7 @@ ToolAtlas is a growing collection of free, privacy-first browser utilities — c
 
 ## Highlights
 
-- **86 fully functional tools** across **13 categories** — no placeholders, no dead buttons.
+- **87 fully functional tools** across **13 categories** — no placeholders, no dead buttons.
 - **Every tool has its own URL** (`/tools/<id>`) so it can be linked, bookmarked and shared.
 - **Global search** — press `⌘K` / `Ctrl+K` (or `/`) from anywhere.
 - **Favourites and recently used** tools, stored in your browser only.
@@ -50,7 +50,7 @@ ToolAtlas is a growing collection of free, privacy-first browser utilities — c
 
 ## The tools
 
-The current catalogue contains **86 tools across 13 categories**. The compact category list below describes the original foundation; the generated catalogue at [docs/TOOLS.md](docs/TOOLS.md) is the complete reference for Release 2.
+The current catalogue contains **87 tools across 13 categories**. The compact category list below describes the original foundation; the generated catalogue at [docs/TOOLS.md](docs/TOOLS.md) is the complete reference for Release 2.
 
 Browse the [live tool library](https://deepbat.github.io/toolatlas/tools/) or open a category from the website. New tools are added only after implementation and verification.
 
@@ -228,7 +228,7 @@ ToolAtlas shares the visual language of its sibling project, [deepbat.github.io/
 | `--raised` | `#e5e4dc` | `#0b171b` |
 | `--line` | `rgba(20,33,38,.18)` | `rgba(212,240,238,.16)` |
 | `--fg` | `#142126` | `#eff3eb` |
-| `--muted` | `#546366` | `#869a9d` |
+| `--muted` | `#546366` | `#879a9d` |
 | `--accent` | `#607b00` | `#d7ff3f` |
 | `--accent-2` | `#007d92` | `#6fe7ff` |
 
@@ -300,7 +300,7 @@ npm run preview          # in one terminal
 npm run test:e2e         # in another
 ```
 
-The expanded suite covers 86 tool routes, representative calculations, file outputs, image and PDF processing, CSV and Unicode edge cases, mobile overflow, offline operation, SEO deep links and browser exceptions. Run `npm run test:expanded` after `npm run build`; it starts its own preview server and requires Playwright Chromium.
+The expanded suite covers 87 tool routes, representative calculations, file outputs, image and PDF processing, CSV and Unicode edge cases, mobile overflow, offline operation, SEO deep links and browser exceptions. Run `npm run test:expanded` after `npm run build`; it starts its own preview server and requires Playwright Chromium.
 
 ---
 
