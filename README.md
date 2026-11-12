@@ -40,6 +40,7 @@ ToolAtlas is a growing collection of free, privacy-first browser utilities — c
 - **Global search** — typo-tolerant matching and practical synonyms; press `⌘K` / `Ctrl+K` (or `/`) from anywhere.
 - **Favourites and recently used** tools, stored in your browser only.
 - **Hindi and Punjabi navigation** with a language selector (tools themselves are still English).
+- **Quality checks** are listed in docs/QUALITY.md.
 - **Offline and install** help at /offline, with progress and repair. See docs/OFFLINE.md.
 - **Workspaces**: named sets of tools with export and import, kept in your browser only. A **Free apps** page lists 25 checked open-source and free programs for bigger jobs.
 - **Library filters** for category, popularity, name, relevance and tools added in the last 30 days.
