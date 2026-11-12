@@ -24,7 +24,7 @@ function Brand() {
       <span className="relative flex h-8 w-8 items-center justify-center border border-accent bg-accent/10">
         <span className="font-mono text-[11px] font-semibold tracking-tight text-accent">TA</span>
       </span>
-      <span className="font-mono text-[12px] font-semibold uppercase tracking-wide2 text-fg">
+      <span className="hidden font-mono text-[12px] font-semibold uppercase tracking-wide2 text-fg min-[340px]:inline">
         Tool<span className="text-accent">Atlas</span>
       </span>
     </Link>
@@ -171,7 +171,7 @@ export default function Layout() {
 
       <OfflineBanner />
       <header className="sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur-xl">
-        <div className="container-page flex h-16 items-center gap-5">
+        <div className="container-page flex h-16 min-w-0 items-center gap-2 sm:gap-5">
           <Brand />
 
           <nav className="ml-2 hidden items-center gap-6 md:flex" aria-label="Primary">
@@ -194,7 +194,7 @@ export default function Layout() {
             {TOOLS.length} tools live
           </span>
 
-          <div className="ml-auto flex items-center gap-2 lg:ml-0">
+          <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2 lg:ml-0">
             <button
               type="button"
               onClick={() => setSearchOpen(true)}

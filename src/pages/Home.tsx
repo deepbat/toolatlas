@@ -82,7 +82,7 @@ function HeroSearch() {
           onFocus={() => setFocused(true)}
           onBlur={() => window.setTimeout(() => setFocused(false), 120)}
           placeholder="Try “pdf”, “json”, “bmi” or “password”…"
-          className="h-10 flex-1 bg-transparent font-mono text-[13px] text-fg outline-none placeholder:text-muted/60 sm:text-sm"
+          className="h-10 min-w-0 flex-1 bg-transparent font-mono text-[13px] text-fg outline-none placeholder:text-muted/60 sm:text-sm"
           aria-label="Search all tools"
         />
         <button
@@ -183,7 +183,7 @@ export default function HomePage() {
               <em className="not-italic font-bold text-accent">Sorted.</em>
             </h1>
 
-            <div className="mt-10 grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
+            <div className="mt-10 grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
               <p className="max-w-md text-base leading-relaxed text-muted">
                 For the PDF that needs two pages out. The photo that is 12 KB too large. The calculation that does not need a spreadsheet. Open a tool and get on with it.
               </p>
