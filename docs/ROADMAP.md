@@ -16,8 +16,8 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 - [ ] Test physical Android and iOS devices, including file pickers, downloads, print, keyboard and low-memory behaviour.
 - [ ] Audit keyboard-only and screen-reader use.
 - [ ] Add automated accessibility and contrast regression tests.
-- [ ] Add export/import for favourites, notes and tasks, with schema versioning and validation.
-- [ ] Add storage usage display, safe clear-data controls and export reminders.
+- [x] Add versioned export/import for ToolAtlas local storage, including favourites, notes and tasks, with schema validation and rollback on restore errors.
+- [x] Add a local storage usage overview and backup export/restore page.\n- [ ] Add safe clear-data controls and export reminders.
 - [ ] Add offline installation progress, cache failure recovery and selective offline mode.
 - [ ] Add fuzzy search, synonyms, category filters and recently-added filters.
 - [ ] Add optional copyable diagnostic reports that remain local by default.
