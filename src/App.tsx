@@ -1,3 +1,5 @@
+import Legal from './pages/Legal';
+import Guides from './pages/Guides';
 import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import AboutPage from './pages/About';
@@ -20,6 +22,10 @@ export default function App() {
         <Route path="favorites" element={<FavoritesPage />} />
         <Route path="recent" element={<RecentPage />} />
         <Route path="about" element={<AboutPage />} />
+        <Route path="privacy" element={<Legal />} />
+        <Route path="contact" element={<Legal />} />
+        <Route path="terms" element={<Legal />} />
+        <Route path="guides" element={<Guides />} />
         <Route path="tools/:toolId" element={<ToolPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

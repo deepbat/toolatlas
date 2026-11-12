@@ -175,18 +175,17 @@ export default function HomePage() {
               {TOOLS.length} tools live · {CATEGORIES.length} categories · no sign-up
             </p>
 
-            <p className="label mt-9 text-accent-2">01 — ToolAtlas</p>
+            <p className="label mt-9 text-accent-2">Your everyday tool drawer</p>
 
             <h1 className="mt-4 font-display text-[clamp(2.5rem,6.3vw,5.6rem)] font-medium leading-[0.9] tracking-[-0.055em] text-fg">
-              One Place.
+              Small jobs.
               <br />
-              <em className="not-italic font-bold text-accent">Countless Useful Tools.</em>
+              <em className="not-italic font-bold text-accent">Sorted.</em>
             </h1>
 
             <div className="mt-10 grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
               <p className="max-w-md text-base leading-relaxed text-muted">
-                Calculators, converters, text helpers, image tools and developer utilities — all in
-                one fast, private workspace. Nothing is uploaded, and nothing needs an account.
+                For the PDF that needs two pages out. The photo that is 12 KB too large. The calculation that does not need a spreadsheet. Open a tool and get on with it.
               </p>
               <HeroSearch />
             </div>
@@ -210,6 +209,13 @@ export default function HomePage() {
       </section>
 
       <div className="container-page space-y-16 pt-14">
+        <section className="grid gap-4 sm:grid-cols-3" aria-label="Popular workflows">{[
+          {title:'Photo too large?',copy:'Fit an upload form in seconds.',to:'/tools/image-target-size',tag:'20 KB / 50 KB / 100 KB'},
+          {title:'PDF needs a quick fix?',copy:'Merge, extract, rotate and number.',to:'/category/pdf',tag:'NO UPLOADS'},
+          {title:'Everyday money math.',copy:'GST, EMI, discounts and SIP estimates.',to:'/category/finance',tag:'INDIA-FRIENDLY'}
+        ].map(w=><Link key={w.to} to={w.to} className="group border border-line bg-surface p-5 transition hover:border-accent"><p className="label text-accent">{w.tag}</p><h2 className="mt-4 text-lg">{w.title} ↗</h2><p className="mt-2 text-sm text-muted">{w.copy}</p></Link>)}</section>
+        <div className="flex flex-wrap items-center justify-between gap-4 border-y border-line py-5"><p className="text-sm text-muted">Start with a job, not a dozen tabs. Read our practical workflows.</p><Link to="/guides" className="text-sm text-accent">Open field notes ↗</Link></div>
+        <details className="border border-line bg-surface p-5"><summary className="cursor-pointer font-display text-lg text-accent">Browse all {TOOLS.length} tools</summary><div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{TOOLS.map(t=><Link key={t.id} to={'/tools/'+t.id} className="border-b border-line py-3 text-sm hover:text-accent">{t.name} ↗</Link>)}</div></details>
         <section aria-labelledby="categories-heading">
           <SectionHeader
             index="01 / Browse"
@@ -219,7 +225,7 @@ export default function HomePage() {
             cta="All categories"
           />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {CATEGORIES.slice(0, 10).map((category) => (
+            {CATEGORIES.map((category) => (
               <Link
                 key={category.id}
                 to={`/category/${category.id}`}
@@ -280,7 +286,7 @@ export default function HomePage() {
           <SectionHeader
             index="03 / Hand-picked"
             title="Featured tools"
-            note="The ones people open first"
+            note="Hand-picked shortcuts"
             to="/tools"
             cta="Browse all"
           />
@@ -293,8 +299,8 @@ export default function HomePage() {
 
         <section aria-labelledby="popular-heading">
           <SectionHeader
-            index="04 / Most opened"
-            title="Popular applications"
+            index="04 / Useful every day"
+            title="Everyday essentials"
             note="A dependable starting point"
           />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -413,14 +419,12 @@ export default function HomePage() {
             <div>
               <p className="label text-accent">07 / Open by design</p>
               <h2 className="mt-3 font-display text-2xl font-medium leading-tight tracking-tight text-fg sm:text-3xl">
-                Built to grow,
+                Made for the small stuff,
                 <br />
-                <em className="not-italic text-accent">one tool at a time.</em>
+                <em className="not-italic text-accent">used every day.</em>
               </h2>
               <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted">
-                ToolAtlas is a modular platform, not a single-purpose site. Every application is an
-                independent module with its own URL, version and lifecycle, so the atlas can keep
-                expanding without ever being rebuilt.
+                A useful tool should do one job well. No sign-up detour, no upload queue, no disappearing download button. Just the settings you need and a result you can keep.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link

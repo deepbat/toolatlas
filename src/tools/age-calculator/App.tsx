@@ -3,20 +3,11 @@ import { Field, Grid, Panel, Result } from '../../components/ui';
 import { formatDate, formatNumber, todayISO } from '../../lib/utils';
 
 function diffYMD(from: Date, to: Date) {
-  let years = to.getFullYear() - from.getFullYear();
-  let months = to.getMonth() - from.getMonth();
-  let days = to.getDate() - from.getDate();
-
-  if (days < 0) {
-    months -= 1;
-    const daysInPreviousMonth = new Date(to.getFullYear(), to.getMonth(), 0).getDate();
-    days += daysInPreviousMonth;
-  }
-  if (months < 0) {
-    years -= 1;
-    months += 12;
-  }
-  return { years, months, days };
+  let totalMonths=(to.getFullYear()-from.getFullYear())*12+to.getMonth()-from.getMonth();
+  const anchor=(months:number)=>{const date=new Date(from.getFullYear(),from.getMonth()+months,1);date.setDate(Math.min(from.getDate(),new Date(date.getFullYear(),date.getMonth()+1,0).getDate()));return date};
+  if(anchor(totalMonths)>to)totalMonths--;
+  const d=anchor(totalMonths);const days=Math.round((Date.UTC(to.getFullYear(),to.getMonth(),to.getDate())-Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()))/86400000);
+  return {years:Math.floor(totalMonths/12),months:totalMonths%12,days};
 }
 
 export default function AgeCalculator() {
@@ -28,23 +19,23 @@ export default function AgeCalculator() {
   const valid = Boolean(dob) && Boolean(asOf) && !Number.isNaN(birth.getTime()) && !Number.isNaN(reference.getTime()) && birth <= reference;
 
   const ymd = valid ? diffYMD(birth, reference) : { years: 0, months: 0, days: 0 };
-  const totalDays = valid ? Math.floor((reference.getTime() - birth.getTime()) / 86_400_000) : 0;
+  const totalDays = valid ? Math.round((Date.UTC(reference.getFullYear(),reference.getMonth(),reference.getDate()) - Date.UTC(birth.getFullYear(),birth.getMonth(),birth.getDate())) / 86_400_000) : 0;
   const totalWeeks = Math.floor(totalDays / 7);
   const totalMonths = valid ? ymd.years * 12 + ymd.months : 0;
 
   let nextBirthday: Date | null = null;
   let daysToBirthday = 0;
   if (valid) {
-    nextBirthday = new Date(reference.getFullYear(), birth.getMonth(), birth.getDate());
+    nextBirthday = new Date(reference.getFullYear(), birth.getMonth(), Math.min(birth.getDate(),new Date(reference.getFullYear(),birth.getMonth()+1,0).getDate()));
     if (nextBirthday.getTime() < reference.getTime()) {
-      nextBirthday = new Date(reference.getFullYear() + 1, birth.getMonth(), birth.getDate());
+      nextBirthday = new Date(reference.getFullYear()+1, birth.getMonth(), Math.min(birth.getDate(),new Date(reference.getFullYear()+1,birth.getMonth()+1,0).getDate()));
     }
     daysToBirthday = Math.round((nextBirthday.getTime() - reference.getTime()) / 86_400_000);
   }
 
   return (
     <div className="space-y-4">
-      <Panel title="Dates">
+      <Panel title="Dates" description="Calendar age uses a clamped month-end convention: a 29 February birthday falls on 28 February in non-leap years.">
         <Grid>
           <Field label="Date of birth">
             <input

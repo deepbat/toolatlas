@@ -61,9 +61,9 @@ function readTheme(): Theme {
     if (raw === 'light' || raw === 'dark' || raw === 'system') return raw;
     // Tolerate values written by older builds that used JSON encoding.
     const parsed = raw ? (JSON.parse(raw) as Theme) : null;
-    return parsed === 'light' || parsed === 'dark' || parsed === 'system' ? parsed : 'system';
+    return parsed === 'light' || parsed === 'dark' || parsed === 'system' ? parsed : 'dark';
   } catch {
-    return 'system';
+    return 'dark';
   }
 }
 

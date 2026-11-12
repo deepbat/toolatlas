@@ -1,3 +1,4 @@
+import SEO from '../lib/seo';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Github, Menu, Moon, Search, Sun, X } from 'lucide-react';
@@ -86,6 +87,10 @@ function Footer() {
             <h3 className="label text-accent">Project</h3>
             <ul className="mt-4 space-y-2.5 text-sm text-muted">
               <li><Link className="transition hover:text-accent" to="/about">About ToolAtlas</Link></li>
+              <li><Link className="transition hover:text-accent" to="/guides">Practical guides</Link></li>
+              <li><Link className="transition hover:text-accent" to="/privacy">Privacy policy</Link></li>
+              <li><Link className="transition hover:text-accent" to="/contact">Contact & support</Link></li>
+              <li><Link className="transition hover:text-accent" to="/terms">Terms of use</Link></li>
               <li>
                 <a className="transition hover:text-accent" href={GITHUB_URL} target="_blank" rel="noreferrer">
                   GitHub repository ↗
@@ -106,7 +111,7 @@ function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-line pt-6 font-mono text-[10px] uppercase tracking-label text-muted sm:flex-row sm:items-center">
-          <p>© {year} ToolAtlas · Built by Deepak Batra · MIT licensed</p>
+          <p>© {year} ToolAtlas · Built by deepbat · MIT licensed</p>
           <p className="flex items-center gap-2 text-accent">
             <span className="h-1.5 w-1.5 animate-pulse-dot bg-accent" aria-hidden="true" />
             Everything runs in your browser
@@ -251,7 +256,7 @@ export default function Layout() {
       </header>
 
       <main id="main" className="flex-1 pb-12">
-        <Outlet />
+        <SEO /><Outlet />
       </main>
 
       <Footer />

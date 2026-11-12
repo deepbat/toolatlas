@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CopyButton, Panel, TextArea } from '../../components/ui';
 
 const FLAGS = ['g', 'i', 'm', 's', 'u'] as const;
@@ -17,26 +17,15 @@ export default function RegexTester() {
 
   const flagString = FLAGS.filter((flag) => flags[flag]).join('');
 
-  const result = useMemo(() => {
-    if (!pattern) return { matches: [] as Match[], error: '' };
-    try {
-      const regex = new RegExp(pattern, flagString);
-      const matches: Match[] = [];
-      if (regex.global) {
-        let match: RegExpExecArray | null;
-        while ((match = regex.exec(text)) !== null && matches.length < 500) {
-          matches.push({ text: match[0], index: match.index, groups: match.slice(1) });
-          if (match[0] === '') regex.lastIndex += 1;
-        }
-      } else {
-        const match = regex.exec(text);
-        if (match) matches.push({ text: match[0], index: match.index, groups: match.slice(1) });
-      }
-      return { matches, error: '' };
-    } catch (cause) {
-      return { matches: [], error: cause instanceof Error ? cause.message : 'Invalid expression' };
-    }
-  }, [flagString, pattern, text]);
+  const [result,setResult]=useState<{matches:Match[];error:string}>({matches:[],error:''});
+  useEffect(()=>{
+    if(!pattern){setResult({matches:[],error:''});return}
+    const code=`onmessage=({data:{pattern,flags,text}})=>{try{const r=new RegExp(pattern,flags),matches=[];let m;while((m=r.exec(text))&&matches.length<500){matches.push({text:m[0],index:m.index,groups:m.slice(1)});if(!r.global)break;if(m[0]==='')r.lastIndex++}postMessage({matches,error:''})}catch(e){postMessage({matches:[],error:e.message})}}`;
+    const url=URL.createObjectURL(new Blob([code],{type:'text/javascript'}));
+    const worker=new Worker(url);const timeout=setTimeout(()=>{worker.terminate();setResult({matches:[],error:'Pattern took too long. Simplify it and try again.'})},800);
+    worker.onmessage=e=>{clearTimeout(timeout);setResult(e.data);worker.terminate()};worker.postMessage({pattern,flags:flagString,text});
+    return()=>{clearTimeout(timeout);worker.terminate();URL.revokeObjectURL(url)};
+  },[flagString,pattern,text]);
 
   const highlighted = useMemo(() => {
     if (result.matches.length === 0) return [{ text, match: false }];

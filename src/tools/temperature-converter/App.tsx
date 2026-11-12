@@ -39,6 +39,7 @@ export default function TemperatureConverter() {
   return (
     <div className="space-y-4">
       <Panel title="Temperature">
+        {celsius < -273.15 && <p role="alert" className="mb-4 text-danger">Below absolute zero. This is not a physically valid temperature.</p>}
         <Tabs
           value={scale}
           onChange={setScale}

@@ -33,14 +33,7 @@ export default function ToolPage() {
   useEffect(() => {
     if (!tool) return;
     recordVisit(tool.id);
-    const previous = document.title;
-    document.title = `${tool.name} — ToolAtlas`;
-    document
-      .querySelector('meta[name="description"]')
-      ?.setAttribute('content', tool.description);
-    return () => {
-      document.title = previous;
-    };
+
   }, [tool, recordVisit]);
 
   if (!tool) return <NotFoundPage />;
@@ -120,10 +113,11 @@ export default function ToolPage() {
 
       <div className={cn('mt-8', widthClass)}>
         <Suspense fallback={<ToolSkeleton />}>
-          {Component ? <Component /> : <ToolSkeleton />}
+          {Component ? <Component key={tool.id} /> : <ToolSkeleton />}
         </Suspense>
 
-        <div className="mt-8 space-y-6">
+        <aside className="ad-space" aria-label="Reserved advertising space">FUTURE AD SPACE · NO ADS ARE ENABLED</aside>
+        <div className="no-print mt-8 space-y-6">
           <Note>
             <span className="font-semibold text-fg">Private by design.</span> This tool runs entirely
             in your browser. Nothing you enter or upload is sent to a server.

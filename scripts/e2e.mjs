@@ -155,9 +155,9 @@ test('Home page renders the hero and catalogue', async () => {
   const data = await evaluate(`
     ${SET_INPUT}
     return {
-      hero: document.body.innerText.includes('Countless Useful Tools'),
+      hero: document.body.innerText.includes('Small jobs.'),
       featured: document.body.innerText.includes('Featured tools'),
-      popular: document.body.innerText.includes('Popular applications'),
+      popular: document.body.innerText.includes('Everyday essentials'),
       categories: document.body.innerText.includes('Find your category'),
       recentlyAdded: document.body.innerText.includes('Recently added'),
       toolCards: document.querySelectorAll('a[href^="/toolatlas/tools/"]').length,

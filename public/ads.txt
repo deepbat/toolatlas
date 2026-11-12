@@ -1,0 +1,3 @@
+# No advertising network is enabled.
+# Replace this comment with your verified seller record only after approval.
+# A production ads.txt must be served at the DOMAIN ROOT, not just /toolatlas/.

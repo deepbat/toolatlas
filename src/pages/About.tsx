@@ -35,7 +35,7 @@ export default function AboutPage() {
           A growing atlas of useful things.
         </h1>
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted">
-          ToolAtlas began with a simple frustration: useful utilities are scattered across the web,
+          Published by deepbat, ToolAtlas began with a simple frustration: useful utilities are scattered across the web,
           each with its own account prompt, upload step and cookie banner. This project puts them in
           one place, keeps the data on your device, and makes each tool easy to find again.
         </p>

@@ -21,7 +21,7 @@ export default function CompoundInterest() {
 
   const periods = Number(frequency);
   const annualRate = num(rate) / 100;
-  const months = Math.max(1, Math.round(num(years) * 12));
+  const months = Math.min(1200, Math.max(1, Math.round(num(years) * 12)));
   const contribution = Math.max(0, num(monthly));
 
   const { balance, contributed, yearly } = useMemo(() => {
@@ -50,7 +50,7 @@ export default function CompoundInterest() {
 
   return (
     <div className="space-y-4">
-      <Panel title="Your plan">
+      <Panel title="Your plan" description="Hypothetical fixed-return estimate with month-end contributions, limited to 100 years. Fees and taxes excluded.">
         <Grid cols={3}>
           <Field label="Starting amount">
             <Input type="number" inputMode="decimal" value={principal} onChange={(event) => setPrincipal(event.target.value)} />

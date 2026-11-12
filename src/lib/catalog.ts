@@ -1,4 +1,6 @@
 import type { Category, CategoryId, ToolMeta } from './types';
+import { EXTRA_TOOLS } from './extra';
+import { MEDIA_TOOLS } from './media';
 
 export const CATEGORIES: Category[] = [
   {
@@ -515,11 +517,13 @@ export const TOOLS: ToolMeta[] = [
   },
 ];
 
+TOOLS.push(...EXTRA_TOOLS, ...MEDIA_TOOLS);
+
 export const TOOL_MAP: Record<string, ToolMeta> = Object.fromEntries(
   TOOLS.map((tool) => [tool.id, tool])
 );
 
-export const FEATURED_TOOLS = TOOLS.filter((tool) => tool.featured);
+export const FEATURED_TOOLS = ['image-target-size','pdf-extract','gst-calculator','invoice-generator','json-formatter','qr-code-generator'].map(id=>TOOL_MAP[id]);
 export const POPULAR_TOOLS = TOOLS.filter((tool) => tool.popular);
 
 export const RECENTLY_ADDED = [...TOOLS]

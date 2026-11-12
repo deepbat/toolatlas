@@ -3,17 +3,8 @@ import { Field, Grid, Panel, Result, Toggle } from '../../components/ui';
 import { formatNumber, todayISO } from '../../lib/utils';
 
 function businessDays(start: Date, end: Date): number {
-  const from = new Date(start);
-  const to = new Date(end);
-  let count = 0;
-  let guard = 0;
-  while (from < to && guard < 100_000) {
-    const day = from.getDay();
-    if (day !== 0 && day !== 6) count += 1;
-    from.setDate(from.getDate() + 1);
-    guard += 1;
-  }
-  return count;
+  const days=Math.round((+end-+start)/86400000);let count=Math.floor(days/7)*5;
+  for(let i=0;i<days%7;i++){const day=(start.getUTCDay()+i)%7;if(day!==0&&day!==6)count++}return count;
 }
 
 export default function DateDifference() {
@@ -25,8 +16,8 @@ export default function DateDifference() {
   });
   const [includeEnd, setIncludeEnd] = useState(false);
 
-  const startDate = new Date(`${start}T00:00:00`);
-  const endDate = new Date(`${end}T00:00:00`);
+  const startDate = new Date(`${start}T00:00:00Z`);
+  const endDate = new Date(`${end}T00:00:00Z`);
   const valid = !Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime());
 
   const rawDays = valid ? Math.round((endDate.getTime() - startDate.getTime()) / 86_400_000) : 0;
@@ -37,7 +28,7 @@ export default function DateDifference() {
   const years = days / 365.2425;
   const workDays = valid
     ? businessDays(rawDays >= 0 ? startDate : endDate, rawDays >= 0 ? endDate : startDate) +
-      (includeEnd && endDate.getDay() !== 0 && endDate.getDay() !== 6 ? 1 : 0)
+      (includeEnd && (rawDays>=0?endDate:startDate).getUTCDay() !== 0 && (rawDays>=0?endDate:startDate).getUTCDay() !== 6 ? 1 : 0)
     : 0;
 
   return (

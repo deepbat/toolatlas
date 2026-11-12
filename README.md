@@ -1,5 +1,12 @@
 # ToolAtlas
 
+## Release 2
+
+**86 tools. 13 categories. Small jobs. Sorted.**
+
+The original foundation is preserved and expanded with 51 new browser-only tools, static deep-link pages, full-release offline caching, six practical guides, local fonts, policy/support pages and inert ad spaces. No ad network is active and no revenue is promised. See [release notes and monetization checklist](docs/RELEASE-2.md), [research](docs/RESEARCH.md), and `npm run test:expanded`.
+
+
 **One Place. Countless Useful Tools.**
 
 ToolAtlas is a growing collection of free, privacy-first browser utilities — calculators, converters, date and time tools, text helpers, PDF and image utilities, developer tools and generators. Everything runs locally in your browser: no sign-up, no uploads, no server round-trips.

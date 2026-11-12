@@ -13,13 +13,13 @@ export default function LoanEmiCalculator() {
 
   const amount = Math.max(0, num(principal));
   const annualRate = Math.max(0, num(rate));
-  const months = Math.max(1, Math.round(num(years) * 12));
+  const months = Math.min(1200, Math.max(1, Math.round(num(years) * 12)));
   const monthlyRate = annualRate / 100 / 12;
 
   const emi =
     monthlyRate === 0
       ? amount / months
-      : (amount * monthlyRate * (1 + monthlyRate) ** months) / ((1 + monthlyRate) ** months - 1);
+      : (amount * monthlyRate) / (1 - (1 + monthlyRate) ** -months);
 
   const totalPayment = emi * months;
   const totalInterest = totalPayment - amount;
@@ -52,7 +52,7 @@ export default function LoanEmiCalculator() {
 
   return (
     <div className="space-y-4">
-      <Panel title="Loan details">
+      <Panel title="Loan details" description="Educational estimate. Term is limited to 1-1200 monthly instalments. Fees, insurance and changing rates are excluded.">
         <Grid cols={3}>
           <Field label="Loan amount">
             <Input type="number" inputMode="decimal" value={principal} onChange={(event) => setPrincipal(event.target.value)} />
