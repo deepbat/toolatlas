@@ -87,6 +87,7 @@ function Footer() {
             <h3 className="label text-accent">Project</h3>
             <ul className="mt-4 space-y-2.5 text-sm text-muted">
               <li><Link className="transition hover:text-accent" to="/about">About ToolAtlas</Link></li>
+              <li><Link className="transition hover:text-accent" to="/settings">Data & Settings</Link></li>
               <li><Link className="transition hover:text-accent" to="/guides">Practical guides</Link></li>
               <li><Link className="transition hover:text-accent" to="/privacy">Privacy policy</Link></li>
               <li><Link className="transition hover:text-accent" to="/contact">Contact & support</Link></li>
