@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Search, X } from 'lucide-react';
 import { CATEGORY_MAP, POPULAR_TOOLS } from '../lib/catalog';
 import { searchTools } from '../lib/search';
-import { cn } from '../lib/utils';
+import { cn, tint } from '../lib/utils';
 import { Icon } from './Icon';
 
 export default function SearchDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -63,7 +63,7 @@ export default function SearchDialog({ open, onClose }: { open: boolean; onClose
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/45 px-4 pt-[10vh] backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-bg/80 px-4 pt-[12vh] backdrop-blur-sm animate-fade-in"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -72,21 +72,21 @@ export default function SearchDialog({ open, onClose }: { open: boolean; onClose
       aria-label="Search tools"
       onKeyDown={onKeyDown}
     >
-      <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl">
+      <div className="w-full max-w-xl border border-line bg-surface shadow-lift">
         <div className="flex items-center gap-3 border-b border-line px-4">
-          <Search className="h-4 w-4 shrink-0 text-muted" />
+          <Search className="h-4 w-4 shrink-0 text-accent" />
           <input
             ref={inputRef}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search 35 tools, categories or keywords…"
-            className="h-14 flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-muted/70"
+            className="h-14 flex-1 bg-transparent font-mono text-sm text-fg outline-none placeholder:text-muted/70"
             aria-label="Search query"
           />
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-muted transition hover:bg-raised hover:text-fg"
+            className="p-1.5 text-muted transition hover:text-fg"
             aria-label="Close search"
           >
             <X className="h-4 w-4" />
@@ -95,13 +95,15 @@ export default function SearchDialog({ open, onClose }: { open: boolean; onClose
 
         <div className="max-h-[52vh] overflow-y-auto p-2">
           {results.length === 0 ? (
-            <div className="px-3 py-10 text-center">
-              <p className="text-sm font-medium text-fg">No tools match “{query}”</p>
-              <p className="mt-1 text-xs text-muted">Try a broader word, like “pdf”, “date” or “json”.</p>
+            <div className="px-3 py-12 text-center">
+              <p className="font-display text-sm font-medium text-fg">No tools match “{query}”</p>
+              <p className="mt-1.5 font-mono text-[10px] uppercase tracking-label text-muted">
+                Try a broader word, like “pdf”, “date” or “json”.
+              </p>
             </div>
           ) : (
             <>
-              <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
+              <p className="label px-3 pb-2 pt-3 text-muted">
                 {query.trim() ? 'Results' : 'Popular right now'}
               </p>
               {results.map((tool, index) => {
@@ -113,18 +115,25 @@ export default function SearchDialog({ open, onClose }: { open: boolean; onClose
                     onMouseEnter={() => setActive(index)}
                     onClick={() => go(tool.id)}
                     className={cn(
-                      'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition',
+                      'flex w-full items-center gap-3 px-3 py-2.5 text-left transition',
                       index === active ? 'bg-accent/10' : 'hover:bg-raised'
                     )}
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface text-accent shadow-sm ring-1 ring-line">
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center border border-line"
+                      style={{ backgroundColor: tint(category.accent, 0.12), color: category.accent }}
+                    >
                       <Icon name={tool.icon} className="h-4 w-4" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-fg">{tool.name}</span>
-                      <span className="block truncate text-xs text-muted">{category.shortName}</span>
+                      <span className="block truncate font-display text-sm font-medium text-fg">
+                        {tool.name}
+                      </span>
+                      <span className="block truncate font-mono text-[9px] uppercase tracking-label text-muted">
+                        {category.shortName}
+                      </span>
                     </span>
-                    <ArrowRight className={cn('h-4 w-4 shrink-0', index === active ? 'text-accent' : 'text-muted/50')} />
+                    <ArrowRight className={cn('h-4 w-4 shrink-0', index === active ? 'text-accent' : 'text-muted/40')} />
                   </button>
                 );
               })}
@@ -132,12 +141,12 @@ export default function SearchDialog({ open, onClose }: { open: boolean; onClose
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-2 border-t border-line bg-raised/40 px-4 py-2 text-[11px] text-muted">
+        <div className="flex items-center justify-between gap-2 border-t border-line bg-raised/40 px-4 py-2 font-mono text-[9px] uppercase tracking-label text-muted">
           <span className="hidden sm:inline">
-            <span className="kbd">↑</span> <span className="kbd">↓</span> to navigate · <span className="kbd">↵</span> to open
+            <span className="kbd">↑</span> <span className="kbd">↓</span> navigate · <span className="kbd">↵</span> open
           </span>
           <span>
-            <span className="kbd">esc</span> to close
+            <span className="kbd">esc</span> close
           </span>
         </div>
       </div>

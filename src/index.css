@@ -2,31 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ------------------------------------------------------------------ tokens */
+/* Palette and rhythm follow the visual language of deepbat.github.io/db:
+   deep teal-black ink, acid-lime accent, cyan secondary, mono labels. */
+
 @layer base {
   :root {
-    --bg: 250 250 252;
-    --surface: 255 255 255;
-    --raised: 245 246 250;
-    --line: 226 228 236;
-    --fg: 17 20 28;
-    --muted: 104 110 126;
-    --accent: 112 96 255;
-    --accent-soft: 238 236 255;
+    /* light — warm paper */
+    --bg: 243 241 233; /* #f3f1e9 */
+    --surface: 255 255 252;
+    --raised: 229 228 220; /* #e5e4dc */
+    --line: 20 33 38;
+    --line-a: 0.18;
+    --fg: 20 33 38; /* #142126 */
+    --soft: 76 93 96; /* #4c5d60 */
+    --muted: 84 99 102; /* #546366 */
+    --accent: 96 123 0; /* #607b00 */
+    --accent-2: 0 125 146; /* #007d92 */
+    --accent-soft: 226 232 208;
+    --on-accent: 7 16 20;
+    --danger: 168 77 65; /* #a84d41 */
+    --warn: 166 106 20;
+
+    /* per-category hues */
+    --cat-calculators: 96 123 0;
+    --cat-converters: 0 125 146;
+    --cat-date: 166 106 20;
+    --cat-finance: 12 120 92;
+    --cat-text: 60 84 78;
+    --cat-pdf: 168 77 65;
+    --cat-image: 108 76 190;
+    --cat-file: 80 96 100;
+    --cat-productivity: 92 135 20;
+    --cat-developer: 60 92 190;
+    --cat-internet: 30 110 155;
+    --cat-generators: 150 115 25;
+    --cat-misc: 80 95 98;
   }
 
   .dark {
-    --bg: 9 10 15;
-    --surface: 17 19 27;
-    --raised: 23 26 36;
-    --line: 38 42 56;
-    --fg: 236 238 245;
-    --muted: 148 155 173;
-    --accent: 146 134 255;
-    --accent-soft: 32 29 62;
+    /* dark — deep ink */
+    --bg: 7 16 20; /* #071014 */
+    --surface: 10 24 28;
+    --raised: 11 23 27; /* #0b171b */
+    --line: 212 240 238;
+    --line-a: 0.16;
+    --fg: 239 243 235; /* #eff3eb */
+    --soft: 165 182 182; /* #a5b6b6 */
+    --muted: 134 154 157; /* #869a9d */
+    --accent: 215 255 63; /* #d7ff3f */
+    --accent-2: 111 231 255; /* #6fe7ff */
+    --accent-soft: 30 40 22;
+    --on-accent: 7 16 20;
+    --danger: 255 158 147; /* #ff9e93 */
+    --warn: 255 180 84; /* #ffb454 */
+
+    /* per-category hues */
+    --cat-calculators: 215 255 63;
+    --cat-converters: 111 231 255;
+    --cat-date: 255 180 84;
+    --cat-finance: 124 240 192;
+    --cat-text: 190 214 205;
+    --cat-pdf: 255 158 147;
+    --cat-image: 199 175 255;
+    --cat-file: 150 170 175;
+    --cat-productivity: 168 255 110;
+    --cat-developer: 130 160 255;
+    --cat-internet: 108 200 235;
+    --cat-generators: 255 205 110;
+    --cat-misc: 170 190 195;
   }
 
   * {
-    border-color: rgb(var(--line));
+    border-color: rgb(var(--line) / var(--line-a));
   }
 
   html {
@@ -36,82 +84,102 @@
 
   body {
     @apply bg-bg font-sans text-fg antialiased;
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    line-height: 1.5;
     min-height: 100dvh;
   }
 
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display;
+    letter-spacing: -0.04em;
+  }
+
   ::selection {
-    background: rgb(var(--accent) / 0.25);
+    background: rgb(var(--accent));
+    color: rgb(var(--on-accent));
   }
 
   :focus-visible {
-    outline: none;
+    outline: 1px solid rgb(var(--accent));
+    outline-offset: 2px;
   }
 
   input[type='range'] {
     accent-color: rgb(var(--accent));
   }
+
+  input[type='color'] {
+    accent-color: rgb(var(--accent));
+  }
 }
+
+/* -------------------------------------------------------------- components */
 
 @layer components {
   .container-page {
-    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    @apply mx-auto w-full max-w-[1200px] px-5 sm:px-8;
   }
 
-  /* Soft aurora used behind the hero. */
-  .aurora {
-    position: absolute;
+  /* Small uppercase mono label — the connective tissue of the whole design. */
+  .label {
+    @apply font-mono text-[10px] uppercase tracking-label;
+  }
+
+  .label-strong {
+    @apply font-mono text-[10px] font-semibold uppercase tracking-label;
+  }
+
+  /* Section heading rule: lime label on the left, muted note on the right. */
+  .section-line {
+    @apply mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-line pb-3;
+  }
+
+  .hero-grid {
+    background-image: linear-gradient(rgb(var(--accent-2) / 0.11) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--accent-2) / 0.11) 1px, transparent 1px);
+    background-size: 86px 86px;
+    mask-image: linear-gradient(90deg, transparent, black 48%, transparent);
+  }
+
+  .grain {
+    position: fixed;
+    z-index: 30;
     inset: 0;
-    overflow: hidden;
     pointer-events: none;
-    z-index: 0;
+    opacity: 0.045;
+    mix-blend-mode: screen;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E");
   }
 
-  .aurora::before,
-  .aurora::after {
-    content: '';
+  .dark .grain {
+    mix-blend-mode: screen;
+  }
+
+  html:not(.dark) .grain {
+    opacity: 0.025;
+    mix-blend-mode: multiply;
+  }
+
+  /* Lime halo used behind the hero and section highlights. */
+  .halo {
     position: absolute;
-    width: 42rem;
-    height: 42rem;
     border-radius: 9999px;
-    filter: blur(110px);
-    opacity: 0.35;
-  }
-
-  .aurora::before {
-    background: radial-gradient(circle at 30% 30%, #7c6cff, transparent 65%);
-    top: -18rem;
-    left: -8rem;
-  }
-
-  .aurora::after {
-    background: radial-gradient(circle at 70% 70%, #22d3ee, transparent 65%);
-    top: -22rem;
-    right: -12rem;
-    opacity: 0.22;
-  }
-
-  .dark .aurora::before {
-    opacity: 0.4;
-  }
-
-  .grid-fade {
-    background-image: linear-gradient(rgb(var(--line) / 0.55) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(var(--line) / 0.55) 1px, transparent 1px);
-    background-size: 56px 56px;
-    mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 30%, transparent 75%);
+    filter: blur(120px);
+    pointer-events: none;
   }
 
   .card-hover {
-    @apply transition duration-300 ease-out hover:-translate-y-0.5 hover:border-accent/35 hover:shadow-lift;
+    @apply transition duration-300 ease-out hover:-translate-y-0.5;
   }
 
   .kbd {
-    @apply inline-flex h-5 min-w-5 items-center justify-center rounded border border-line bg-raised px-1.5 font-mono text-[10px] font-semibold text-muted;
+    @apply inline-flex h-5 min-w-5 items-center justify-center border border-line bg-raised px-1.5 font-mono text-[10px] font-semibold text-muted;
   }
 
   .prose-tool h3 {
-    @apply mt-5 text-sm font-semibold text-fg;
+    @apply mt-5 font-display text-sm font-semibold tracking-tight text-fg;
   }
 
   .prose-tool p {
@@ -126,7 +194,7 @@
 /* Thin, theme-aware scrollbars. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(var(--line)) transparent;
+  scrollbar-color: rgb(var(--line) / 0.4) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -135,7 +203,7 @@
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: rgb(var(--line));
+  background-color: rgb(var(--line) / 0.4);
   border-radius: 9999px;
   border: 3px solid transparent;
   background-clip: content-box;

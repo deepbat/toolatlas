@@ -142,7 +142,7 @@ Use the shared primitives so the tool matches the rest of the platform.
 | An empty state | `<EmptyState icon="…" title="…" description="…" />` |
 | A copy button | `<CopyButton value={…} />` |
 
-Colour comes from the semantic tokens — `bg-surface`, `border-line`, `text-fg`, `text-muted`, `bg-accent`, `text-accent` — never from raw palette colours, so both themes work automatically.
+Colour comes from the semantic tokens — `bg-surface`, `border-line`, `text-fg`, `text-muted`, `bg-accent`, `text-accent` — never from raw palette colours, so both themes work automatically. Corners are sharp (2–3px) and depth comes from 1px borders rather than shadows. Micro-labels use the `.label` / `.label-strong` classes (uppercase mono).
 
 ---
 

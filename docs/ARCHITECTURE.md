@@ -179,20 +179,38 @@ The same function powers the hero search, the browse-page filter and the ⌘K di
 
 ## 7. Design system
 
-`src/index.css` defines the tokens; `tailwind.config.js` exposes them as utilities.
+ToolAtlas shares the visual language of [deepbat.github.io/db](https://deepbat.github.io/db/). `src/index.css` defines the tokens; `tailwind.config.js` exposes them as utilities.
 
 | Token | Light | Dark | Used for |
 | --- | --- | --- | --- |
-| `--bg` | 250 250 252 | 9 10 15 | page background |
-| `--surface` | 255 255 255 | 17 19 27 | cards, panels |
-| `--raised` | 245 246 250 | 23 26 36 | inputs, chips |
-| `--line` | 226 228 236 | 38 42 56 | borders |
-| `--fg` | 17 20 28 | 236 238 245 | primary text |
-| `--muted` | 104 110 126 | 148 155 173 | secondary text |
-| `--accent` | 112 96 255 | 146 134 255 | primary actions |
-| `--accent-soft` | 238 236 255 | 32 29 62 | tinted surfaces |
+| `--bg` | 243 241 233 | 7 16 20 | page background |
+| `--surface` | 255 255 252 | 10 24 28 | cards, panels |
+| `--raised` | 229 228 220 | 11 23 27 | inputs, chips |
+| `--line` | 20 33 38 (α .18) | 212 240 238 (α .16) | borders |
+| `--fg` | 20 33 38 | 239 243 235 | primary text |
+| `--soft` | 76 93 96 | 165 182 182 | secondary text |
+| `--muted` | 84 99 102 | 134 154 157 | tertiary text |
+| `--accent` | 96 123 0 | 215 255 63 | primary actions |
+| `--accent-2` | 0 125 146 | 111 231 255 | cyan secondary |
+| `--on-accent` | 7 16 20 | 7 16 20 | text on the accent |
+| `--danger` | 168 77 65 | 255 158 147 | destructive |
+| `--warn` | 166 106 20 | 255 180 84 | warnings |
 
 Because both themes are the same token names with different values, no component ever needs a `.dark:` variant.
+
+Each category also carries a hue (`--cat-<id>`) that is defined per theme, so a category icon is recognisable without breaking the palette.
+
+### Type
+
+| Family | Role |
+| --- | --- |
+| Space Grotesk | Display headings, values, card titles |
+| DM Sans | Body copy |
+| IBM Plex Mono | Labels, data, code, navigation status |
+
+### Shape
+
+The radius scale is deliberately flat — `rounded-2xl` resolves to 3px — and depth comes from 1px borders rather than shadows. Uppercase mono micro-labels (`01 / Browse`) act as the connective tissue between sections, matching the reference site.
 
 ### Shared primitives
 

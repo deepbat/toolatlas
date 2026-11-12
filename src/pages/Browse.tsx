@@ -3,11 +3,11 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import ToolCard from '../components/ToolCard';
 import { Icon } from '../components/Icon';
+import { EmptyState } from '../components/ui';
 import { CATEGORIES, CATEGORY_MAP, TOOLS, toolsByCategory } from '../lib/catalog';
 import { searchTools } from '../lib/search';
 import type { CategoryId, ToolMeta } from '../lib/types';
-import { cn } from '../lib/utils';
-import { EmptyState } from '../components/ui';
+import { cn, tint } from '../lib/utils';
 
 type SortKey = 'relevance' | 'name' | 'newest' | 'popular';
 
@@ -49,44 +49,42 @@ export default function BrowsePage() {
   };
 
   return (
-    <div className="container-page pt-10">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
-            {category ? 'Category' : 'Library'}
-          </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-fg sm:text-4xl">
+    <div className="container-page pt-12">
+      <header className="section-line">
+        <div className="flex items-baseline gap-3">
+          <span className="label text-muted/60">{category ? 'Category' : 'Library'}</span>
+          <h1 className="font-display text-2xl font-medium tracking-tight text-fg sm:text-3xl">
             {category ? category.name : 'All tools'}
           </h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted">
-            {category
-              ? category.description
-              : 'Every application in the atlas, searchable and filterable. Nothing behind a login.'}
-          </p>
         </div>
-        <p className="text-sm text-muted">
-          <span className="font-semibold text-fg">{results.length}</span>{' '}
-          {results.length === 1 ? 'tool' : 'tools'}
+        <p className="font-mono text-[10px] uppercase tracking-label text-muted">
+          <span className="text-accent">{results.length}</span> {results.length === 1 ? 'tool' : 'tools'}
           {query && <> matching “{query}”</>}
         </p>
       </header>
 
-      <div className="mt-6 rounded-2xl border border-line bg-surface p-3 shadow-soft">
+      <p className="max-w-2xl text-sm leading-relaxed text-muted">
+        {category
+          ? category.description
+          : 'Every application in the atlas, searchable and filterable. Nothing behind a login.'}
+      </p>
+
+      <div className="mt-6 border border-line bg-surface/80 p-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative min-w-[220px] flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
             <input
               value={query}
               onChange={(event) => update('q', event.target.value)}
               placeholder="Filter by name, keyword or category…"
-              className="h-10 w-full rounded-xl border border-line bg-raised/50 pl-9 pr-9 text-sm text-fg outline-none transition placeholder:text-muted/70 focus:border-accent/60 focus:bg-surface focus:ring-4 focus:ring-accent/10"
+              className="h-10 w-full border border-line bg-raised/60 pl-9 pr-9 font-mono text-[13px] text-fg outline-none transition placeholder:text-muted/60 focus:border-accent"
               aria-label="Filter tools"
             />
             {query && (
               <button
                 type="button"
                 onClick={() => update('q', '')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted transition hover:bg-raised hover:text-fg"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted transition hover:text-fg"
                 aria-label="Clear filter"
               >
                 <X className="h-3.5 w-3.5" />
@@ -95,11 +93,11 @@ export default function BrowsePage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <SlidersHorizontal className="hidden h-4 w-4 text-muted sm:block" />
+            <SlidersHorizontal className="hidden h-3.5 w-3.5 text-muted sm:block" />
             <select
               value={sort}
               onChange={(event) => update('sort', event.target.value === 'relevance' ? '' : event.target.value)}
-              className="h-10 rounded-xl border border-line bg-raised/50 px-3 text-sm text-fg outline-none focus:border-accent/60"
+              className="h-10 border border-line bg-raised/60 px-3 font-mono text-[11px] uppercase tracking-label text-fg outline-none focus:border-accent"
               aria-label="Sort tools"
             >
               {SORTS.map((option) => (
@@ -115,10 +113,10 @@ export default function BrowsePage() {
           <Link
             to="/tools"
             className={cn(
-              'rounded-full border px-3 py-1 text-xs font-medium transition',
+              'border px-3 py-1 font-mono text-[10px] uppercase tracking-label transition',
               !activeCategory
-                ? 'border-accent/30 bg-accent/10 text-accent'
-                : 'border-line text-muted hover:border-accent/30 hover:text-fg'
+                ? 'border-accent bg-accent/10 text-accent'
+                : 'border-line text-muted hover:border-accent/40 hover:text-fg'
             )}
           >
             All
@@ -130,15 +128,15 @@ export default function BrowsePage() {
                 key={item.id}
                 to={`/category/${item.id}`}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition',
+                  'inline-flex items-center gap-1.5 border px-3 py-1 font-mono text-[10px] uppercase tracking-label transition',
                   activeCategory === item.id
-                    ? 'border-accent/30 bg-accent/10 text-accent'
-                    : 'border-line text-muted hover:border-accent/30 hover:text-fg'
+                    ? 'border-accent bg-accent/10 text-accent'
+                    : 'border-line text-muted hover:border-accent/40 hover:text-fg'
                 )}
               >
                 <Icon name={item.icon} className="h-3 w-3" />
                 {item.shortName}
-                <span className="text-[10px] opacity-60">{count}</span>
+                <span className="opacity-50">{count}</span>
               </Link>
             );
           })}
@@ -152,10 +150,7 @@ export default function BrowsePage() {
             title="No tools found"
             description="Try a different keyword, or clear the filters to see the whole atlas."
             action={
-              <Link
-                to="/tools"
-                className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white"
-              >
+              <Link to="/tools" className="bg-accent px-4 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-label text-on-accent">
                 Show all tools
               </Link>
             }

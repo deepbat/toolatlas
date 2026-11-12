@@ -164,7 +164,7 @@ export default function Calculator() {
 
   return (
     <div className="space-y-4">
-      <Panel className="overflow-hidden p-0">
+      <Panel className="overflow-hidden !p-0">
         <div className="flex items-center justify-between border-b border-line px-4 py-2 text-xs text-muted">
           <span className="font-mono">
             {acc !== null && op ? `${format(acc)} ${op}` : '\u00a0'}

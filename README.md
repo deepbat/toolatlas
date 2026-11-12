@@ -224,13 +224,28 @@ Full guide: [`docs/ADDING_A_TOOL.md`](docs/ADDING_A_TOOL.md).
 
 ## Design system
 
-Colour, spacing and elevation are defined once as CSS custom properties in `src/index.css` and exposed to Tailwind as semantic tokens (`bg`, `surface`, `raised`, `line`, `fg`, `muted`, `accent`).
+ToolAtlas shares the visual language of its sibling project, [deepbat.github.io/db](https://deepbat.github.io/db/): deep teal-black ink, acid-lime accent, cyan secondary, mono labels and sharp, technical corners.
+
+| Token | Light | Dark |
+| --- | --- | --- |
+| `--bg` | `#f3f1e9` | `#071014` |
+| `--surface` | `#fffffc` | `#0a181c` |
+| `--raised` | `#e5e4dc` | `#0b171b` |
+| `--line` | `rgba(20,33,38,.18)` | `rgba(212,240,238,.16)` |
+| `--fg` | `#142126` | `#eff3eb` |
+| `--muted` | `#546366` | `#869a9d` |
+| `--accent` | `#607b00` | `#d7ff3f` |
+| `--accent-2` | `#007d92` | `#6fe7ff` |
+
+Colour, spacing and elevation are defined once as CSS custom properties in `src/index.css` and exposed to Tailwind as semantic tokens (`bg`, `surface`, `raised`, `line`, `fg`, `muted`, `accent`, `accent-2`).
 
 ```html
-<div class="rounded-2xl border border-line bg-surface p-5 shadow-soft">
+<div class="border border-line bg-surface p-5">
 ```
 
 Because the tokens swap under the `.dark` class, every tool supports both themes without writing a single dark-mode rule. The active theme is resolved by a tiny inline script in `index.html` before React boots, so there is no flash of the wrong theme.
+
+**Type** — `Space Grotesk` for display and headings, `DM Sans` for body copy, `IBM Plex Mono` for labels, data and code. **Shape** — a 2px radius scale, 1px borders instead of shadows, and uppercase mono micro-labels (`01 / Browse`) as the connective tissue between sections.
 
 ---
 

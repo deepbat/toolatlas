@@ -5,8 +5,8 @@
   "start_url": "/toolatlas/",
   "scope": "/toolatlas/",
   "display": "standalone",
-  "background_color": "#090a0f",
-  "theme_color": "#090a0f",
+  "background_color": "#071014",
+  "theme_color": "#071014",
   "orientation": "any",
   "categories": ["productivity", "utilities"],
   "icons": [

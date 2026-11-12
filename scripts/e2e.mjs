@@ -560,7 +560,7 @@ test('URL parser splits a URL into parts', async () => {
   `);
   check('host parsed', data.includes('example.com'), data.slice(0, 300));
   check('port parsed', data.includes('8080'), data.slice(0, 300));
-  check('two query parameters listed', data.includes('Query parameters (2)'), data.slice(0, 300));
+  check('two query parameters listed', data.toLowerCase().includes('query parameters (2)'), data.slice(0, 300));
 });
 
 test('Task list stores tasks locally', async () => {

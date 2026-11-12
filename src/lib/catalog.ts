@@ -7,7 +7,7 @@ export const CATEGORIES: Category[] = [
     shortName: 'Calculators',
     description: 'Everyday math, percentages, health numbers and quick estimates.',
     icon: 'Calculator',
-    accent: 'from-violet-500 to-indigo-500',
+    accent: 'var(--cat-calculators)',
   },
   {
     id: 'converters',
@@ -15,7 +15,7 @@ export const CATEGORIES: Category[] = [
     shortName: 'Converters',
     description: 'Length, weight, volume, speed, data and temperature conversions.',
     icon: 'Ruler',
-    accent: 'from-sky-500 to-cyan-500',
+    accent: 'var(--cat-converters)',
   },
   {
     id: 'date',
@@ -23,7 +23,7 @@ export const CATEGORIES: Category[] = [
     shortName: 'Date & Time',
     description: 'Ages, date gaps, time zones and countdowns.',
     icon: 'CalendarDays',
-    accent: 'from-amber-500 to-orange-500',
+    accent: 'var(--cat-date)',
   },
   {
     id: 'finance',
@@ -31,7 +31,7 @@ export const CATEGORIES: Category[] = [
     shortName: 'Finance',
     description: 'Loans, interest, savings targets and money planning.',
     icon: 'Wallet',
-    accent: 'from-emerald-500 to-teal-500',
+    accent: 'var(--cat-finance)',
   },
   {
     id: 'text',
@@ -39,7 +39,7 @@ export const CATEGORIES: Category[] = [
     shortName: 'Text',
     description: 'Count, clean, compare and generate text without leaving the page.',
     icon: 'PenLine',
-    accent: 'from-rose-500 to-pink-500',
+    accent: 'var(--cat-text)',
   },
   {
     id: 'pdf',
@@ -47,7 +47,7 @@ export const CATEGORIES: Category[] = [
     shortName: 'PDF',
     description: 'Build and combine documents entirely on your device.',
     icon: 'FileText',
-    accent: 'from-red-500 to-rose-600',
+    accent: 'var(--cat-pdf)',
   },
   {
     id: 'image',
@@ -55,7 +55,7 @@ export const CATEGORIES: Category[] = [
     shortName: 'Images',
     description: 'Compress, resize and prepare images in the browser.',
     icon: 'Image',
-    accent: 'from-fuchsia-500 to-purple-600',
+    accent: 'var(--cat-image)',
   },
   {
     id: 'file',
@@ -63,7 +63,7 @@ export const CATEGORIES: Category[] = [
     shortName: 'Files',
     description: 'Checksums, sizes and file inspection helpers.',
     icon: 'FolderOpen',
-    accent: 'from-slate-500 to-slate-700',
+    accent: 'var(--cat-file)',
   },
   {
     id: 'productivity',
@@ -71,7 +71,7 @@ export const CATEGORIES: Category[] = [
     shortName: 'Productivity',
     description: 'Small apps for focus, notes and task tracking.',
     icon: 'Kanban',
-    accent: 'from-lime-500 to-emerald-500',
+    accent: 'var(--cat-productivity)',
   },
   {
     id: 'developer',
@@ -79,7 +79,7 @@ export const CATEGORIES: Category[] = [
     shortName: 'Developer',
     description: 'JSON, encodings, hashes, tokens and regular expressions.',
     icon: 'Code2',
-    accent: 'from-blue-500 to-indigo-600',
+    accent: 'var(--cat-developer)',
   },
   {
     id: 'internet',
@@ -87,7 +87,7 @@ export const CATEGORIES: Category[] = [
     shortName: 'Internet',
     description: 'Inspect URLs, parameters and browser network details.',
     icon: 'Globe',
-    accent: 'from-cyan-500 to-blue-500',
+    accent: 'var(--cat-internet)',
   },
   {
     id: 'generators',
@@ -95,7 +95,7 @@ export const CATEGORIES: Category[] = [
     shortName: 'Generators',
     description: 'Passwords, QR codes, identifiers and colour systems.',
     icon: 'Sparkles',
-    accent: 'from-orange-500 to-amber-500',
+    accent: 'var(--cat-generators)',
   },
   {
     id: 'misc',
@@ -103,7 +103,7 @@ export const CATEGORIES: Category[] = [
     shortName: 'Misc',
     description: 'Handy extras that do not fit anywhere else.',
     icon: 'Shapes',
-    accent: 'from-teal-500 to-cyan-600',
+    accent: 'var(--cat-misc)',
   },
 ];
 

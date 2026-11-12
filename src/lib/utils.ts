@@ -2,6 +2,14 @@ export function cn(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(' ');
 }
 
+/**
+ * Builds a translucent colour from a CSS custom property that holds an
+ * "r g b" triplet, e.g. `tint('var(--cat-calculators)', 0.12)`.
+ */
+export function tint(accent: string, alpha = 1): string {
+  return `rgb(${accent} / ${alpha})`;
+}
+
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }

@@ -98,7 +98,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle('dark', resolvedTheme === 'dark');
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', resolvedTheme === 'dark' ? '#090a0f' : '#ffffff');
+      ?.setAttribute('content', resolvedTheme === 'dark' ? '#071014' : '#f3f1e9');
   }, [resolvedTheme]);
 
   const setTheme = useCallback((next: Theme) => {

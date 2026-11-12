@@ -10,21 +10,20 @@ export default function FavoritesPage() {
   const tools = favorites.map((id) => TOOL_MAP[id]).filter(Boolean);
 
   return (
-    <div className="container-page pt-10">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-500">
-            <Star className="h-3.5 w-3.5 fill-current" /> Saved locally
-          </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-fg sm:text-4xl">Favourites</h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted">
-            Your pinned tools. They live in this browser only — no account, no sync, no tracking.
-          </p>
+    <div className="container-page pt-12">
+      <header className="section-line">
+        <div className="flex items-baseline gap-3">
+          <span className="label text-accent">Saved locally</span>
+          <h1 className="font-display text-2xl font-medium tracking-tight text-fg sm:text-3xl">Favourites</h1>
         </div>
-        <p className="text-sm text-muted">
-          <span className="font-semibold text-fg">{tools.length}</span> saved
+        <p className="font-mono text-[10px] uppercase tracking-label text-muted">
+          <span className="text-accent">{tools.length}</span> saved
         </p>
       </header>
+
+      <p className="max-w-2xl text-sm leading-relaxed text-muted">
+        Your pinned tools. They live in this browser only — no account, no sync, no tracking.
+      </p>
 
       <div className="mt-6">
         {tools.length === 0 ? (
@@ -33,7 +32,10 @@ export default function FavoritesPage() {
             title="Nothing pinned yet"
             description="Open any tool and press the star in its header (or on its card) to keep it here."
             action={
-              <Link to="/tools" className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white">
+              <Link
+                to="/tools"
+                className="bg-accent px-4 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-label text-on-accent"
+              >
                 Browse the atlas
               </Link>
             }

@@ -3,7 +3,7 @@ import { Star } from 'lucide-react';
 import { CATEGORY_MAP } from '../lib/catalog';
 import { useApp } from '../lib/store';
 import type { ToolMeta } from '../lib/types';
-import { cn } from '../lib/utils';
+import { cn, tint } from '../lib/utils';
 import { Icon } from './Icon';
 
 export default function ToolCard({ tool, className }: { tool: ToolMeta; className?: string }) {
@@ -15,18 +15,16 @@ export default function ToolCard({ tool, className }: { tool: ToolMeta; classNam
     <Link
       to={`/tools/${tool.id}`}
       className={cn(
-        'card-hover group relative flex flex-col rounded-2xl border border-line bg-surface p-4 shadow-soft',
+        'group relative flex flex-col border border-line bg-surface/90 p-4 transition duration-300 ease-out hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lift',
         className
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <span
-          className={cn(
-            'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm transition group-hover:scale-105',
-            category.accent
-          )}
+          className="flex h-10 w-10 shrink-0 items-center justify-center border border-line transition group-hover:border-accent/50"
+          style={{ backgroundColor: tint(category.accent, 0.12), color: category.accent }}
         >
-          <Icon name={tool.icon} className="h-5 w-5" />
+          <Icon name={tool.icon} className="h-4.5 w-4.5" />
         </span>
         <button
           type="button"
@@ -36,8 +34,8 @@ export default function ToolCard({ tool, className }: { tool: ToolMeta; classNam
             toggleFavorite(tool.id);
           }}
           className={cn(
-            'rounded-lg p-1.5 transition',
-            favorite ? 'text-amber-500' : 'text-muted/60 hover:bg-raised hover:text-fg'
+            'p-1.5 transition',
+            favorite ? 'text-accent' : 'text-muted/50 hover:text-fg'
           )}
           aria-label={favorite ? `Remove ${tool.name} from favourites` : `Add ${tool.name} to favourites`}
           aria-pressed={favorite}
@@ -46,14 +44,14 @@ export default function ToolCard({ tool, className }: { tool: ToolMeta; classNam
         </button>
       </div>
 
-      <h3 className="mt-3 text-sm font-semibold tracking-tight text-fg">{tool.name}</h3>
-      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">{tool.description}</p>
+      <h3 className="mt-3.5 font-display text-sm font-semibold tracking-tight text-fg">{tool.name}</h3>
+      <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted">{tool.description}</p>
 
-      <div className="mt-auto flex items-center gap-2 pt-3 text-[11px] text-muted">
+      <div className="mt-auto flex items-center gap-2 pt-4 font-mono text-[9px] uppercase tracking-label text-muted">
         <span className="truncate">{category.shortName}</span>
-        <span className="text-line">•</span>
-        <span className="font-mono">v{tool.version}</span>
-        {tool.status === 'beta' && <span className="text-amber-500">beta</span>}
+        <span className="text-line">/</span>
+        <span>v{tool.version}</span>
+        {tool.status === 'beta' && <span className="text-warn">beta</span>}
       </div>
     </Link>
   );
