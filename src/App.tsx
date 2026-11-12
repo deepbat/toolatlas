@@ -1,4 +1,5 @@
 import Legal from './pages/Legal';
+import SettingsPage from './pages/Settings';
 import Guides from './pages/Guides';
 import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="contact" element={<Legal />} />
         <Route path="terms" element={<Legal />} />
         <Route path="guides" element={<Guides />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="tools/:toolId" element={<ToolPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
