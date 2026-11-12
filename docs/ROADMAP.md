@@ -25,7 +25,7 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 ## Phase 2: High-value tool collections
 
 ### PDF Studio
-- [ ] PDF compression with quality and size preview.
+- [x] PDF page organiser with custom page order, page removal and duplication.\n- [ ] PDF compression with quality and size preview.
 - [ ] PDF-to-image export with page selection and resolution controls.
 - [ ] Batch image-to-PDF ordering, page size, margins and orientation.
 - [ ] PDF form filling where browser-compatible.
@@ -90,4 +90,4 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 10. Build and relevant regression tests pass.
 
 ## Current scope
-Current Release 2 contains 87 tools in 13 categories. This roadmap is a plan, not a claim that unchecked features are already available.
+Current Release 2 contains 88 tools in 13 categories. This roadmap is a plan, not a claim that unchecked features are already available.
