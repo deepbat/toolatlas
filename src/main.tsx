@@ -9,6 +9,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AppProvider } from './lib/store';
+import { LangProvider } from './lib/i18n';
 import './index.css';
 
 // GitHub Pages serves 404.html for unknown paths. That page parks the original
@@ -29,9 +30,9 @@ try {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <AppProvider>
+      <LangProvider><AppProvider>
         <App />
-      </AppProvider>
+      </AppProvider></LangProvider>
     </BrowserRouter>
   </StrictMode>
 );

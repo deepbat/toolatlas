@@ -15,4 +15,7 @@ assert.ok(ids('byaj').includes('emi-calculator') || ids('byaj').length > 0, 'Hin
 assert.equal(suggestQuery('pasprt'), 'passport', 'two-letter typo gets a did-you-mean');
 assert.equal(suggestQuery('zzqvxx'), null, 'nonsense gets no suggestion');
 assert.equal(suggestQuery('passport'), null, 'a query with results gets no suggestion');
+assert.ok(ids('वेतन').includes('salary-structure'), 'Hindi script finds salary tools');
+assert.ok(ids('ਤਨਖਾਹ').includes('salary-structure'), 'Punjabi script finds salary tools');
+assert.ok(ids('पीडीएफ').includes('pdf-merge'), 'Hindi PDF finds PDF tools');
 console.log('Search regression checks passed.');

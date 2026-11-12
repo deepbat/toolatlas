@@ -17,8 +17,14 @@ const SYNONYMS: Record<string, string[]> = {
   pdf: ['document'], document: ['pdf', 'file'], background: ['remove background'],
 };
 
+const NATIVE: Record<string, string[]> = {
+  'वेतन': ['salary'], 'तनख्वाह': ['salary'], 'ब्याज': ['interest', 'loan'], 'कर': ['tax'], 'पीडीएफ': ['pdf'], 'फोटो': ['photo', 'image'], 'तस्वीर': ['image', 'photo'], 'कैलकुलेटर': ['calculator'], 'बिल': ['invoice', 'gst'], 'ऋण': ['loan', 'emi'],
+  'ਤਨਖਾਹ': ['salary'], 'ਵਿਆਜ': ['interest', 'loan'], 'ਟੈਕਸ': ['tax'], 'ਪੀਡੀਐਫ': ['pdf'], 'ਫੋਟੋ': ['photo', 'image'], 'ਤਸਵੀਰ': ['image', 'photo'], 'ਕੈਲਕੁਲੇਟਰ': ['calculator'], 'ਬਿੱਲ': ['invoice', 'gst'], 'ਕਰਜ਼ਾ': ['loan', 'emi'],
+};
 const normalize = (value: string) => value.toLocaleLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
-const tokens = (value: string) => normalize(value).split(/[^a-z0-9]+/).filter(Boolean);
+const tokens = (value: string) => normalize(value).split(/[^\p{L}\p{M}\p{N}]+/u).filter(Boolean);
+
+for (const [k, v] of Object.entries(NATIVE)) SYNONYMS[normalize(k)] = v;
 
 function editDistance(a: string, b: string, limit: number): number {
   if (Math.abs(a.length - b.length) > limit) return limit + 1;
