@@ -1,6 +1,7 @@
 // Unit tests for pure calculation and file-format helpers. Run: npm run test:unit
 import assert from 'node:assert/strict';
 import { incomeTax, gst, tds, gratuity, hra, rd, fd, loan, workingDays, addWorkingDays, rupeesInWords, checkGstin, gstinCheckChar, checkPan, checkIfsc, epf, salaryStructure, parseAmount, type TaxInput } from '../src/lib/india';
+import { ppf, cagr, invoiceTotals, parseInvoiceLines, summarise, textPdf } from '../src/lib/office';
 import { crc32, makeZip } from '../src/lib/zip';
 import { parseExif, stripJpeg, stripPng } from '../src/lib/exif';
 import { parseCsv, toCsv, safeCell } from '../src/lib/csvtools';
@@ -62,5 +63,30 @@ await t('strip png removes text chunks', () => {
   const r = stripPng(png.buffer)!;
   assert.equal(r.removed, 15);
   assert.equal(parseExif(r.bytes.buffer.slice(0) as ArrayBuffer).tags.length, 0);
+});
+await t('ppf matches yearly compounding', () => {
+  const r = ppf(150000, 7.1, 15, true);
+  assert.ok(Math.abs(r.maturity - 4068209) < 500, String(r.maturity));
+  assert.equal(r.invested, 2250000);
+  assert.throws(() => ppf(200000, 7.1, 15, true), /maximum/);
+  assert.throws(() => ppf(1000, 7.1, 10, true), /15 years/);
+});
+await t('cagr', () => {
+  assert.ok(Math.abs(cagr(100, 200, 1).rate - 100) < 1e-9);
+  assert.throws(() => cagr(0, 5, 1), /more than zero/);
+});
+await t('invoice totals split tax and round', () => {
+  const t = invoiceTotals(parseInvoiceLines('A | 1 | 2 | 100.50 | 18'), false);
+  assert.equal(t.taxable, 201);
+  assert.ok(Math.abs(t.cgst - 18.09) < 1e-9 && Math.abs(t.sgst - 18.09) < 1e-9);
+  assert.equal(t.total, 237);
+  assert.equal(invoiceTotals(parseInvoiceLines('A | 1 | 1 | 100 | 5'), true).igst, 5);
+  assert.throws(() => parseInvoiceLines('A | 1 | 1 | 100 | 17'), /standard slab/);
+  assert.throws(() => parseInvoiceLines('A | 1 | 0 | 100 | 5'), /quantity/);
+});
+await t('expense summary', () => {
+  const s = summarise([{ id: '1', date: '2026-01-01', kind: 'in', category: 'x', note: '', amount: 500 }, { id: '2', date: '2026-01-02', kind: 'out', category: 'Food', note: '', amount: 120 }], 100);
+  assert.equal(s.balance, 480);
+  assert.deepEqual(s.byCat, [['Food', 120]]);
 });
 console.log(`\n${n} unit checks passed`);

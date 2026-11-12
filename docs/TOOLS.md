@@ -1,6 +1,6 @@
 # The ToolAtlas catalogue
 
-113 applications, 13 categories. Every tool runs entirely in your browser and works offline once loaded.
+120 applications, 13 categories. Every tool runs entirely in your browser and works offline once loaded.
 
 ---
 
@@ -201,3 +201,10 @@ Each tool shows the financial year it uses, links its sources and says it is an 
 - **EPF Calculator** (`/tools/epf-calculator`), **Gratuity Calculator** (`/tools/gratuity-calculator`), **HRA Exemption Calculator** (`/tools/hra-calculator`, metro list depends on the FY).
 - **FD and RD Calculator** (`/tools/fd-rd-calculator`), **Loan Amortisation Schedule** (`/tools/loan-schedule`), **Working Days Calculator** (`/tools/working-days`).
 - **Number to Words, Rupees** (`/tools/number-to-words-inr`), **GSTIN, PAN and IFSC Checker** (`/tools/gst-pan-validator`, format checks only, no registry lookup).
+- **Salary Structure Calculator** (`/tools/salary-structure`): CTC split into basic, HRA, special allowance and PF with an estimated take-home. HRA exemption and other deductions are not applied.
+- **PPF Calculator** (`/tools/ppf-calculator`): yearly compounding with an editable rate. Real PPF works out interest monthly, so the result is a close estimate.
+- **CAGR Calculator** (`/tools/cagr-calculator`)
+- **Rent Receipt Maker** (`/tools/rent-receipt`): monthly receipts in one PDF, landlord PAN checked when rent is above 1,00,000 a year.
+- **GST Invoice Maker** (`/tools/gst-invoice`): CGST and SGST or IGST, HSN or SAC, total in words, PDF download. A simple layout, not a full statutory invoice.
+- **Expense and Petty Cash Tracker** (`/tools/expense-tracker`): saved in this browser only, CSV export.
+- **CSV and Excel Utilities** (`/tools/csv-excel-tools`): open CSV or XLSX, sort, remove duplicates and empty rows, trim, export. Formula-injection safeguard on export.
