@@ -16,6 +16,8 @@
     "test:search": "tsx scripts/search-tests.ts",
     "test:unit": "tsx scripts/studio-unit-tests.ts",
     "test:studio": "node scripts/studio-tests.mjs",
+    "test:quality": "node scripts/quality-checks.mjs",
+    "test:a11y": "node scripts/a11y-tests.mjs",
     "test:pdf-editor": "node scripts/pdf-editor-tests.mjs"
   },
   "dependencies": {

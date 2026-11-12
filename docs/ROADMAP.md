@@ -107,3 +107,10 @@ Current release contains 120 tools in 13 categories (Studio batch 1 added 14 PDF
 
 - Done: English, Hindi and Punjabi navigation labels (header, mobile menu, footer) with a language selector that remembers your choice and sets the page language. Search understands common Hindi and Punjabi words in Devanagari and Gurmukhi script.
 - Pending: Hindi and Punjabi tool names, descriptions and tool screens. Only Latin font subsets are bundled, so Hindi and Punjabi text uses your device fonts. Translations should be reviewed by a native speaker before they are treated as final.
+
+## Quality and accessibility progress
+
+- Done: automated accessibility audit of every static page at 393px (`npm run test:a11y`), licence, secrets, unsafe HTML and bundle checks (`npm run test:quality`). See [QUALITY.md](QUALITY.md).
+- Pending: customisable dashboard. Favourites and Recent already cover pinning.
+- Skipped on purpose to keep the interface simple: clipboard history and guided tool chaining.
+- Pending: selective offline downloads, translated tool names and descriptions, a manual screen reader pass, quotation templates, SWP calculator, travel budget.

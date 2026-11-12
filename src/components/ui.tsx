@@ -1,4 +1,6 @@
 import {
+  useEffect,
+  useId,
   useRef,
   useState,
   type ButtonHTMLAttributes,
@@ -62,9 +64,17 @@ export function Field({
   children: ReactNode;
   className?: string;
 }) {
+  const autoId = useId();
+  const box = useRef<HTMLDivElement>(null);
+  // Older tools did not pass htmlFor. Link the label to the first control so screen readers announce it.
+  useEffect(() => {
+    if (htmlFor || !box.current) return;
+    const control = box.current.querySelector<HTMLElement>('input:not([type=hidden]), select, textarea');
+    if (control && !control.id) control.id = autoId;
+  });
   return (
-    <div className={cn('space-y-2', className)}>
-      <label htmlFor={htmlFor} className="label block text-muted">
+    <div ref={box} className={cn('space-y-2', className)}>
+      <label htmlFor={htmlFor ?? autoId} className="label block text-muted">
         {label}
       </label>
       {children}
@@ -182,6 +192,7 @@ export function CopyButton({
         }
       }}
       aria-live="polite"
+      aria-label={label ? undefined : copied ? 'Copied' : 'Copy to clipboard'}
     >
       {copied ? <Check className="h-3.5 w-3.5 text-accent" /> : <Copy className="h-3.5 w-3.5" />}
       {copied ? 'Copied' : label}
