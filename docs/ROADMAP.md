@@ -90,4 +90,4 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 10. Build and relevant regression tests pass.
 
 ## Current scope
-Current Release 2 contains 86 tools in 13 categories. This roadmap is a plan, not a claim that unchecked features are already available.
+Current Release 2 contains 87 tools in 13 categories. This roadmap is a plan, not a claim that unchecked features are already available.
