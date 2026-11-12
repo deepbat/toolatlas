@@ -1,6 +1,7 @@
 import SEO from '../lib/seo';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import OfflineBanner from './OfflineBanner';
 import { Github, Menu, Moon, Search, Sun, X } from 'lucide-react';
 import { CATEGORIES, TOOLS } from '../lib/catalog';
 import { useApp } from '../lib/store';
@@ -72,6 +73,7 @@ function Footer() {
               <li><Link className="transition hover:text-accent" to="/recent">Recently used</Link></li>
               <li><Link className="transition hover:text-accent" to="/workspaces">Workspaces</Link></li>
               <li><Link className="transition hover:text-accent" to="/resources">Free apps</Link></li>
+              <li><Link className="transition hover:text-accent" to="/offline">Offline and install</Link></li>
             </ul>
           </div>
 
@@ -164,6 +166,7 @@ export default function Layout() {
         Skip to content
       </a>
 
+      <OfflineBanner />
       <header className="sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur-xl">
         <div className="container-page flex h-16 items-center gap-5">
           <Brand />
@@ -239,6 +242,7 @@ export default function Layout() {
                 { to: '/recent', label: 'Recently used' },
                 { to: '/workspaces', label: 'Workspaces' },
                 { to: '/resources', label: 'Free apps' },
+                { to: '/offline', label: 'Offline and install' },
                 { to: '/about', label: 'About' },
               ].map((item, index) => (
                 <NavLink

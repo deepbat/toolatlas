@@ -11,6 +11,7 @@ import HomePage from './pages/Home';
 import NotFoundPage from './pages/NotFound';
 import RecentPage from './pages/Recent';
 import ToolPage from './pages/ToolPage';
+import OfflinePage from './pages/Offline';
 import ResourcesPage from './pages/Resources';
 import WorkspacesPage from './pages/Workspaces';
 
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="category/:categoryId" element={<BrowsePage />} />
         <Route path="favorites" element={<FavoritesPage />} />
         <Route path="recent" element={<RecentPage />} />
+        <Route path="offline" element={<OfflinePage />} />
         <Route path="resources" element={<ResourcesPage />} />
         <Route path="workspaces" element={<WorkspacesPage />} />
         <Route path="about" element={<AboutPage />} />

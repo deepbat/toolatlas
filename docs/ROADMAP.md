@@ -19,7 +19,7 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 - [x] Add versioned export/import for ToolAtlas local storage, including favourites, notes and tasks, with schema validation and rollback on restore errors.
 - [x] Add a local storage usage overview and backup export/restore page.
 - [x] Add safe clear-data controls with confirmation and backup reminders.
-- [ ] Add offline installation progress, cache failure recovery and selective offline mode.
+- [ ] Add offline installation progress, cache failure recovery and selective offline mode. Progress, repair of missing files with retry, an offline banner, a new-version prompt and install steps shipped (/offline). Selective offline mode is pending because each tool loads its own code chunks and a partial copy would break.
 - [x] Add typo-tolerant search, practical synonyms, category filters and a recently-added filter.
 - [x] Add optional local diagnostic report export without saved note/task contents.
 
@@ -101,4 +101,4 @@ Current release contains 120 tools in 13 categories (Studio batch 1 added 14 PDF
 ## Platform progress
 
 - Done: Workspaces page (`/workspaces`) with named tool sets, reorder, JSON export and a validated import. Free apps page (`/resources`) with 25 links that were opened and checked, each marked with its licence. Search suggests a correction when nothing matches and understands a few Hindi words (for example vetan, byaj, kagaz).
-- Pending: workspace tool chaining as a guided flow, a reusable clipboard history, a customisable pinned dashboard on Home, Hindi and Punjabi navigation, offline install help, selective offline downloads.
+- Pending: workspace tool chaining as a guided flow, a reusable clipboard history, a customisable pinned dashboard on Home, Hindi and Punjabi navigation, selective offline downloads.
