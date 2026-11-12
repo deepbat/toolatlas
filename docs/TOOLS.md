@@ -1,6 +1,6 @@
 # The ToolAtlas catalogue
 
-35 applications, 13 categories. Every tool runs entirely in your browser and works offline once loaded.
+89 applications, 13 categories. Every tool runs entirely in your browser and works offline once loaded.
 
 ---
 
@@ -89,6 +89,9 @@ Combines any number of PDFs into one document, in the order you choose, with pag
 
 ### Image Compressor — `/tools/image-compressor`
 Resize and re-encode JPG, PNG or WebP with a quality slider and a live before/after preview. Shows the exact size reduction.
+
+### Image Contact Sheet — `/tools/image-contact-sheet`
+Arrange up to 20 local images in a configurable grid. Choose columns, tile width, background, output format and optional file-name labels, then download a single contact sheet.
 
 ---
 
