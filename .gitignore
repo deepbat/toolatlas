@@ -5,3 +5,6 @@ dist-ssr
 .DS_Store
 .vite
 *.log
+
+# generated at prebuild from pdfjs-dist
+public/pdfjs.worker.min.js
