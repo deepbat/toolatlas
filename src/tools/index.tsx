@@ -1,5 +1,6 @@
 import {EXTRA_TOOLS} from '../lib/extra';
 import {MEDIA_TOOLS} from '../lib/media';
+import {STUDIO_TOOLS,STUDIO_PDF} from '../lib/studio';
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
 
 /**
@@ -87,6 +88,7 @@ const REGISTRY = {
  * literal shape is kept internally for the compile-time sync check in
  * `src/tools/registry.check.ts`.
  */
-export const TOOL_COMPONENTS: Record<string, LazyExoticComponent<ComponentType>> = {...REGISTRY, ...Object.fromEntries(EXTRA_TOOLS.map(t=>[t.id,lazy(()=>import('./expanded/UtilityApp'))])), ...Object.fromEntries(MEDIA_TOOLS.map(t=>[t.id,lazy(t.id==='image-contact-sheet'?()=>import('./expanded/ImageContactSheet'):t.category==='image'?()=>import('./expanded/ImageTools'):t.category==='pdf'?()=>import('./expanded/PDFTools'):t.id==='markdown-preview'?()=>import('./expanded/Markdown'):t.id==='stopwatch'?()=>import('./expanded/Stopwatch'):()=>import('./expanded/Invoice'))]))};
+const PdfStudio=lazy(()=>import('./studio/PdfStudio'));const ImageStudio=lazy(()=>import('./studio/ImageStudio'));
+export const TOOL_COMPONENTS: Record<string, LazyExoticComponent<ComponentType>> = {...REGISTRY, ...Object.fromEntries(STUDIO_TOOLS.map(t=>[t.id,STUDIO_PDF.has(t.id)?PdfStudio:ImageStudio])), ...Object.fromEntries(EXTRA_TOOLS.map(t=>[t.id,lazy(()=>import('./expanded/UtilityApp'))])), ...Object.fromEntries(MEDIA_TOOLS.map(t=>[t.id,lazy(t.id==='image-contact-sheet'?()=>import('./expanded/ImageContactSheet'):t.category==='image'?()=>import('./expanded/ImageTools'):t.category==='pdf'?()=>import('./expanded/PDFTools'):t.id==='markdown-preview'?()=>import('./expanded/Markdown'):t.id==='stopwatch'?()=>import('./expanded/Stopwatch'):()=>import('./expanded/Invoice'))]))};
 
 export default TOOL_COMPONENTS;

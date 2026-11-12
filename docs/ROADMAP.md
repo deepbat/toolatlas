@@ -27,21 +27,21 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 
 ### PDF Studio
 - [x] PDF page organiser with custom page order, page removal and duplication.
-- [ ] PDF compression with quality and size preview.
-- [ ] PDF-to-image export with page selection and resolution controls.
+- [x] PDF compression with quality and size preview.
+- [x] PDF-to-image export with page selection and resolution controls.
 - [ ] Batch image-to-PDF ordering, page size, margins and orientation.
-- [ ] PDF form filling where browser-compatible.
-- [ ] Page backgrounds and advanced page arrangement.
-- [ ] Visual PDF comparison.
+- [x] PDF form filling where browser-compatible.
+- [ ] Page backgrounds and advanced page arrangement. Background and colour shipped; advanced arrangement is still pending.
+- [x] Visual PDF comparison.
 - [ ] Warn that editing signed PDFs can invalidate signatures.
 
 ### Image Studio
-- [ ] Batch resize and convert with per-file output.
-- [ ] Passport/photo-print layouts with configurable dimensions.
+- [x] Batch resize and convert with per-file output.
+- [x] Passport/photo-print layouts with configurable dimensions.
 - [x] Collage and contact-sheet maker.
-- [ ] Screenshot annotation and crop handles.
-- [ ] EXIF and metadata viewer, plus clear-metadata export.
-- [ ] Optional background removal and upscaling only after model size, device performance, licence and privacy review. Show download size and ask before downloading.
+- [ ] Screenshot annotation and crop handles. Annotation shipped; draggable crop handles are still pending (crop uses sliders).
+- [x] EXIF and metadata viewer, plus clear-metadata export.
+- [ ] Optional background removal and upscaling only after model size, device performance, licence and privacy review. Show download size and ask before downloading. A non-AI colour-key remover and a plain enlarger shipped; model-based versions remain pending.
 
 ### India Finance and Office Toolkit
 - [ ] TDS, HRA, salary structure, EPF and gratuity calculators.
@@ -92,4 +92,4 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 10. Build and relevant regression tests pass.
 
 ## Current scope
-Current Release 2 contains 88 tools in 13 categories. This roadmap is a plan, not a claim that unchecked features are already available.
+Current release contains 103 tools in 13 categories (Studio batch 1 added 14 PDF and image tools). This roadmap is a plan, not a claim that unchecked features are already available.

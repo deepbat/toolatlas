@@ -1,6 +1,7 @@
 import type { Category, CategoryId, ToolMeta } from './types';
 import { EXTRA_TOOLS } from './extra';
 import { MEDIA_TOOLS } from './media';
+import { STUDIO_TOOLS } from './studio';
 
 export const CATEGORIES: Category[] = [
   {
@@ -530,7 +531,7 @@ export const TOOLS: ToolMeta[] = [
   },
 ];
 
-TOOLS.push(...EXTRA_TOOLS, ...MEDIA_TOOLS);
+TOOLS.push(...EXTRA_TOOLS, ...MEDIA_TOOLS, ...STUDIO_TOOLS);
 
 export const TOOL_MAP: Record<string, ToolMeta> = Object.fromEntries(
   TOOLS.map((tool) => [tool.id, tool])
