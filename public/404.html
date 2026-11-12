@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ToolAtlas</title>
+    <script>
+      (function () {
+        try {
+          sessionStorage.setItem(
+            'toolatlas:redirect',
+            location.pathname + location.search + location.hash
+          );
+        } catch (e) {}
+        location.replace('/toolatlas/');
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Redirecting to <a href="/toolatlas/">ToolAtlas</a>…</p>
+  </body>
+</html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ToolAtlas — One Place. Countless Useful Tools.</title>
+    <meta
+      name="description"
+      content="ToolAtlas is a growing collection of free online tools: calculators, converters, date and text utilities, generators, PDF and image tools. Everything runs in your browser."
+    />
+    <meta name="theme-color" content="#090a0f" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta property="og:title" content="ToolAtlas — One Place. Countless Useful Tools." />
+    <meta
+      property="og:description"
+      content="A growing atlas of free, privacy-first browser tools. No accounts, no uploads, no waiting."
+    />
+    <meta property="og:type" content="website" />
+    <script>
+      try {
+        var stored = localStorage.getItem('toolatlas:theme');
+        if (stored && stored.charAt(0) === '"') {
+          stored = JSON.parse(stored);
+        }
+        var dark =
+          stored === 'dark' ||
+          ((!stored || stored === 'system') &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', dark);
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

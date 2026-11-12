@@ -1,0 +1,26 @@
+{
+  "name": "ToolAtlas — One Place. Countless Useful Tools.",
+  "short_name": "ToolAtlas",
+  "description": "A growing collection of free browser tools: calculators, converters, text, PDF, image and developer utilities.",
+  "start_url": "/toolatlas/",
+  "scope": "/toolatlas/",
+  "display": "standalone",
+  "background_color": "#090a0f",
+  "theme_color": "#090a0f",
+  "orientation": "any",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: 250 250 252;
+    --surface: 255 255 255;
+    --raised: 245 246 250;
+    --line: 226 228 236;
+    --fg: 17 20 28;
+    --muted: 104 110 126;
+    --accent: 112 96 255;
+    --accent-soft: 238 236 255;
+  }
+
+  .dark {
+    --bg: 9 10 15;
+    --surface: 17 19 27;
+    --raised: 23 26 36;
+    --line: 38 42 56;
+    --fg: 236 238 245;
+    --muted: 148 155 173;
+    --accent: 146 134 255;
+    --accent-soft: 32 29 62;
+  }
+
+  * {
+    border-color: rgb(var(--line));
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-bg font-sans text-fg antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    min-height: 100dvh;
+  }
+
+  ::selection {
+    background: rgb(var(--accent) / 0.25);
+  }
+
+  :focus-visible {
+    outline: none;
+  }
+
+  input[type='range'] {
+    accent-color: rgb(var(--accent));
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Soft aurora used behind the hero. */
+  .aurora {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .aurora::before,
+  .aurora::after {
+    content: '';
+    position: absolute;
+    width: 42rem;
+    height: 42rem;
+    border-radius: 9999px;
+    filter: blur(110px);
+    opacity: 0.35;
+  }
+
+  .aurora::before {
+    background: radial-gradient(circle at 30% 30%, #7c6cff, transparent 65%);
+    top: -18rem;
+    left: -8rem;
+  }
+
+  .aurora::after {
+    background: radial-gradient(circle at 70% 70%, #22d3ee, transparent 65%);
+    top: -22rem;
+    right: -12rem;
+    opacity: 0.22;
+  }
+
+  .dark .aurora::before {
+    opacity: 0.4;
+  }
+
+  .grid-fade {
+    background-image: linear-gradient(rgb(var(--line) / 0.55) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--line) / 0.55) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 30%, transparent 75%);
+  }
+
+  .card-hover {
+    @apply transition duration-300 ease-out hover:-translate-y-0.5 hover:border-accent/35 hover:shadow-lift;
+  }
+
+  .kbd {
+    @apply inline-flex h-5 min-w-5 items-center justify-center rounded border border-line bg-raised px-1.5 font-mono text-[10px] font-semibold text-muted;
+  }
+
+  .prose-tool h3 {
+    @apply mt-5 text-sm font-semibold text-fg;
+  }
+
+  .prose-tool p {
+    @apply mt-1 text-sm leading-relaxed text-muted;
+  }
+
+  .prose-tool ul {
+    @apply mt-2 list-disc space-y-1 pl-5 text-sm text-muted;
+  }
+}
+
+/* Thin, theme-aware scrollbars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--line)) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--line));
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
