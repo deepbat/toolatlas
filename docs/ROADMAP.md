@@ -44,10 +44,10 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 - [ ] Optional background removal and upscaling only after model size, device performance, licence and privacy review. Show download size and ask before downloading. A non-AI colour-key remover and a plain enlarger shipped; model-based versions remain pending.
 
 ### India Finance and Office Toolkit
-- [ ] TDS, HRA, salary structure, EPF and gratuity calculators.
-- [ ] Income-tax comparison by financial year and regime, with official references and effective dates.
+- [ ] TDS, HRA, salary structure, EPF and gratuity calculators. TDS, HRA, EPF and gratuity shipped; salary structure UI is still pending.
+- [x] Income-tax comparison by financial year and regime, with official references and effective dates.
 - [ ] Capital-gains worksheet with explicit FIFO assumptions and editable transactions.
-- [ ] FD, RD, SWP and loan amortisation tools.
+- [ ] FD, RD, SWP and loan amortisation tools. FD, RD and loan amortisation shipped; SWP is still pending.
 - [ ] GST invoice and quotation templates with CGST/SGST/IGST selection.
 - [ ] Attendance and working-hours calculator with configurable shifts, holidays and overtime rules.
 - [ ] CSV/XLSX viewer and export, with formula-injection safeguards.
@@ -61,7 +61,7 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 - [ ] Workflow templates with visible steps and clear output destinations.
 
 ## Phase 4: Everyday and developer utilities
-- [ ] Calendar and working-day planner with selectable country/region holidays.
+- [ ] Calendar and working-day planner with selectable country/region holidays. A working-day counter shipped; regional holiday lists are still pending.
 - [ ] Expense and travel budget tools with CSV export.
 - [ ] World clock using browser time-zone data.
 - [ ] Electricity and fuel calculators with editable local tariffs.
@@ -92,4 +92,4 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 10. Build and relevant regression tests pass.
 
 ## Current scope
-Current release contains 103 tools in 13 categories (Studio batch 1 added 14 PDF and image tools). This roadmap is a plan, not a claim that unchecked features are already available.
+Current release contains 113 tools in 13 categories (Studio batch 1 added 14 PDF and image tools, batch 2 added 10 India finance and date tools). This roadmap is a plan, not a claim that unchecked features are already available.
