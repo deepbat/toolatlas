@@ -38,6 +38,9 @@ jobs:
       - name: Build production site
         run: npm run build
 
+      - name: Run search regression tests
+        run: npm run test:search
+
       - name: Run expanded browser regression suite
         run: npm run test:expanded
 

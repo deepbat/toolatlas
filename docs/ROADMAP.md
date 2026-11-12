@@ -18,10 +18,10 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 - [ ] Add automated accessibility and contrast regression tests.
 - [x] Add versioned export/import for ToolAtlas local storage, including favourites, notes and tasks, with schema validation and rollback on restore errors.
 - [x] Add a local storage usage overview and backup export/restore page.
-- [ ] Add safe clear-data controls and export reminders.
+- [x] Add safe clear-data controls with confirmation and backup reminders.
 - [ ] Add offline installation progress, cache failure recovery and selective offline mode.
-- [ ] Add fuzzy search, synonyms, category filters and recently-added filters.
-- [ ] Add optional copyable diagnostic reports that remain local by default.
+- [x] Add typo-tolerant search, practical synonyms, category filters and a recently-added filter.
+- [x] Add optional local diagnostic report export without saved note/task contents.
 
 ## Phase 2: High-value tool collections
 

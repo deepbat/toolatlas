@@ -1,55 +1,91 @@
 import type { ToolMeta } from './types';
 import { CATEGORY_MAP, TOOLS } from './catalog';
 
-function haystack(tool: ToolMeta): string {
-  return [
-    tool.name,
-    tool.description,
-    CATEGORY_MAP[tool.category].name,
-    tool.id.replace(/-/g, ' '),
-    ...tool.keywords,
-  ]
-    .join(' ')
-    .toLowerCase();
+const SYNONYMS: Record<string, string[]> = {
+  photo: ['image', 'picture', 'passport'], pictures: ['image', 'photo'], image: ['photo', 'picture'],
+  combine: ['merge', 'join'], join: ['merge', 'combine'], split: ['divide', 'separate'],
+  tax: ['gst', 'tds', 'income tax'], gst: ['tax', 'goods services tax'], salary: ['pay', 'wage', 'hra', 'epf'],
+  pay: ['salary', 'wage'], pf: ['epf', 'provident fund'], provident: ['epf', 'pf'],
+  money: ['finance', 'currency', 'loan'], interest: ['emi', 'loan', 'fd', 'rd'],
+  resize: ['compress', 'image'], reduce: ['compress', 'shrink'], compress: ['reduce', 'shrink'],
+  time: ['clock', 'date', 'timer'], clock: ['time', 'timezone'], birthday: ['age', 'dob'],
+  words: ['text', 'character'], text: ['words', 'writing'], qr: ['barcode', 'code'],
+  developer: ['code', 'json', 'formatter'], excel: ['csv', 'spreadsheet', 'xlsx'],
+  spreadsheet: ['csv', 'xlsx', 'excel'], invoice: ['bill', 'quotation', 'gst'],
+  pdf: ['document'], document: ['pdf', 'file'], background: ['remove background'],
+};
+
+const normalize = (value: string) => value.toLocaleLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+const tokens = (value: string) => normalize(value).split(/[^a-z0-9]+/).filter(Boolean);
+
+function editDistance(a: string, b: string, limit: number): number {
+  if (Math.abs(a.length - b.length) > limit) return limit + 1;
+  let previous = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i += 1) {
+    const current = [i];
+    let rowMin = i;
+    for (let j = 1; j <= b.length; j += 1) {
+      const value = Math.min(current[j - 1] + 1, previous[j] + 1, previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      current[j] = value;
+      rowMin = Math.min(rowMin, value);
+    }
+    if (rowMin > limit) return limit + 1;
+    previous = current;
+  }
+  return previous[b.length];
 }
 
-/**
- * Lightweight, dependency-free search. Every query term must appear somewhere
- * in the tool's name, description, category, id or keywords; results are ranked
- * by where the match happens.
- */
+function toolFields(tool: ToolMeta) {
+  return {
+    name: tokens(tool.name),
+    category: tokens(CATEGORY_MAP[tool.category].name),
+    description: tokens(tool.description),
+    keywords: tool.keywords.flatMap(tokens),
+    all: tokens([tool.name, tool.description, CATEGORY_MAP[tool.category].name, tool.id.replace(/-/g, ' '), ...tool.keywords].join(' ')),
+  };
+}
+
+function matchTerm(term: string, fields: ReturnType<typeof toolFields>): { score: number; matched: boolean } {
+  const aliases = [term, ...(SYNONYMS[term] ?? [])];
+  let best = 0;
+  for (const alias of aliases) {
+    if (fields.name.includes(alias)) best = Math.max(best, alias === term ? 70 : 34);
+    if (fields.keywords.includes(alias)) best = Math.max(best, alias === term ? 24 : 15);
+    if (fields.category.includes(alias)) best = Math.max(best, alias === term ? 12 : 8);
+    if (fields.description.includes(alias)) best = Math.max(best, alias === term ? 5 : 3);
+    if (fields.all.some((word) => word.startsWith(alias))) best = Math.max(best, alias === term ? 18 : 10);
+  }
+  if (best) return { score: best, matched: true };
+
+  if (term.length < 4) return { score: 0, matched: false };
+  const limit = term.length >= 8 ? 2 : 1;
+  let distance = limit + 1;
+  for (const word of fields.all) {
+    if (Math.abs(word.length - term.length) > limit) continue;
+    distance = Math.min(distance, editDistance(term, word, limit));
+    if (distance === 0) break;
+  }
+  return distance <= limit ? { score: distance === 1 ? 8 : 5, matched: true } : { score: 0, matched: false };
+}
+
+/** Dependency-free ranked search with typo tolerance and practical synonyms. */
 export function searchTools(query: string, source: ToolMeta[] = TOOLS): ToolMeta[] {
-  const trimmed = query.trim().toLowerCase();
-  if (!trimmed) return source;
-
-  const terms = trimmed.split(/\s+/).filter(Boolean);
-
-  const results = source
+  const terms = tokens(query);
+  if (!terms.length) return source;
+  return source
     .map((tool) => {
-      const name = tool.name.toLowerCase();
-      const category = CATEGORY_MAP[tool.category].name.toLowerCase();
-      const description = tool.description.toLowerCase();
-      const keywords = tool.keywords.map((keyword) => keyword.toLowerCase());
-      const hay = haystack(tool);
-
+      const fields = toolFields(tool);
       let score = 0;
       for (const term of terms) {
-        if (!hay.includes(term)) return { tool, score: -1 };
-        if (name === term) score += 70;
-        else if (name.startsWith(term)) score += 45;
-        else if (name.includes(term)) score += 28;
-        if (keywords.some((keyword) => keyword === term)) score += 20;
-        else if (keywords.some((keyword) => keyword.startsWith(term))) score += 12;
-        else if (keywords.some((keyword) => keyword.includes(term))) score += 6;
-        if (category.includes(term)) score += 8;
-        if (description.includes(term)) score += 3;
-        score += 2;
+        const match = matchTerm(term, fields);
+        if (!match.matched) return { tool, score: -1 };
+        score += match.score;
       }
       if (tool.featured) score += 1;
+      if (tool.popular) score += 0.5;
       return { tool, score };
     })
     .filter((entry) => entry.score >= 0)
-    .sort((a, b) => b.score - a.score);
-
-  return results.map((entry) => entry.tool);
+    .sort((a, b) => b.score - a.score || a.tool.name.localeCompare(b.tool.name))
+    .map((entry) => entry.tool);
 }

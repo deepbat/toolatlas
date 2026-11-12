@@ -35,11 +35,16 @@ export default function BrowsePage() {
   const category = activeCategory ? CATEGORY_MAP[activeCategory] : null;
   const query = params.get('q') ?? '';
   const sort = (SORTS.find((option) => option.id === params.get('sort'))?.id ?? 'relevance') as SortKey;
+  const recentOnly = params.get('recent') === '1';
 
   const results = useMemo(() => {
     const base = activeCategory ? toolsByCategory(activeCategory) : TOOLS;
-    return sortTools(searchTools(query, base), sort);
-  }, [activeCategory, query, sort]);
+    const matched = sortTools(searchTools(query, base), sort);
+    if (!recentOnly) return matched;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    return matched.filter((tool) => new Date(`${tool.added}T00:00:00`) >= cutoff);
+  }, [activeCategory, query, sort, recentOnly]);
 
   const update = (key: string, value: string) => {
     const next = new URLSearchParams(params);
@@ -109,7 +114,8 @@ export default function BrowsePage() {
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-1.5 border-t border-line pt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-line pt-3">
+          <button type="button" onClick={() => update('recent', recentOnly ? '' : '1')} aria-pressed={recentOnly} className={cn('border px-3 py-1 font-mono text-[10px] uppercase tracking-label transition', recentOnly ? 'border-accent bg-accent/10 text-accent' : 'border-line text-muted hover:border-accent/40 hover:text-fg')}>Recently added · 30 days</button>
           <Link
             to="/tools"
             className={cn(
