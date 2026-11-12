@@ -55,6 +55,48 @@ export default function SettingsPage() {
     }
   };
 
+  const exportDiagnostics = async () => {
+    setError('');
+    try {
+      const data = entries();
+      const cacheNames = 'caches' in window ? await caches.keys() : [];
+      const registration = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : undefined;
+      const report = {
+        app: 'ToolAtlas',
+        createdAt: new Date().toISOString(),
+        browser: { userAgent: navigator.userAgent, language: navigator.language, online: navigator.onLine },
+        screen: { width: window.innerWidth, height: window.innerHeight, devicePixelRatio: window.devicePixelRatio },
+        storage: { recordCount: data.length, approximateBytes: data.reduce((sum, item) => sum + sizeOf(item.key) + sizeOf(item.value), 0) },
+        offline: { serviceWorkerSupported: 'serviceWorker' in navigator, controlled: Boolean(navigator.serviceWorker?.controller), registered: Boolean(registration), cacheNames },
+      };
+      const url = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }));
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `toolatlas-diagnostics-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setStatus('Diagnostic report exported. It contains technical details only, not saved note or task contents.');
+    } catch {
+      setError('Could not create diagnostic report in this browser.');
+    }
+  };
+
+  const clearData = () => {
+    setError('');
+    setStatus('');
+    if (!window.confirm('Clear all ToolAtlas data saved in this browser? This removes favourites, recent history, theme preferences, notes and tasks. Export a backup first if you may need them.')) return;
+    try {
+      entries().forEach((item) => localStorage.removeItem(item.key));
+      setStatus('All ToolAtlas browser data has been cleared. Reload the page to refresh open tools.');
+      refresh();
+    } catch {
+      setError('Could not clear all ToolAtlas data. Check browser storage permissions and try again.');
+      refresh();
+    }
+  };
+
   const importBackup = async (file: File) => {
     setError('');
     setStatus('');
@@ -113,6 +155,12 @@ export default function SettingsPage() {
     <Panel title="Restore backup"><p className="text-sm text-muted">Import a ToolAtlas JSON backup created by this page. Existing ToolAtlas browser data will be replaced after confirmation. Other websites' storage is not affected.</p>
       <input ref={fileRef} type="file" accept=".json,application/json" className="sr-only" aria-label="Choose ToolAtlas backup file" onChange={event => { const file = event.target.files?.[0]; if (file) void importBackup(file); event.target.value = ''; }} />
       <button type="button" onClick={() => fileRef.current?.click()} className="mt-4 inline-flex min-h-10 items-center border border-line px-4 py-2 font-mono text-xs font-semibold uppercase tracking-label text-fg transition hover:border-accent hover:text-accent">Choose backup file</button>
+    </Panel>
+    <Panel title="Diagnostic report"><p className="text-sm text-muted">Export a local technical report to help troubleshoot browser, storage and offline issues. It does not include note contents, task contents or other saved values.</p>
+      <button type="button" onClick={() => void exportDiagnostics()} className="mt-4 inline-flex min-h-10 items-center border border-line px-4 py-2 font-mono text-xs font-semibold uppercase tracking-label text-fg transition hover:border-accent hover:text-accent">Export diagnostics</button>
+    </Panel>
+    <Panel title="Clear local data"><p className="text-sm text-muted">Remove all ToolAtlas records from this browser only. This includes favourites, recent history, theme preferences, notes and tasks. Export a backup first if you may need them.</p>
+      <button type="button" onClick={clearData} className="mt-4 inline-flex min-h-10 items-center border border-rose-500/50 px-4 py-2 font-mono text-xs font-semibold uppercase tracking-label text-rose-700 transition hover:bg-rose-500/10 dark:text-rose-300">Clear all ToolAtlas data</button>
     </Panel>
     {status && <p role="status" className="border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm text-emerald-700 dark:text-emerald-300">{status}</p>}
     {error && <p role="alert" className="border border-rose-500/30 bg-rose-500/5 p-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
