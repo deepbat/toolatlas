@@ -70,6 +70,8 @@ function Footer() {
               <li><Link className="transition hover:text-accent" to="/categories">Categories</Link></li>
               <li><Link className="transition hover:text-accent" to="/favorites">Favourites</Link></li>
               <li><Link className="transition hover:text-accent" to="/recent">Recently used</Link></li>
+              <li><Link className="transition hover:text-accent" to="/workspaces">Workspaces</Link></li>
+              <li><Link className="transition hover:text-accent" to="/resources">Free apps</Link></li>
             </ul>
           </div>
 
@@ -235,6 +237,8 @@ export default function Layout() {
                 { to: '/categories', label: 'Categories' },
                 { to: '/favorites', label: 'Favourites' },
                 { to: '/recent', label: 'Recently used' },
+                { to: '/workspaces', label: 'Workspaces' },
+                { to: '/resources', label: 'Free apps' },
                 { to: '/about', label: 'About' },
               ].map((item, index) => (
                 <NavLink

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Search, X } from 'lucide-react';
 import { CATEGORY_MAP, POPULAR_TOOLS } from '../lib/catalog';
-import { searchTools } from '../lib/search';
+import { searchTools, suggestQuery } from '../lib/search';
 import { cn, tint } from '../lib/utils';
 import { Icon } from './Icon';
 
@@ -97,9 +97,13 @@ export default function SearchDialog({ open, onClose }: { open: boolean; onClose
           {results.length === 0 ? (
             <div className="px-3 py-12 text-center">
               <p className="font-display text-sm font-medium text-fg">No tools match “{query}”</p>
-              <p className="mt-1.5 font-mono text-[10px] uppercase tracking-label text-muted">
-                Try a broader word, like “pdf”, “date” or “json”.
-              </p>
+              {suggestQuery(query) ? (
+                <p className="mt-2 text-sm text-muted">Did you mean <button type="button" className="text-accent underline" data-testid="did-you-mean" onClick={() => setQuery(suggestQuery(query)!)}>{suggestQuery(query)}</button>?</p>
+              ) : (
+                <p className="mt-1.5 font-mono text-[10px] uppercase tracking-label text-muted">
+                  Try a broader word, like “pdf”, “date” or “json”.
+                </p>
+              )}
             </div>
           ) : (
             <>

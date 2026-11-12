@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { searchTools } from '../src/lib/search';
+import { searchTools, suggestQuery } from '../src/lib/search';
 import { TOOLS } from '../src/lib/catalog';
 
 const ids = (query: string) => searchTools(query).map((tool) => tool.id);
@@ -10,4 +10,9 @@ assert.ok(ids('pdf combne').includes('pdf-merge'), 'typo and multi-term search f
 assert.ok(ids('tax').includes('gst-calculator'), 'tax synonym finds GST calculator');
 assert.ok(ids('spreadsheet').some((id) => id.includes('csv')), 'spreadsheet synonym finds CSV tools');
 assert.equal(ids('zzqvxx').length, 0, 'unrelated query has no false positives');
+assert.ok(ids('vetan').includes('salary-structure'), 'Hindi word for salary finds salary tools');
+assert.ok(ids('byaj').includes('emi-calculator') || ids('byaj').length > 0, 'Hindi word for interest finds finance tools');
+assert.equal(suggestQuery('pasprt'), 'passport', 'two-letter typo gets a did-you-mean');
+assert.equal(suggestQuery('zzqvxx'), null, 'nonsense gets no suggestion');
+assert.equal(suggestQuery('passport'), null, 'a query with results gets no suggestion');
 console.log('Search regression checks passed.');
