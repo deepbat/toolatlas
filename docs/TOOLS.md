@@ -1,6 +1,6 @@
 # The ToolAtlas catalogue
 
-89 applications, 13 categories. Every tool runs entirely in your browser and works offline once loaded.
+103 applications, 13 categories. Every tool runs entirely in your browser and works offline once loaded.
 
 ---
 
@@ -168,3 +168,26 @@ Converts any colour between HEX, RGB, HSL, HSV and CMYK, with a preview, channel
 
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — how the platform is built
 - [`ADDING_A_TOOL.md`](ADDING_A_TOOL.md) — how to add the next one
+
+
+---
+
+## Studio batch 1 (added 12 November 2026)
+
+All of these run in the browser. Files are not uploaded. Outputs can be passed to another tool with the "Use this result in another tool" strip.
+
+### PDF
+- **PDF Compressor** (`/tools/pdf-compress`): quality or target-size modes. Warns when compression rasterises text.
+- **PDF to Images** (`/tools/pdf-to-images`): PNG or JPEG per page, ZIP download. Page size is capped at 8 megapixels.
+- **PDF Background and Colour** (`/tools/pdf-background`): background fill, greyscale, black and white, brightness and contrast.
+- **PDF Compare** (`/tools/pdf-compare`): text and page-picture differences.
+- **PDF Splitter** (`/tools/pdf-split`): single pages, fixed chunks or custom ranges.
+- **PDF Text Extractor** (`/tools/pdf-extract-text`): copies the text layer. Scans without a text layer are reported, not OCR'd.
+- **PDF Form Filler** (`/tools/pdf-form-filler`): fills AcroForm fields, optional flatten.
+
+### Image
+- **Background Remover, colour based** (`/tools/image-bg-remove`): removes a plain background by colour. It is not an AI cut-out and struggles with busy backgrounds.
+- **Image Enlarger** (`/tools/image-upscale`): 2x to 4x resampling with sharpening. Does not add detail.
+- **Bulk Image Resizer and Converter** (`/tools/image-bulk-convert`): up to 100 images to JPEG, PNG, WebP or AVIF. AVIF saving depends on the browser.
+- **Passport Photo Maker, India** (`/tools/passport-photo`): 35 x 45 mm, PAN 25 x 35 mm, 2 x 2 inch and custom sizes at 300 dpi, plus a print sheet. Always check the current rules of the office you apply to.
+- **Collage Maker** (`/tools/image-collage`), **Image Annotator and Editor** (`/tools/image-annotate`), **Image Metadata Viewer and Remover** (`/tools/image-metadata`).
