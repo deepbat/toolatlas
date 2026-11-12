@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test:e2e": "node scripts/e2e.mjs",
-    "test:expanded": "node scripts/expanded-tests.mjs"
+    "test:expanded": "node scripts/expanded-tests.mjs",
+    "prebuild": "node -e \"require('fs').copyFileSync('node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs','public/pdfjs.worker.min.js')\""
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.3.0",
