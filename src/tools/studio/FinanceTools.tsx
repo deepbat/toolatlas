@@ -1,9 +1,14 @@
 import { useState, type ReactNode } from 'react';
+import { useLocalStorage } from '../../lib/hooks';
+import { downloadBlob, downloadText, todayISO } from '../../lib/utils';
+import { detectDelimiter, parseCsv, toCsv } from '../../lib/csvtools';
+import { makeXlsx, readXlsx } from '../../lib/xlsx';
+import { cagr, invoiceTotals, parseInvoiceLines, ppf, summarise, textPdf, type Entry } from '../../lib/office';
 import { useParams } from 'react-router-dom';
-import { Field, Grid, Input, Note, Panel, Select, TextArea } from '../../components/ui';
+import { Button, Dropzone, DownloadButton, Field, Grid, Input, Note, Panel, Select, TextArea } from '../../components/ui';
 import {
   FD_FREQ, FY_LABEL, METROS_NEW, METROS_OLD, RULES_AS_OF, TDS_PRESETS, addWorkingDays, checkGstin, checkIfsc, checkPan, epf, fd, fdSimple, gratuity, hra, incomeTax,
-  inr, loan, num, parseAmount, parseHolidays, rd, rupeesInWords, tds, workingDays, type AgeBand, type FY, type Regime,
+  inr, loan, num, parseAmount, parseHolidays, rd, rupeesInWords, salaryStructure, tds, workingDays, type AgeBand, type FY, type Regime,
 } from '../../lib/india';
 import { DataTable, Disclaimer, Kv } from './kit';
 
@@ -327,7 +332,287 @@ function Validators() {
   );
 }
 
+/* Salary structure */
+function Salary() {
+  return (
+    <Calc
+      intro="Split a CTC into basic, HRA and special allowance and see the monthly take-home. Employer costs follow the PF and gratuity choices you make."
+      fields={[
+        { key: 'fy', label: 'Financial year', value: '2026-27', options: FYS },
+        { key: 'regime', label: 'Tax regime', value: 'new', options: [['new', 'New regime'], ['old', 'Old regime']] },
+        { key: 'ctc', label: 'Annual CTC', value: '1200000' },
+        { key: 'basic', label: 'Basic as % of CTC', value: '40' },
+        { key: 'hra', label: 'HRA as % of basic', value: '50' },
+        { key: 'pf', label: 'PF base', value: 'ceiling', options: [['ceiling', 'Capped at ₹15,000 a month'], ['full', 'Full basic']] },
+        { key: 'grat', label: 'Gratuity inside CTC', value: 'yes', options: [['yes', 'Yes'], ['no', 'No']] },
+        { key: 'pt', label: 'Professional tax per month', value: '200' },
+      ]}
+      run={(v) => {
+        const r = salaryStructure({ fy: v.fy as FY, regime: v.regime as Regime, ctc: a(v, 'ctc', 'CTC', 1), basicPct: a(v, 'basic', 'Basic %', 1, 100), hraPct: a(v, 'hra', 'HRA %', 0, 100), pfOnCeiling: v.pf === 'ceiling', gratuityInCtc: v.grat === 'yes', professionalTax: a(v, 'pt', 'Professional tax', 0, 5000) });
+        return (
+          <>
+            <Panel title={`Salary breakup, ${FY_LABEL[v.fy as FY]}`}>
+              <DataTable caption="Salary breakup" head={['Part', 'Monthly', 'Yearly']} rows={[
+                ['Basic', inr(r.basic / 12), inr(r.basic)], ['HRA', inr(r.hra / 12), inr(r.hra)], ['Special allowance', inr(r.special / 12), inr(r.special)], ['Gross salary', inr(r.gross / 12), inr(r.gross)],
+                ['Employee PF', inr(r.employeePf / 12), inr(r.employeePf)], ['Employer PF (in CTC)', inr(r.employerPf / 12), inr(r.employerPf)], ['Gratuity (in CTC)', inr(r.gratuity / 12), inr(r.gratuity)], ['Income tax estimate', inr(r.tax / 12), inr(r.tax)],
+              ]} />
+              <div className="mt-4"><Kv strong={0} rows={[['Estimated take-home per month', inr(r.takeHomeMonthly)], ['Estimated take-home per year', inr(r.takeHomeAnnual)]]} /></div>
+            </Panel>
+            <Note>HRA exemption and other deductions are not applied to the tax estimate here. Use the income tax calculator with your own deductions for a closer figure.</Note>
+            <Disclaimer fy={FY_LABEL[v.fy as FY]}>Employers split CTC in different ways.</Disclaimer>
+          </>
+        );
+      }}
+    />
+  );
+}
+
+/* PPF */
+function Ppf() {
+  return (
+    <Calc
+      intro="Public Provident Fund growth with yearly compounding. The interest rate is set by the government every quarter, so enter the current rate."
+      fields={[
+        { key: 'dep', label: 'Yearly deposit', value: '150000', hint: '₹500 to ₹1,50,000' },
+        { key: 'rate', label: 'Interest rate % a year', value: '7.1', hint: 'Check the current rate on the India Post or Ministry of Finance site.' },
+        { key: 'years', label: 'Years', value: '15', hint: '15 to 50, in blocks of 5 after year 15' },
+        { key: 'when', label: 'Deposit made', value: 'early', options: [['early', 'By the 5th of April each year'], ['late', 'At the end of each year']] },
+      ]}
+      run={(v) => {
+        const r = ppf(a(v, 'dep', 'Yearly deposit', 0, 1e7), a(v, 'rate', 'Rate', 0, 20), a(v, 'years', 'Years', 1, 50), v.when === 'early');
+        return (
+          <>
+            <Panel title="PPF maturity">
+              <Kv strong={0} rows={[['Maturity value', inr(r.maturity)], ['Total deposited', inr(r.invested)], ['Interest earned', inr(r.interest)]]} />
+              <div className="mt-4"><DataTable caption="Year by year" head={['Year', 'Deposit', 'Interest', 'Balance']} rows={r.rows.map((x) => [String(x.year), inr(x.deposit), inr(x.interest), inr(x.balance)])} /></div>
+            </Panel>
+            <Note>Real PPF interest is worked out monthly on the lowest balance between the 5th and month end, then credited once a year. This table is a close estimate. PPF interest is tax free under current rules.</Note>
+            <Disclaimer>Rates change each quarter.</Disclaimer>
+          </>
+        );
+      }}
+    />
+  );
+}
+
+/* CAGR */
+function Cagr() {
+  return (
+    <Calc
+      fields={[
+        { key: 's', label: 'Starting value', value: '100000' },
+        { key: 'e', label: 'Ending value', value: '250000' },
+        { key: 'y', label: 'Years', value: '5', hint: 'Decimals are fine, for example 3.5' },
+      ]}
+      run={(v) => {
+        const r = cagr(a(v, 's', 'Starting value', 0.01), a(v, 'e', 'Ending value'), a(v, 'y', 'Years', 0.01, 100));
+        return <Panel title="Growth"><Kv strong={0} rows={[['CAGR', num(r.rate, 2) + '% a year'], ['Total change', num(r.absolute, 2) + '%']]} /><p className="mt-3 text-sm text-muted">CAGR is a smoothed yearly rate. It ignores the ups and downs in between and any money added or taken out. For regular investments use XIRR in a spreadsheet.</p></Panel>;
+      }}
+    />
+  );
+}
+
+/* Rent receipt */
+function RentReceipt() {
+  const [v, setV] = useState({ tenant: '', landlord: '', pan: '', address: '', rent: '15000', from: '2026-04', months: '12' });
+  const [err, setErr] = useState('');
+  const set = (k: string, val: string) => setV({ ...v, [k]: val });
+  const build = () => {
+    const rent = parseAmount(v.rent, 'Monthly rent', 1);
+    const n = parseAmount(v.months, 'Months', 1, 24);
+    if (!v.tenant.trim() || !v.landlord.trim() || !v.address.trim()) throw Error('Fill in the tenant, landlord and property address.');
+    if (!/^\d{4}-\d{2}$/.test(v.from)) throw Error('Choose the first month.');
+    if (rent * 12 > 100000 && !checkPan(v.pan).valid) throw Error('Rent above ₹1,00,000 a year needs a valid landlord PAN on the receipt.');
+    const [y, m] = v.from.split('-').map(Number);
+    return Array.from({ length: n }, (_, i) => {
+      const d = new Date(y, m - 1 + i, 1);
+      const label = d.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+      return [
+        '# Rent receipt', '', `Month: ${label}`, `Amount: ${inr(rent)} (${rupeesInWords(rent)})`, '',
+        `Received from ${v.tenant.trim()} towards rent of the property at:`, v.address.trim(), '', `Landlord: ${v.landlord.trim()}`, v.pan.trim() ? `Landlord PAN: ${v.pan.trim().toUpperCase()}` : '', '', 'Signature of landlord: ______________________',
+      ];
+    });
+  };
+  const go = async () => {
+    try { setErr(''); const pages = build(); downloadBlob('rent-receipts.pdf', new Blob([(await textPdf(pages, 'Rent receipts')) as BlobPart], { type: 'application/pdf' })); } catch (e) { setErr(e instanceof Error ? e.message : 'Could not make the receipts.'); }
+  };
+  return (
+    <div className="space-y-4">
+      <Panel title="Receipt details" description="One receipt per month, one page each. Nothing leaves your device.">
+        <Grid>
+          <Field label="Tenant name" htmlFor="rr-t"><Input id="rr-t" value={v.tenant} onChange={(e) => set('tenant', e.target.value)} /></Field>
+          <Field label="Landlord name" htmlFor="rr-l"><Input id="rr-l" value={v.landlord} onChange={(e) => set('landlord', e.target.value)} /></Field>
+          <Field label="Landlord PAN" hint="Needed when rent is above ₹1,00,000 a year" htmlFor="rr-p"><Input id="rr-p" value={v.pan} onChange={(e) => set('pan', e.target.value)} /></Field>
+          <Field label="Monthly rent (₹)" htmlFor="rr-r"><Input id="rr-r" inputMode="decimal" value={v.rent} onChange={(e) => set('rent', e.target.value)} /></Field>
+          <Field label="First month" htmlFor="rr-f"><Input id="rr-f" type="month" value={v.from} onChange={(e) => set('from', e.target.value)} /></Field>
+          <Field label="Number of months" htmlFor="rr-m"><Input id="rr-m" inputMode="numeric" value={v.months} onChange={(e) => set('months', e.target.value)} /></Field>
+        </Grid>
+        <div className="mt-3"><Field label="Property address" htmlFor="rr-a"><TextArea id="rr-a" rows={2} value={v.address} onChange={(e) => set('address', e.target.value)} /></Field></div>
+        <div className="mt-4"><Button type="button" onClick={go}>Make PDF</Button></div>
+      </Panel>
+      {err && <div role="alert" data-testid="calc-error"><Note tone="warning">{err}</Note></div>}
+      <Note>Keep a revenue stamp rule in mind: some states ask for one on cash receipts above a limit. Receipts support an HRA claim but do not replace a rent agreement or bank proof.</Note>
+    </div>
+  );
+}
+
+/* GST invoice */
+function GstInvoice() {
+  const [v, setV] = useState({ seller: 'Your business name', sgstin: '', buyer: 'Customer name', bgstin: '', no: 'INV-001', date: todayISO(), inter: 'no', items: 'Consulting service | 998313 | 1 | 25000 | 18\nUSB cable | 8544 | 3 | 250 | 18' });
+  const [err, setErr] = useState('');
+  const set = (k: string, val: string) => setV({ ...v, [k]: val });
+  let t: ReturnType<typeof invoiceTotals> | null = null;
+  let msg = '';
+  try {
+    if (v.sgstin && !checkGstin(v.sgstin).valid) throw Error('Seller GSTIN is not valid. Leave it empty if you are not registered.');
+    if (v.bgstin && !checkGstin(v.bgstin).valid) throw Error('Buyer GSTIN is not valid. Leave it empty for a customer without one.');
+    t = invoiceTotals(parseInvoiceLines(v.items), v.inter === 'yes');
+  } catch (e) { msg = e instanceof Error ? e.message : 'Check the invoice.'; }
+  const pdf = async () => {
+    if (!t) return;
+    try {
+      setErr('');
+      const lines = ['# Tax invoice', '', `Invoice no: ${v.no}    Date: ${v.date}`, '', `Seller: ${v.seller}`, v.sgstin ? `GSTIN: ${v.sgstin.toUpperCase()}` : 'GSTIN: not registered', '', `Buyer: ${v.buyer}`, v.bgstin ? `GSTIN: ${v.bgstin.toUpperCase()}` : '', `Supply: ${v.inter === 'yes' ? 'Inter-state (IGST)' : 'Within the state (CGST + SGST)'}`, '', '# Items'];
+      t.lines.forEach((l, i) => lines.push(`${i + 1}. ${l.desc} (HSN ${l.hsn || '-'}) ${l.qty} x ${num(l.price, 2)} @ ${l.rate}% = taxable ${num(l.taxable, 2)}, tax ${num(l.tax, 2)}`));
+      lines.push('', `Taxable value: ${num(t.taxable, 2)}`);
+      if (v.inter === 'yes') lines.push(`IGST: ${num(t.igst, 2)}`); else lines.push(`CGST: ${num(t.cgst, 2)}`, `SGST: ${num(t.sgst, 2)}`);
+      lines.push(`Round off: ${num(t.roundOff, 2)}`, `# Total: Rs. ${num(t.total, 2)}`, rupeesInWords(t.total));
+      downloadBlob(`invoice-${v.no.replace(/[^\w-]/g, '_')}.pdf`, new Blob([(await textPdf([lines], 'Tax invoice')) as BlobPart], { type: 'application/pdf' }));
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Could not make the PDF.'); }
+  };
+  return (
+    <div className="space-y-4">
+      <Panel title="Invoice details" description="Items go one per line as: description | HSN or SAC | quantity | price | GST rate.">
+        <Grid>
+          <Field label="Seller" htmlFor="gi-s"><Input id="gi-s" value={v.seller} onChange={(e) => set('seller', e.target.value)} /></Field>
+          <Field label="Seller GSTIN" htmlFor="gi-sg"><Input id="gi-sg" value={v.sgstin} onChange={(e) => set('sgstin', e.target.value)} /></Field>
+          <Field label="Buyer" htmlFor="gi-b"><Input id="gi-b" value={v.buyer} onChange={(e) => set('buyer', e.target.value)} /></Field>
+          <Field label="Buyer GSTIN" htmlFor="gi-bg"><Input id="gi-bg" value={v.bgstin} onChange={(e) => set('bgstin', e.target.value)} /></Field>
+          <Field label="Invoice number" htmlFor="gi-n"><Input id="gi-n" value={v.no} onChange={(e) => set('no', e.target.value)} /></Field>
+          <Field label="Date" htmlFor="gi-d"><Input id="gi-d" type="date" value={v.date} onChange={(e) => set('date', e.target.value)} /></Field>
+          <Field label="Supply" htmlFor="gi-i"><Select id="gi-i" value={v.inter} onChange={(e) => set('inter', e.target.value)}><option value="no">Within the state: CGST + SGST</option><option value="yes">Between states: IGST</option></Select></Field>
+        </Grid>
+        <div className="mt-3"><Field label="Items" htmlFor="gi-it"><TextArea id="gi-it" rows={4} value={v.items} onChange={(e) => set('items', e.target.value)} /></Field></div>
+      </Panel>
+      {msg ? <div role="alert" data-testid="calc-error"><Note tone="warning">{msg}</Note></div> : t && (
+        <div data-testid="calc-result" className="space-y-4">
+          <Panel title="Totals">
+            <DataTable caption="Invoice lines" head={['Item', 'Taxable', 'GST']} rows={t.lines.map((l) => [l.desc, inr(l.taxable, 2), `${inr(l.tax, 2)} (${l.rate}%)`])} />
+            <div className="mt-4"><Kv strong={5} rows={[['Taxable value', inr(t.taxable, 2)], ...(v.inter === 'yes' ? [['IGST', inr(t.igst, 2)] as [string, string]] : [['CGST', inr(t.cgst, 2)] as [string, string], ['SGST', inr(t.sgst, 2)] as [string, string]]), ['Round off', inr(t.roundOff, 2)], ['In words', rupeesInWords(t.total)], ['Invoice total', inr(t.total, 2)]]} /></div>
+            <div className="mt-4"><Button type="button" onClick={pdf}>Download PDF</Button></div>
+          </Panel>
+          {err && <Note tone="warning">{err}</Note>}
+        </div>
+      )}
+      <Disclaimer>Check the HSN or SAC code, rate and place of supply for your own sale. A registered seller must follow the invoice rules in the GST law, which include more fields than this simple page.</Disclaimer>
+    </div>
+  );
+}
+
+/* Expense and petty cash */
+const CATS = ['Travel', 'Food', 'Office', 'Supplies', 'Bills', 'Staff', 'Other'];
+function Expenses() {
+  const [entries, setEntries] = useLocalStorage<Entry[]>('toolatlas:expenses', []);
+  const [opening, setOpening] = useLocalStorage<string>('toolatlas:expenses-opening', '0');
+  const [f, setF] = useState({ date: todayISO(), kind: 'out', category: 'Other', note: '', amount: '' });
+  const [err, setErr] = useState('');
+  const add = () => {
+    try {
+      const amount = parseAmount(f.amount, 'Amount', 0.01, 1e9);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(f.date)) throw Error('Choose a date.');
+      setEntries([...entries, { id: crypto.randomUUID(), date: f.date, kind: f.kind as 'in' | 'out', category: f.category, note: f.note.slice(0, 120), amount }].sort((x, y) => x.date.localeCompare(y.date)));
+      setF({ ...f, note: '', amount: '' }); setErr('');
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Check the entry.'); }
+  };
+  let op = 0;
+  try { op = parseAmount(opening, 'Opening balance', -1e9, 1e9); } catch { op = 0; }
+  const s = summarise(entries, op);
+  const csv = () => downloadText('expenses.csv', toCsv([['Date', 'Type', 'Category', 'Note', 'Amount'], ...entries.map((e) => [e.date, e.kind === 'in' ? 'Cash in' : 'Spent', e.category, e.note, String(e.amount)])], true));
+  return (
+    <div className="space-y-4">
+      <Panel title="Add an entry" description="Saved only in this browser. Use it as a petty cash book by setting an opening balance and adding top-ups as cash in.">
+        <Grid>
+          <Field label="Date" htmlFor="ex-d"><Input id="ex-d" type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
+          <Field label="Type" htmlFor="ex-k"><Select id="ex-k" value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}><option value="out">Spent</option><option value="in">Cash in</option></Select></Field>
+          <Field label="Category" htmlFor="ex-c"><Select id="ex-c" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })}>{CATS.map((c) => <option key={c}>{c}</option>)}</Select></Field>
+          <Field label="Amount (₹)" htmlFor="ex-a"><Input id="ex-a" inputMode="decimal" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} /></Field>
+          <Field label="Note" htmlFor="ex-n"><Input id="ex-n" maxLength={120} value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} /></Field>
+          <Field label="Opening balance (₹)" htmlFor="ex-o"><Input id="ex-o" inputMode="decimal" value={opening} onChange={(e) => setOpening(e.target.value)} /></Field>
+        </Grid>
+        <div className="mt-4 flex flex-wrap gap-2"><Button type="button" onClick={add}>Add entry</Button><DownloadButton label="Download CSV" onClick={csv} /><Button type="button" variant="secondary" onClick={() => { if (confirm('Delete all entries from this browser?')) setEntries([]); }}>Clear all</Button></div>
+      </Panel>
+      {err && <div role="alert" data-testid="calc-error"><Note tone="warning">{err}</Note></div>}
+      <Panel title="Summary"><div data-testid="calc-result"><Kv strong={3} rows={[['Opening balance', inr(op, 2)], ['Cash in', inr(s.inflow, 2)], ['Spent', inr(s.outflow, 2)], ['Balance', inr(s.balance, 2)]]} /></div>
+        {s.byCat.length > 0 && <div className="mt-4"><DataTable caption="Spend by category" head={['Category', 'Spent']} rows={s.byCat.map(([c, n]) => [c, inr(n, 2)])} /></div>}
+      </Panel>
+      {entries.length > 0 && (
+        <Panel title="Entries"><DataTable caption="All entries" head={['Date', 'Category', 'Note', 'Amount', '']} rows={entries.map((e) => [e.date, e.category, e.note || '-', (e.kind === 'in' ? '+' : '-') + inr(e.amount, 2), <button key={e.id} type="button" className="underline" aria-label={`Delete entry ${e.date} ${e.category}`} onClick={() => setEntries(entries.filter((x) => x.id !== e.id))}>Delete</button>])} /></Panel>
+      )}
+    </div>
+  );
+}
+
+/* CSV and Excel utilities */
+function CsvExcel() {
+  const [rows, setRows] = useState<string[][]>([]);
+  const [name, setName] = useState('');
+  const [err, setErr] = useState('');
+  const [col, setCol] = useState('0');
+  const load = async (files: File[]) => {
+    const file = files[0];
+    if (!file) return;
+    try {
+      setErr('');
+      if (file.size > 25 * 1024 * 1024) throw Error('This file is over 25 MB. Split it first so the browser does not run out of memory.');
+      const isX = /\.xlsx$/i.test(file.name);
+      const data = isX ? await readXlsx(await file.arrayBuffer()) : parseCsv(await file.text(), detectDelimiter(await file.text()));
+      if (data.length === 0) throw Error('The file has no rows.');
+      setRows(data); setName(file.name.replace(/\.[^.]+$/, '')); setCol('0');
+    } catch (e) { setRows([]); setErr(e instanceof Error ? e.message : 'Could not read this file. Use a .csv or .xlsx file.'); }
+  };
+  const head = rows[0] ?? [];
+  const apply = (fn: (r: string[][]) => string[][]) => setRows(fn(rows));
+  const ci = Math.min(Number(col) || 0, Math.max(head.length - 1, 0));
+  return (
+    <div className="space-y-4">
+      <Panel title="Open a file" description="Reads .csv and .xlsx in your browser. The first row is treated as the header.">
+        <Dropzone accept=".csv,.xlsx,text/csv" multiple={false} onFiles={load} title="Drop a CSV or Excel file" />
+      </Panel>
+      {err && <div role="alert" data-testid="calc-error"><Note tone="warning">{err}</Note></div>}
+      {rows.length > 0 && (
+        <>
+          <Panel title="Clean up">
+            <div className="flex flex-wrap items-end gap-2">
+              <Field label="Column" htmlFor="cx-c"><Select id="cx-c" value={String(ci)} onChange={(e) => setCol(e.target.value)}>{head.map((h, i) => <option key={i} value={i}>{h || `Column ${i + 1}`}</option>)}</Select></Field>
+              <Button type="button" variant="secondary" onClick={() => apply((r) => [r[0], ...r.slice(1).sort((x, y) => (x[ci] ?? '').localeCompare(y[ci] ?? '', 'en', { numeric: true }))])}>Sort A to Z</Button>
+              <Button type="button" variant="secondary" onClick={() => apply((r) => [r[0], ...r.slice(1).sort((x, y) => (y[ci] ?? '').localeCompare(x[ci] ?? '', 'en', { numeric: true }))])}>Sort Z to A</Button>
+              <Button type="button" variant="secondary" onClick={() => apply((r) => { const seen = new Set<string>(); return r.filter((x, i) => { if (i === 0) return true; const k = JSON.stringify(x); if (seen.has(k)) return false; seen.add(k); return true; }); })}>Remove duplicate rows</Button>
+              <Button type="button" variant="secondary" onClick={() => apply((r) => r.filter((x, i) => i === 0 || x.some((c) => c.trim() !== '')))}>Remove empty rows</Button>
+              <Button type="button" variant="secondary" onClick={() => apply((r) => r.map((x) => x.map((c) => c.trim())))}>Trim spaces</Button>
+            </div>
+          </Panel>
+          <Panel title={`Preview, ${rows.length - 1} data rows, ${head.length} columns`}>
+            <div data-testid="calc-result"><DataTable caption="First 20 rows" head={head.map((h, i) => h || `Column ${i + 1}`)} rows={rows.slice(1, 21).map((r) => head.map((_, i) => r[i] ?? ''))} /></div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <DownloadButton label="Download CSV" onClick={() => downloadText(`${name || 'data'}.csv`, toCsv(rows, true))} />
+              <DownloadButton label="Download XLSX" onClick={async () => downloadBlob(`${name || 'data'}.xlsx`, new Blob([(await makeXlsx(rows)) as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))} />
+            </div>
+          </Panel>
+          <Note>Cells that start with =, + or @ get a leading apostrophe on export so a spreadsheet does not run them as formulas.</Note>
+        </>
+      )}
+    </div>
+  );
+}
+
 const PARTS: Record<string, () => JSX.Element> = {
+  'salary-structure': Salary,
+  'ppf-calculator': Ppf,
+  'cagr-calculator': Cagr,
+  'rent-receipt': RentReceipt,
+  'gst-invoice': GstInvoice,
+  'expense-tracker': Expenses,
+  'csv-excel-tools': CsvExcel,
   'income-tax-india': IncomeTax,
   'tds-calculator': Tds,
   'epf-calculator': Epf,

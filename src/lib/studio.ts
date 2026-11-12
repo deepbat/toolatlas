@@ -27,6 +27,13 @@ const rows: Row[] = [
   ['working-days', 'Working Days Calculator', 'Count working days between dates or find the date after N working days, with your own weekly off and holidays.', 'date', 'CalendarRange', ['business days', 'workdays', 'holidays', 'notice period']],
   ['number-to-words-inr', 'Number to Words (Rupees)', 'Write an amount in Indian words with lakh and crore, for cheques and invoices.', 'finance', 'Type', ['amount in words', 'cheque', 'lakh', 'crore', 'rupees only']],
   ['gst-pan-validator', 'GSTIN, PAN and IFSC Checker', 'Check the format of a GSTIN (including its check character), PAN and IFSC offline.', 'finance', 'ShieldCheck', ['gst number', 'pan card', 'ifsc code', 'verify']],
+  ['salary-structure', 'Salary Structure Calculator', 'Split a CTC into basic, HRA, special allowance and PF, and see the estimated monthly take-home.', 'finance', 'Wallet', ['ctc to in hand', 'take home salary', 'salary breakup', 'in-hand salary']],
+  ['ppf-calculator', 'PPF Calculator', 'Maturity value of a Public Provident Fund account with yearly deposits, rate and deposit timing.', 'finance', 'PiggyBank', ['public provident fund', '15 year', 'tax free', 'savings scheme']],
+  ['cagr-calculator', 'CAGR Calculator', 'Find the yearly growth rate between a starting and an ending value.', 'finance', 'TrendingUp', ['compound annual growth', 'returns', 'investment growth']],
+  ['rent-receipt', 'Rent Receipt Maker', 'Make monthly rent receipts in one PDF for an HRA claim, with the landlord PAN check.', 'finance', 'Receipt', ['hra receipt', 'rent proof', 'landlord receipt']],
+  ['gst-invoice', 'GST Invoice Maker', 'Make a simple GST tax invoice PDF with CGST, SGST or IGST, HSN codes and the total in words.', 'finance', 'FileText', ['tax invoice', 'bill', 'cgst sgst igst', 'hsn', 'gst bill'], { popular: true }],
+  ['expense-tracker', 'Expense and Petty Cash Tracker', 'Log money in and out, see the balance and spend by category, and export CSV. Saved only in your browser.', 'finance', 'Wallet', ['petty cash', 'cash book', 'expenses', 'budget']],
+  ['csv-excel-tools', 'CSV and Excel Utilities', 'Open a CSV or XLSX, sort, remove duplicates and empty rows, trim spaces, and save as CSV or XLSX.', 'finance', 'Files', ['xlsx to csv', 'csv to xlsx', 'dedupe', 'clean spreadsheet', 'sort csv']],
 ];
 
 export const STUDIO_TOOLS: ToolMeta[] = rows.map(([id, name, description, category, icon, keywords, extra]) => ({

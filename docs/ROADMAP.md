@@ -44,13 +44,13 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 - [ ] Optional background removal and upscaling only after model size, device performance, licence and privacy review. Show download size and ask before downloading. A non-AI colour-key remover and a plain enlarger shipped; model-based versions remain pending.
 
 ### India Finance and Office Toolkit
-- [ ] TDS, HRA, salary structure, EPF and gratuity calculators. TDS, HRA, EPF and gratuity shipped; salary structure UI is still pending.
+- [x] TDS, HRA, salary structure, EPF and gratuity calculators.
 - [x] Income-tax comparison by financial year and regime, with official references and effective dates.
 - [ ] Capital-gains worksheet with explicit FIFO assumptions and editable transactions.
 - [ ] FD, RD, SWP and loan amortisation tools. FD, RD and loan amortisation shipped; SWP is still pending.
-- [ ] GST invoice and quotation templates with CGST/SGST/IGST selection.
+- [ ] GST invoice and quotation templates with CGST/SGST/IGST selection. Invoice shipped; quotation templates are still pending.
 - [ ] Attendance and working-hours calculator with configurable shifts, holidays and overtime rules.
-- [ ] CSV/XLSX viewer and export, with formula-injection safeguards.
+- [x] CSV/XLSX viewer and export, with formula-injection safeguards.
 
 ## Phase 3: Connected workflows
 - [ ] Tool-to-tool handoff using typed, in-memory data contracts.
@@ -62,7 +62,7 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 
 ## Phase 4: Everyday and developer utilities
 - [ ] Calendar and working-day planner with selectable country/region holidays. A working-day counter shipped; regional holiday lists are still pending.
-- [ ] Expense and travel budget tools with CSV export.
+- [ ] Expense and travel budget tools with CSV export. Expense and petty cash tracker shipped; travel budget is still pending.
 - [ ] World clock using browser time-zone data.
 - [ ] Electricity and fuel calculators with editable local tariffs.
 - [ ] Indian PIN-code reference only if a trustworthy, maintainable data source is available.
@@ -92,4 +92,4 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 10. Build and relevant regression tests pass.
 
 ## Current scope
-Current release contains 113 tools in 13 categories (Studio batch 1 added 14 PDF and image tools, batch 2 added 10 India finance and date tools). This roadmap is a plan, not a claim that unchecked features are already available.
+Current release contains 120 tools in 13 categories (Studio batch 1 added 14 PDF and image tools, batch 3 added 7 office and finance tools (salary structure, PPF, CAGR, rent receipt, GST invoice, expense tracker, CSV and Excel utilities), batch 2 added 10 India finance and date tools). This roadmap is a plan, not a claim that unchecked features are already available.
