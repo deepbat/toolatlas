@@ -35,7 +35,7 @@ ToolAtlas is a growing collection of free, privacy-first browser utilities — c
 
 ## Highlights
 
-- **35 fully functional tools** across **13 categories** — no placeholders, no dead buttons.
+- **86 fully functional tools** across **13 categories** — no placeholders, no dead buttons.
 - **Every tool has its own URL** (`/tools/<id>`) so it can be linked, bookmarked and shared.
 - **Global search** — press `⌘K` / `Ctrl+K` (or `/`) from anywhere.
 - **Favourites and recently used** tools, stored in your browser only.
@@ -50,23 +50,9 @@ ToolAtlas is a growing collection of free, privacy-first browser utilities — c
 
 ## The tools
 
-| Category | Tools |
-| --- | --- |
-| **Calculators** | Standard Calculator · Percentage Calculator · BMI Calculator · Tip & Bill Splitter |
-| **Measurement Converters** | Unit Converter · Temperature Converter |
-| **Date & Time Tools** | Age Calculator · Date Difference · Time Zone Converter · Countdown Timer |
-| **Financial Tools** | Loan EMI Calculator · Compound Interest · Savings Goal Planner |
-| **Text & Writing Tools** | Word & Character Counter · Case Converter · Text Diff Checker · Lorem Ipsum Generator |
-| **PDF & Document Tools** | Image to PDF · PDF Merge |
-| **Image & Media Tools** | Image Compressor |
-| **File Utilities** | File Checksum |
-| **Productivity Applications** | Task List · Quick Notes · Pomodoro Timer |
-| **Developer Tools** | JSON Formatter · Base64 Encoder · Hash Generator · JWT Decoder · Regex Tester |
-| **Internet & Network Utilities** | URL Parser |
-| **Generators** | Password Generator · QR Code Generator · UUID Generator · Colour Palette Generator |
-| **Miscellaneous Utilities** | Colour Converter |
+The current catalogue contains **86 tools across 13 categories**. The compact category list below describes the original foundation; the generated catalogue at [docs/TOOLS.md](docs/TOOLS.md) is the complete reference for Release 2.
 
-Every tool is functional and self-contained. See [`docs/TOOLS.md`](docs/TOOLS.md) for a detailed description of each one.
+Browse the [live tool library](https://deepbat.github.io/toolatlas/tools/) or open a category from the website. New tools are added only after implementation and verification.
 
 ---
 
@@ -129,7 +115,8 @@ The dev server prints a local URL (default <http://localhost:5173/toolatlas/>).
 | `npm run build` | Type-check (`tsc --noEmit`) and build to `dist/` |
 | `npm run preview` | Serve the production build locally |
 | `npm run typecheck` | Type-check only |
-| `npm run test:e2e` | Run the headless-Chrome functional suite (needs a running `preview` server) |
+| `npm run test:e2e` | Run the original headless-Chrome suite (needs a running `preview` server) |
+| `npm run test:expanded` | Run expanded browser, file-output, mobile, offline and SEO checks |
 
 ### Serving from a different path
 
@@ -158,7 +145,8 @@ toolatlas/
 │   ├── robots.txt
 │   └── sw.js                      # service worker (offline shell)
 ├── scripts/
-│   └── e2e.mjs                    # headless functional test suite
+│   ├── e2e.mjs                    # original headless functional test suite
+│   └── expanded-tests.mjs         # expanded Chromium regression suite
 ├── src/
 │   ├── components/                # shell UI (Layout, SearchDialog, ToolCard, ui.tsx)
 │   ├── lib/                       # catalogue, types, search, store, utils, colour
@@ -312,25 +300,19 @@ npm run preview          # in one terminal
 npm run test:e2e         # in another
 ```
 
-The suite covers 35 tool routes, search, the ⌘K dialog, favourites, recent history, theming, the 404 page and the catalogue/registry sync.
+The expanded suite covers 86 tool routes, representative calculations, file outputs, image and PDF processing, CSV and Unicode edge cases, mobile overflow, offline operation, SEO deep links and browser exceptions. Run `npm run test:expanded` after `npm run build`; it starts its own preview server and requires Playwright Chromium.
 
 ---
 
 ## Roadmap
 
-The architecture already leaves room for these without a rewrite:
-
-- More advanced multi-page applications (for example a complete PDF toolkit).
-- Offline-first tools through the existing service-worker layer.
-- Optional cloud integrations behind explicit opt-in.
-- Per-tool documentation pages and worked examples.
-- Community-contributed modules with review guidelines.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for a phased ToolAtlas 3.0 plan covering quality, PDF Studio, Image Studio, India Finance and Office Toolkit, connected workflows, developer utilities and growth. Unchecked items are planned work, not existing features.
 
 ---
 
 ## Contributing
 
-Issues and pull requests are welcome. Please read [`docs/ADDING_A_TOOL.md`](docs/ADDING_A_TOOL.md) first, and make sure `npm run build` and `npm run test:e2e` pass before opening a pull request.
+Issues and pull requests are welcome. Read [`docs/ADDING_A_TOOL.md`](docs/ADDING_A_TOOL.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md) first. Before opening a pull request, run `npm ci`, `npm run build`, and `npm run test:expanded`. GitHub Actions repeats build and expanded browser checks automatically.
 
 ---
 
