@@ -17,7 +17,8 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 - [ ] Audit keyboard-only and screen-reader use.
 - [ ] Add automated accessibility and contrast regression tests.
 - [x] Add versioned export/import for ToolAtlas local storage, including favourites, notes and tasks, with schema validation and rollback on restore errors.
-- [x] Add a local storage usage overview and backup export/restore page.\n- [ ] Add safe clear-data controls and export reminders.
+- [x] Add a local storage usage overview and backup export/restore page.
+- [ ] Add safe clear-data controls and export reminders.
 - [ ] Add offline installation progress, cache failure recovery and selective offline mode.
 - [ ] Add fuzzy search, synonyms, category filters and recently-added filters.
 - [ ] Add optional copyable diagnostic reports that remain local by default.
@@ -25,6 +26,7 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 ## Phase 2: High-value tool collections
 
 ### PDF Studio
+- [x] PDF page organiser with custom page order, page removal and duplication.
 - [ ] PDF compression with quality and size preview.
 - [ ] PDF-to-image export with page selection and resolution controls.
 - [ ] Batch image-to-PDF ordering, page size, margins and orientation.
@@ -90,4 +92,4 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 10. Build and relevant regression tests pass.
 
 ## Current scope
-Current Release 2 contains 87 tools in 13 categories. This roadmap is a plan, not a claim that unchecked features are already available.
+Current Release 2 contains 88 tools in 13 categories. This roadmap is a plan, not a claim that unchecked features are already available.
