@@ -53,19 +53,17 @@ export const SECTIONS: Section[] = [
     id: 'video',
     name: 'Video Tools',
     shortName: 'Video',
-    description: 'Trim, convert and prepare video clips in the browser. This section is in the works.',
+    description: 'Trim, convert and prepare video clips in the browser. Files stay on your device.',
     icon: 'Video',
     accent: 'var(--cat-generators)',
-    comingSoon: true,
   },
   {
     id: 'audio',
     name: 'Audio Tools',
     shortName: 'Audio',
-    description: 'Convert, trim and clean up audio files in the browser. This section is in the works.',
+    description: 'Convert, trim and clean up audio files in the browser. Files stay on your device.',
     icon: 'Music',
     accent: 'var(--cat-date)',
-    comingSoon: true,
   },
   {
     id: 'text',
@@ -108,6 +106,8 @@ export const SECTION_MAP: Record<SectionId, Section> = Object.fromEntries(
 
 /** Default section for each catalogue category. */
 const SECTION_BY_CATEGORY: Record<CategoryId, SectionId> = {
+  video: 'video',
+  audio: 'audio',
   pdf: 'pdf',
   image: 'image',
   text: 'text',

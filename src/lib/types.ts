@@ -6,6 +6,8 @@ export type CategoryId =
   | 'text'
   | 'pdf'
   | 'image'
+  | 'video'
+  | 'audio'
   | 'file'
   | 'productivity'
   | 'developer'
