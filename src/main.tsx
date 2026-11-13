@@ -1,3 +1,4 @@
+import { cleanupTransfers } from './lib/platform';
 import '@fontsource/dm-sans/latin-400.css';
 import '@fontsource/dm-sans/latin-500.css';
 import '@fontsource/space-grotesk/latin-500.css';
@@ -36,6 +37,8 @@ createRoot(document.getElementById('root')!).render(
     </BrowserRouter>
   </StrictMode>
 );
+
+void cleanupTransfers();
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {

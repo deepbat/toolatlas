@@ -1,3 +1,4 @@
+import { WorkspaceBridge, ShareState } from '../components/Workflow';
 import { Suspense, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowRight, ChevronRight, Github, Star } from 'lucide-react';
@@ -102,7 +103,7 @@ export default function ToolPage() {
             )}
           >
             <Star className={cn('h-3.5 w-3.5', favorite && 'fill-current')} />
-            {favorite ? 'Saved' : 'Save'}
+            {favorite ? 'Pinned' : 'Pin tool'}
           </button>
           <CopyButton
             value={typeof window !== 'undefined' ? window.location.href : ''}
@@ -112,9 +113,9 @@ export default function ToolPage() {
       </header>
 
       <div className={cn('mt-8', widthClass)}>
-        <Suspense fallback={<ToolSkeleton />}>
+        <p className="mb-3 inline-block border border-line px-3 py-2 text-[10px] text-accent">100% local processing · Your inputs and files are not uploaded</p><WorkspaceBridge key={tool.id} id={tool.id}/><ShareState key={tool.id+"-share"} id={tool.id} enabled={["calculators","converters","date","text"].includes(tool.category) && !["signature-maker","list-cleaner"].includes(tool.id)}/><div data-workspace><Suspense fallback={<ToolSkeleton />}>
           {Component ? <Component key={tool.id} /> : <ToolSkeleton />}
-        </Suspense>
+        </Suspense></div>
 
         <aside className="ad-space" aria-label="Reserved advertising space">FUTURE AD SPACE · NO ADS ARE ENABLED</aside>
         <div className="no-print mt-8 space-y-6">
@@ -143,7 +144,7 @@ export default function ToolPage() {
       <section className="mx-auto mt-14 max-w-5xl border-t border-line pt-8">
         <div className="section-line">
           <h2 className="font-display text-base font-medium tracking-tight text-fg">
-            You might also need
+            Next step / Related tools
           </h2>
           <Link
             to={`/category/${category.id}`}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button, Dropzone, Field, Grid, Panel, ProgressBar, Result, Select } from '../../components/ui';
-import { downloadBlob, formatBytes, formatNumber } from '../../lib/utils';
+import { downloadBlob, formatBytes, formatNumber, publishOutput } from '../../lib/utils';
 import { canvasToBlob, num } from '../shared';
 
 interface Source {
@@ -88,6 +88,7 @@ export default function ImageCompressor() {
       const blob = await canvasToBlob(canvas, format, Math.min(1, Math.max(0.05, num(quality, 0.8))));
       if (!blob) throw new Error('The browser could not encode that format.');
 
+      publishOutput('compressed.'+(blob.type==='image/png'?'png':blob.type==='image/webp'?'webp':'jpg'),blob);
       setOutput({ blob, url: URL.createObjectURL(blob), width, height, type: format });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Compression failed.');

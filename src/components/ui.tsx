@@ -347,16 +347,16 @@ export function Toggle({
         <span className="block text-sm text-fg">{label}</span>
         {description && <span className="mt-0.5 block text-[11px] text-muted">{description}</span>}
       </span>
-      <span className={cn('relative h-5 w-9 shrink-0 transition', checked ? 'bg-accent' : 'bg-line')}>
+      <span className={cn('relative h-5 w-9 shrink-0 transition focus-within:outline focus-within:outline-2 focus-within:outline-accent', checked ? 'bg-accent' : 'bg-line')}>
         <input
           type="checkbox"
-          className="peer sr-only"
+          className="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
           checked={checked}
           onChange={(event) => onChange(event.target.checked)}
         />
         <span
           className={cn(
-            'absolute top-0.5 h-4 w-4 bg-on-accent transition-all',
+            'pointer-events-none absolute top-0.5 h-4 w-4 bg-on-accent transition-all',
             checked ? 'left-[18px]' : 'left-0.5'
           )}
         />

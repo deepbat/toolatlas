@@ -7,7 +7,7 @@ const SYNONYMS: Record<string, string[]> = {
   tax: ['gst', 'tds', 'income tax'], gst: ['tax', 'goods services tax'], salary: ['pay', 'wage', 'hra', 'epf'],
   pay: ['salary', 'wage'], pf: ['epf', 'provident fund'], provident: ['epf', 'pf'],
   money: ['finance', 'currency', 'loan'], interest: ['emi', 'loan', 'fd', 'rd'],
-  resize: ['compress', 'image'], reduce: ['compress', 'shrink'], compress: ['reduce', 'shrink'],
+  shrink: ['compress','reduce'], resize: ['compress', 'image'], reduce: ['compress', 'shrink'], compress: ['reduce', 'shrink'],
   time: ['clock', 'date', 'timer'], clock: ['time', 'timezone'], birthday: ['age', 'dob'],
   words: ['text', 'character'], text: ['words', 'writing'], qr: ['barcode', 'code'],
   developer: ['code', 'json', 'formatter'], excel: ['csv', 'spreadsheet', 'xlsx'],
@@ -61,7 +61,7 @@ function matchTerm(term: string, fields: ReturnType<typeof toolFields>): { score
     if (fields.keywords.includes(alias)) best = Math.max(best, alias === term ? 24 : 15);
     if (fields.category.includes(alias)) best = Math.max(best, alias === term ? 12 : 8);
     if (fields.description.includes(alias)) best = Math.max(best, alias === term ? 5 : 3);
-    if (fields.all.some((word) => word.startsWith(alias))) best = Math.max(best, alias === term ? 18 : 10);
+    if (fields.all.some((word) => word.includes(alias))) best = Math.max(best, alias === term ? 18 : 10);
   }
   if (best) return { score: best, matched: true };
 

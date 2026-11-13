@@ -1,6 +1,6 @@
 # The ToolAtlas catalogue
 
-135 applications, 8 top-level sections and 15 internal collections. Every tool runs entirely in your browser and works offline once loaded.
+141 applications, 8 top-level sections and 15 internal collections. Every tool runs entirely in your browser and works offline once the release cache has installed successfully (subject to browser storage and codec support).
 
 ---
 
@@ -229,4 +229,21 @@ Tests: `npm run test:av` covers actual exports, non-silent preserved video sound
 
 ## Demand-driven utility additions
 
-135 tools total. Create ZIP (up to 100 files / 50 MB, uncompressed store mode), Image to Base64 (up to 5 MB, PNG/JPEG/WebP/GIF), and Screen Colour Test (manual, no flashing or repair claims). Selection evidence and deliberate omissions: [demand research](DEMAND-RESEARCH-2026-11.md). `npm run test:demand` verifies ZIP structure/duplicate names/content, file limits, real data URL output/preview, SVG rejection and narrow layouts.
+141 tools total. Create ZIP (up to 100 files / 50 MB, uncompressed store mode), Image to Base64 (up to 5 MB, PNG/JPEG/WebP/GIF), and Screen Colour Test (manual, no flashing or repair claims). Selection evidence and deliberate omissions: [demand research](DEMAND-RESEARCH-2026-11.md). `npm run test:demand` verifies ZIP structure/duplicate names/content, file limits, real data URL output/preview, SVG rejection and narrow layouts.
+
+## Practical tools and platform upgrade (13 November 2026)
+
+The total is now **141 tools**. Six new routes plus upgraded Invoice & Quotation and Fuel Cost:
+
+| Tool | Route |
+| --- | --- |
+| Signature Pad & Transparent PNG | `/tools/signature-maker/` |
+| Bulk File Renamer | `/tools/bulk-renamer/` |
+| List Cleaner & Deduplicator | `/tools/list-cleaner/` |
+| Passport & ID Photo Sheet Maker | `/tools/id-photo-maker/` |
+| Photo EXIF & Metadata Stripper | `/tools/remove-exif/` |
+| Group Expense & Split Bill Settler | `/tools/split-bill/` |
+| Invoice & Quotation Generator (upgraded existing tool) | `/tools/invoice-generator/` |
+| Fuel Cost Calculator (upgraded existing tool) | `/tools/fuel-cost/` |
+
+See [the upgrade notes](UPGRADES-2026-11.md) for platform changes, formats, limits, storage/URL privacy, offline conditions and intentional departures from the brief.

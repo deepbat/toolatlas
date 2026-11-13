@@ -1,8 +1,9 @@
+import {storeTransfer} from '../../lib/platform';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { Button, Note } from '../../components/ui';
-import { CHAIN, sendHandoff, takeHandoff } from '../../lib/handoff';
+import { CHAIN, takeHandoff } from '../../lib/handoff';
 import { TOOL_MAP } from '../../lib/catalog';
 import { cn } from '../../lib/utils';
 
@@ -60,8 +61,8 @@ export function SendTo({ from, kind, files }: { from: string; kind: 'pdf' | 'ima
               try {
                 const f = await files();
                 if (!f.length) throw Error('Nothing to send yet.');
-                sendHandoff(from, t.id, f);
-                nav('/tools/' + t.id + '/');
+                const token=await storeTransfer(t.id,f);
+                nav('/tools/' + t.id + '/?handoff='+token);
               } catch (e) {
                 setErr(e instanceof Error ? e.message : 'Could not send the file.');
               }

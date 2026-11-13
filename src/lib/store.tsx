@@ -36,7 +36,7 @@ const STORAGE = {
 function read<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
+    return raw ? (() => { const v=JSON.parse(raw); return (Array.isArray(fallback) ? (Array.isArray(v) ? v : fallback) : v) as T; })() : fallback;
   } catch {
     return fallback;
   }
@@ -82,8 +82,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [systemDark, setSystemDark] = useState<boolean>(() =>
     typeof window === 'undefined' ? true : window.matchMedia('(prefers-color-scheme: dark)').matches
   );
-  const [favorites, setFavorites] = useState<string[]>(() => read<string[]>(STORAGE.favorites, []));
-  const [recents, setRecents] = useState<RecentEntry[]>(() => read<RecentEntry[]>(STORAGE.recents, []));
+  const [favorites, setFavorites] = useState<string[]>(() => read<unknown[]>(STORAGE.favorites, []).filter((v):v is string=>typeof v==='string'));
+  const [recents, setRecents] = useState<RecentEntry[]>(() => read<unknown[]>(STORAGE.recents, []).filter((v):v is RecentEntry=>!!v&&typeof v==='object'&&typeof (v as RecentEntry).id==='string'&&Number.isFinite((v as RecentEntry).at)).slice(0,6));
 
   const resolvedTheme: 'light' | 'dark' = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme;
 
@@ -118,7 +118,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const recordVisit = useCallback((id: string) => {
     setRecents((current) => {
-      const next = [{ id, at: Date.now() }, ...current.filter((entry) => entry.id !== id)].slice(0, 12);
+      const next = [{ id, at: Date.now() }, ...current.filter((entry) => entry.id !== id)].slice(0, 6);
       write(STORAGE.recents, next);
       return next;
     });

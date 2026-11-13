@@ -1,3 +1,4 @@
+import {clearAllTransfers} from '../lib/platform';
 import { useEffect, useRef, useState } from 'react';
 import { Panel } from '../components/ui';
 
@@ -83,12 +84,13 @@ export default function SettingsPage() {
     }
   };
 
-  const clearData = () => {
+  const clearData = async () => {
     setError('');
     setStatus('');
     if (!window.confirm('Clear all ToolAtlas data saved in this browser? This removes favourites, recent history, theme preferences, notes and tasks. Export a backup first if you may need them.')) return;
     try {
       entries().forEach((item) => localStorage.removeItem(item.key));
+      await clearAllTransfers();
       setStatus('All ToolAtlas browser data has been cleared. Reload the page to refresh open tools.');
       refresh();
     } catch {

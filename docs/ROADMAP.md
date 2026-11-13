@@ -92,7 +92,7 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 10. Build and relevant regression tests pass.
 
 ## Current scope
-Current release contains 135 tools in 8 sections and 15 internal collections (Studio batch 1 added 14 PDF and image tools, batch 3 added 7 office and finance tools (salary structure, PPF, CAGR, rent receipt, GST invoice, expense tracker, CSV and Excel utilities), batch 2 added 10 India finance and date tools). The later media batch added 12 tools; demand-driven additions added 3 more. This roadmap is a plan, not a claim that unchecked features are already available.
+Current release contains 141 tools in 8 sections and 15 internal collections (Studio batch 1 added 14 PDF and image tools, batch 3 added 7 office and finance tools (salary structure, PPF, CAGR, rent receipt, GST invoice, expense tracker, CSV and Excel utilities), batch 2 added 10 India finance and date tools). The later media batch added 12 tools; demand-driven additions added 3 more. This roadmap is a plan, not a claim that unchecked features are already available.
 
 ## PDF editor responsiveness
 
@@ -101,7 +101,7 @@ Current release contains 135 tools in 8 sections and 15 internal collections (St
 ## Platform progress
 
 - Done: Workspaces page (`/workspaces`) with named tool sets, reorder, JSON export and a validated import. Free apps page (`/resources`) with 25 links that were opened and checked, each marked with its licence. Search suggests a correction when nothing matches and understands a few Hindi words (for example vetan, byaj, kagaz).
-- Pending: workspace tool chaining as a guided flow, a reusable clipboard history, a customisable pinned dashboard on Home, Hindi and Punjabi tool names and descriptions, selective offline downloads.
+- Pending: workspace tool chaining as a guided flow, a reusable clipboard history, Hindi and Punjabi tool names and descriptions, selective offline downloads.
 
 ## Language support
 
@@ -111,9 +111,9 @@ Current release contains 135 tools in 8 sections and 15 internal collections (St
 ## Quality and accessibility progress
 
 - Done: automated accessibility audit of every static page at 393px (`npm run test:a11y`), licence, secrets, unsafe HTML and bundle checks (`npm run test:quality`). See [QUALITY.md](QUALITY.md).
-- Pending: customisable dashboard. Favourites and Recent already cover pinning.
+- Done: a compact pinned/recent homepage strip with unpin and clear-history controls.
 - Skipped on purpose to keep the interface simple: clipboard history and guided tool chaining.
-- Pending: selective offline downloads, translated tool names and descriptions, a manual screen reader pass, quotation templates, SWP calculator, travel budget.
+- Pending: selective offline downloads, translated tool names and descriptions, a manual screen reader pass, SWP calculator, travel budget.
 
 ### Shipped 13 November 2026: media essentials
 - 5 Video and 7 Audio tools, replacing the empty coming-soon sections.
@@ -124,3 +124,10 @@ Current release contains 135 tools in 8 sections and 15 internal collections (St
 - Replaced the two-column promotional hero with a category directory as the first screen.
 - Ten clear entry points, including Calculators and Finance outside the catch-all Utilities label.
 - Full first-screen bounds and real category-link navigation tested at 360/393/412/820/1280/1440 widths. The original eight section URLs remain unchanged.
+
+### Platform and practical tools upgrade, 13 November 2026
+- Done: search alias/substring matching, accurate dynamic count, focus return/trap, six recent entries and homepage personal strip, workflow-related links, local file dropzone and temporary IndexedDB handoffs.
+- Done: cache-first local assets, stale-while-revalidate page navigation, versioned full-release offline cache and ready notice. Offline requires successful cache installation; browser storage can still be cleared or evicted.
+- Done: opt-in URL input sharing for calculator/date/converter/text tools, with an explicit history/privacy notice; local-processing workspace badge. Files and sensitive generator/accounting tools are excluded from URL state.
+- Done: signature maker, bulk renamer, list cleaner, ID photo print sheets, batch EXIF stripping and exact group settlement. Upgraded the existing invoice generator to support quotations, logos, per-line taxes and paginated A4 PDF, and fuel calculator to support round-trips, four unit modes, driver exclusion and saved vehicles.
+- Intentional limits and departures from the prompt: see [UPGRADES-2026-11.md](UPGRADES-2026-11.md). No new dependencies. Browser-only processing and all media beta limits remain.

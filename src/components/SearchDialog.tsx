@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Search, X } from 'lucide-react';
-import { CATEGORY_MAP, POPULAR_TOOLS } from '../lib/catalog';
+import { CATEGORY_MAP, POPULAR_TOOLS, TOOLS } from '../lib/catalog';
 import { searchTools, suggestQuery } from '../lib/search';
 import { cn, tint } from '../lib/utils';
 import { Icon } from './Icon';
@@ -21,11 +21,13 @@ export default function SearchDialog({ open, onClose }: { open: boolean; onClose
     if (!open) return;
     setQuery('');
     setActive(0);
+    const previous=document.activeElement as HTMLElement|null;
     const timer = window.setTimeout(() => inputRef.current?.focus(), 30);
     document.body.style.overflow = 'hidden';
     return () => {
       window.clearTimeout(timer);
       document.body.style.overflow = '';
+      previous?.focus();
     };
   }, [open]);
 
@@ -41,6 +43,7 @@ export default function SearchDialog({ open, onClose }: { open: boolean; onClose
   };
 
   const onKeyDown = (event: React.KeyboardEvent) => {
+    if(event.key==='Tab'){const items=Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button,input')).filter(e=>!e.hasAttribute('disabled'));const first=items[0],last=items[items.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}}
     if (event.key === 'Escape') {
       event.preventDefault();
       onClose();
@@ -79,8 +82,8 @@ export default function SearchDialog({ open, onClose }: { open: boolean; onClose
             ref={inputRef}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search 35 tools, categories or keywords…"
-            className="h-14 flex-1 bg-transparent font-mono text-sm text-fg outline-none placeholder:text-muted/70"
+            placeholder={`Search ${TOOLS.length} tools, categories or keywords…`}
+            className="h-14 min-w-0 flex-1 bg-transparent font-mono text-sm text-fg outline-none placeholder:text-muted/70"
             aria-label="Search query"
           />
           <button
