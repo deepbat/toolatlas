@@ -1,3 +1,4 @@
+import { PersonalStrip, FileDrop } from '../components/Workflow';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Clock, Search, Sparkles, Star, Zap } from 'lucide-react';
@@ -161,7 +162,7 @@ export default function HomePage() {
             </div>
             <div className="w-full lg:max-w-lg"><HeroSearch /></div>
           </div>
-          <div id="categories-heading" className="mb-2 flex items-center justify-between gap-2 font-mono text-[9px] uppercase tracking-label text-muted">
+          <PersonalStrip /><div id="categories-heading" className="mb-2 flex items-center justify-between gap-2 font-mono text-[9px] uppercase tracking-label text-muted">
             <h2>Find your category</h2>
             <span>{TOOLS.length} tools · no sign-up</span>
           </div>
@@ -188,7 +189,7 @@ export default function HomePage() {
               </Link>;
             })}
           </nav>
-          <div className="mt-3 flex items-center justify-between text-[10px] text-muted"><span>Private by design. Files stay on your device.</span><Link to="/tools" className="shrink-0 font-semibold text-accent">All tools ↗</Link></div>
+          <FileDrop /><div className="mt-3 flex items-center justify-between text-[10px] text-muted"><span>Private by design. Files stay on your device.</span><Link to="/tools" className="shrink-0 font-semibold text-accent">All tools ↗</Link></div>
         </div>
       </section>
 

@@ -66,7 +66,10 @@ export async function copyText(text: string): Promise<boolean> {
   }
 }
 
+export function publishOutput(filename:string,blob:Blob){window.dispatchEvent(new CustomEvent("toolatlas:output", {detail:new File([blob],filename,{type:blob.type})}));}
+
 export function downloadBlob(filename: string, blob: Blob): void {
+  publishOutput(filename,blob);
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

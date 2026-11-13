@@ -81,46 +81,34 @@ export function makeZip(files: ZipFile[]): Uint8Array<ArrayBuffer> {
 }
 export const zipBlob = (files: ZipFile[]) => new Blob([makeZip(files)], { type: 'application/zip' });
 
-async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
-  if (typeof DecompressionStream === 'undefined') throw Error('This browser cannot unzip Excel files. Update your browser.');
-  const stream = new Blob([data as BlobPart]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
+async function inflateRaw(data: Uint8Array,maxBytes:number): Promise<Uint8Array> {
+  if (typeof DecompressionStream === 'undefined') throw Error('This browser cannot unzip files. Update your browser.');
+  const reader=new Blob([data as BlobPart]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader();
+  const chunks:Uint8Array[]=[];let length=0;
+  try{while(true){const {done,value}=await reader.read();if(done)break;length+=value.length;if(length>maxBytes){await reader.cancel();throw Error('The archive expands beyond its safe size limit.');}chunks.push(value);}}finally{reader.releaseLock();}
+  const out=new Uint8Array(length);let at=0;for(const c of chunks){out.set(c,at);at+=c.length;}return out;
 }
-/** Reads a ZIP into a name -> bytes map. Limits protect against zip bombs. */
-export async function readZip(buf: ArrayBuffer | Uint8Array, maxTotal = 200 * 1024 * 1024): Promise<Map<string, Uint8Array>> {
-  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
-  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  let eocd = -1;
-  for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--) {
-    if (dv.getUint32(i, true) === 0x06054b50) {
-      eocd = i;
-      break;
-    }
-  }
-  if (eocd < 0) throw Error('This is not a valid ZIP or Excel file.');
-  const count = dv.getUint16(eocd + 10, true);
-  let p = dv.getUint32(eocd + 16, true);
-  const out = new Map<string, Uint8Array>();
-  let total = 0;
-  for (let i = 0; i < count; i++) {
-    if (dv.getUint32(p, true) !== 0x02014b50) throw Error('The ZIP directory is damaged.');
-    const method = dv.getUint16(p + 10, true);
-    const csize = dv.getUint32(p + 20, true);
-    const usize = dv.getUint32(p + 24, true);
-    const nlen = dv.getUint16(p + 28, true);
-    const elen = dv.getUint16(p + 30, true);
-    const clen = dv.getUint16(p + 32, true);
-    const lho = dv.getUint32(p + 42, true);
-    const name = new TextDecoder().decode(bytes.subarray(p + 46, p + 46 + nlen));
-    p += 46 + nlen + elen + clen;
-    total += usize;
-    if (total > maxTotal) throw Error('The archive expands to more than 200 MB, so it was not opened.');
-    const lnlen = dv.getUint16(lho + 26, true);
-    const lelen = dv.getUint16(lho + 28, true);
-    const start = lho + 30 + lnlen + lelen;
-    const raw = bytes.subarray(start, start + csize);
-    if (name.endsWith('/')) continue;
-    out.set(name, method === 0 ? raw : method === 8 ? await inflateRaw(raw) : (() => { throw Error('Unsupported ZIP compression.'); })());
-  }
-  return out;
+/** Reads standard, unencrypted ZIPs. Checks bounds, CRC and actual expanded sizes. */
+export async function readZip(buf:ArrayBuffer|Uint8Array,maxTotal=200*1024*1024,maxEntries=10000):Promise<Map<string,Uint8Array>>{
+ const bytes=buf instanceof Uint8Array?buf:new Uint8Array(buf),dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+ const bounds=(at:number,length:number)=>{if(at<0||length<0||at+length>bytes.length)throw Error('The ZIP directory or file data is truncated.');};
+ let eocd=-1;for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--)if(dv.getUint32(i,true)===0x06054b50){eocd=i;break;}
+ if(eocd<0)throw Error('This is not a valid ZIP or Excel file.');
+ const count=dv.getUint16(eocd+10,true);if(count>maxEntries)throw Error('The archive contains too many files.');
+ if(dv.getUint16(eocd+4,true)!==0||dv.getUint16(eocd+6,true)!==0||count===65535)throw Error('Split and ZIP64 archives are not supported.');
+ let p=dv.getUint32(eocd+16,true),total=0;const out=new Map<string,Uint8Array>();
+ for(let i=0;i<count;i++){
+  bounds(p,46);if(dv.getUint32(p,true)!==0x02014b50)throw Error('The ZIP directory is damaged.');
+  if(dv.getUint16(p+8,true)&1)throw Error('Password-protected ZIPs are not supported.');
+  const method=dv.getUint16(p+10,true),crc=dv.getUint32(p+16,true),csize=dv.getUint32(p+20,true),usize=dv.getUint32(p+24,true),nlen=dv.getUint16(p+28,true),elen=dv.getUint16(p+30,true),clen=dv.getUint16(p+32,true),lho=dv.getUint32(p+42,true);
+  bounds(p+46,nlen+elen+clen);const name=new TextDecoder().decode(bytes.subarray(p+46,p+46+nlen));p+=46+nlen+elen+clen;
+  if(usize>maxTotal-total)throw Error('The archive expands beyond its safe size limit.');
+  bounds(lho,30);if(dv.getUint32(lho,true)!==0x04034b50)throw Error('The ZIP local header is damaged.');
+  const start=lho+30+dv.getUint16(lho+26,true)+dv.getUint16(lho+28,true);bounds(start,csize);
+  if(name.endsWith('/'))continue;
+  const raw=bytes.subarray(start,start+csize);const data=method===0?raw:method===8?await inflateRaw(raw,Math.min(usize,maxTotal-total)):(()=>{throw Error('Unsupported ZIP compression.');})();
+  if(data.length!==usize||crc32(data)!==crc)throw Error('The ZIP file size or checksum is invalid.');total+=data.length;
+  if(out.has(name))throw Error('This ZIP contains duplicate paths. Unzip it on your device first.');out.set(name,data);
+ }
+ return out;
 }

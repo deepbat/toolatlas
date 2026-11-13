@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib';
 import { Button, Dropzone, Field, Input, Panel, Select } from '../../components/ui';
-import { downloadBlob, formatBytes } from '../../lib/utils';
+import { downloadBlob, formatBytes, publishOutput } from '../../lib/utils';
 
 export function pageRange(input: string, total: number): number[] {
   if (!input.trim()) return Array.from({ length: total }, (_, i) => i);
@@ -116,7 +116,8 @@ export default function PDFTools() {
       }
 
       const bytes = await doc.save();
-      setOutput(new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' }));
+      const result=new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' });
+      publishOutput('toolatlas-'+toolId+'.pdf',result);setOutput(result);
       setInfo(doc.getPageCount() + ' pages processed. Original: ' + count + ' pages, ' + formatBytes(file.size) + '.');
     } catch (cause) {
       setError(cause instanceof Error

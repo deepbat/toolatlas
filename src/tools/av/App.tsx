@@ -1,3 +1,4 @@
+import {publishOutput} from '../../lib/utils';
 import {useEffect, useRef, useState} from 'react';
 import {useParams} from 'react-router-dom';
 import {Button, Field, Grid, Input, Note, Panel, Select} from '../../components/ui';
@@ -14,7 +15,7 @@ export default function AVApp() {
   const media=useRef<HTMLVideoElement>(null),stop=useRef<(()=>void)|null>(null),alive=useRef(true), urls=useRef<string[]>([]),generation=useRef(0);
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;generation.current++;stop.current?.();urls.current.forEach(URL.revokeObjectURL);};},[]);
   const clearResult=()=>{setResult(null);setError('');setMessage('');};
-  const finish=(blob:Blob,name:string)=>{if(!alive.current)return;if(result){URL.revokeObjectURL(result.url);urls.current=urls.current.filter(u=>u!==result.url);}if(!blob.size)throw new Error('No output was produced.'); const url=URL.createObjectURL(blob);urls.current.push(url);setResult({url,name,size:blob.size,type:blob.type});setMessage('Ready. Preview your result before downloading.');};
+  const finish=(blob:Blob,name:string)=>{if(!alive.current)return;if(result){URL.revokeObjectURL(result.url);urls.current=urls.current.filter(u=>u!==result.url);}if(!blob.size)throw new Error('No output was produced.'); const url=URL.createObjectURL(blob);urls.current.push(url);setResult({url,name,size:blob.size,type:blob.type});publishOutput(name,blob);setMessage('Ready. Preview your result before downloading.');};
   async function choose(selected:File[]){
     const job=++generation.current;urls.current.forEach(URL.revokeObjectURL);urls.current=[];clearResult();setDuration(0);setFiles([]);setSource('');setStart('0');setEnd('0');
     if(!selected.length)return;

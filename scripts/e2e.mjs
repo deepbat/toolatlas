@@ -654,10 +654,10 @@ test('Favourites can be toggled and persist', async () => {
     button.click();
     await new Promise((r) => setTimeout(r, 300));
     const stored = JSON.parse(localStorage.getItem('toolatlas:favorites') || '[]');
-    return { stored, label: byText('button', 'Saved') ? 'Saved' : 'Save' };
+    return { stored, label: byText('button', 'Pinned') ? 'Pinned' : 'Pin tool' };
   `);
   check('calculator was favourited', (data.stored ?? []).includes('calculator'), JSON.stringify(data));
-  eq('header button switches to Saved', data.label, 'Saved');
+  eq('header button switches to Pinned', data.label, 'Pinned');
 
   await goto('/favorites');
   const listed = await evaluate(

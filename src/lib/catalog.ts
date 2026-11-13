@@ -1,3 +1,4 @@
+import { NEW_TOOL_DATA } from './new-tools';
 import { DEMAND_TOOLS } from './demand-catalog';
 import { AV_TOOLS } from './av-catalog';
 import type { Category, CategoryId, ToolMeta } from './types';
@@ -535,7 +536,7 @@ export const TOOLS: ToolMeta[] = [
   },
 ];
 
-TOOLS.push(...DEMAND_TOOLS, ...AV_TOOLS, ...EXTRA_TOOLS, ...MEDIA_TOOLS, ...STUDIO_TOOLS);
+TOOLS.push(...NEW_TOOL_DATA.map(t=>({...t,category:t.category as CategoryId,status:'stable' as const,version:'1.0.0',added:'2026-11-13',layout:'wide' as const})),...DEMAND_TOOLS, ...AV_TOOLS, ...EXTRA_TOOLS, ...MEDIA_TOOLS, ...STUDIO_TOOLS);
 
 export const TOOL_MAP: Record<string, ToolMeta> = Object.fromEntries(
   TOOLS.map((tool) => [tool.id, tool])
@@ -553,6 +554,8 @@ export function toolsByCategory(category: CategoryId): ToolMeta[] {
 }
 
 export function relatedTools(tool: ToolMeta, limit = 3): ToolMeta[] {
+  const workflows:Record<string,string[]>={ 'pdf-merge':['pdf-compress','pdf-watermark','pdf-page-organiser'],'pdf-split':['pdf-merge','pdf-compress','pdf-editor'],'image-resizer':['image-compressor','image-bulk-convert','image-to-pdf'],'image-bulk-convert':['image-compressor','remove-exif','image-to-pdf'],'signature-maker':['pdf-editor','invoice-generator','image-to-pdf'],'invoice-generator':['gst-calculator','signature-maker','pdf-merge'],'fuel-cost':['split-bill','tip-calculator','unit-converter'],'list-cleaner':['sort-lines','csv-to-json','word-counter']};
+  if(workflows[tool.id]) return workflows[tool.id].map(id=>TOOL_MAP[id]).filter(Boolean).slice(0,limit);
   const sameCategory = TOOLS.filter((t) => t.category === tool.category && t.id !== tool.id);
   if (sameCategory.length >= limit) return sameCategory.slice(0, limit);
   const others = TOOLS.filter((t) => t.category !== tool.category).slice(0, limit - sameCategory.length);
