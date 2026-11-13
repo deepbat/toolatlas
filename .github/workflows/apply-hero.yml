@@ -1,0 +1,38 @@
+name: Apply hero categories (one-time)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify baseline
+        run: test "$(git rev-parse HEAD)" = "00a85b859a722399ad38b6ae38c6c3ae508b772e"
+      - name: Apply patch
+        run: |
+          echo 'H4sICNql9moCA2hlcm8ucGF0Y2gAxVrrbts4Fv6fpzgwBuMEMWVJjtM0G3tmekO722mCSefHIgi2tEXbmkqiRqJiu4b/7ivso+z/fZR9kj0kZVsXynHaAluglkRSh4fn8p2L4vmTCRAy9QXQbpqMuzGdsrT7lofMEukCRobBIz/y2AIu3OfPbdezLIdOHHdyAY5tn5+dHRFCjLSOTk9PzfR+/hmI4/Y7z+BUX3BgkkVj4fMI3rKE3zKajGfHJ7A6gs2/q67nPww3zyfrIzgi+QxOwDigafqBhmzQCgU5g0mALMsfMk9oDL5gYUrGLBIsgT+yVPiT5eZxSmPitoZHp43kejDzPY9FTQQVBUjDSznfGu6YXt21/3p7/QEmPAmpwKXtDrRvXr2BkCVTJh9+j1AVYx49sCSffvHrO3n56IfsC4/UohtkZs4Tr31vhTQ+PsaV4QkMhnC82woZH2VC8Kg4BPCZLQcruX6txX5+1jmTcsfreV8Kni1ingjw2IRmgSjoAbV1g3orawGAJj4lWhyDlkgy1trNdoc7rdQFiacU1I9YQqQ9QMICKvwHBl+IY0M8Qt4gFsQ5k4LEG9dGSZLC8ap6oagK0l8E5WW4MC4uC+iIBeBHAe5MlFXUVWf1QbCFICmfiCo1pJfGNCqSnBEH35irXxr5qFlG4ixIGfG4gNGU0LGk3jLISoqoQn718fr6/a0VsGgqZmsQnAcpBFIw//k3rG5fv/z47vrDbn6Mu0154rNUzkccUn8akSyuyKAb40aPywWN+7k+u+ZZOsLfeZYAQ4NcenSp+AEvoXOWGInOnLrvoaKJ56dxIN+XxO9wSRgfo6ATFnbOrd7DvNO3zvHh5F4vD5nnZyEEjHp+NCV3tvX8HkRCx5/VI7Etu99n4b2mN5nW1XQb0iCAP/gotWoaHCUGwV+xsMh6xAXxBQ38seZoxAOvKJrW8BYdhXnWVZeFVZPrzpy6aOpAgoY+TXxP/ZAxKprchX6Elnxsd5xJgsKQ9oirgullYY1tXfQnyT8cy8HLvZzUNswiz2Cucd1LwvwkI5qyrYylAy5YPhNmeLQ6MYA3PAExYyBRS8yogIgxLwUx56BgHXgmLPiIK+IZF1yv8VNwXPjbC2k9EFDEOr1kTINxJt0eAUYt9DhSQMkrqkAhjRPkLp0xhkSvY4Rcqi2QRig1JgBfnPtihk5sbQD76UhzIYHmmcIZhB03BxzH3gUBE9UDNPesojhHa62ktBx45EKpa7e8qd62MvQdMO20qtfvjWq1Db4XrlX5ViBUGdslDQZW6hDV2wdRroSovuUiRJ09BlHuYxhVk0oRpeo60ThVH/8mpKqKQ2HVXvtSKJ6nPE8CEGnVo4CPP5uO/v9DkroI4roE6mjdl8fB6zOj/+y3uVK2Wh57PEq41fRVevRCpkbyZknO60C9uqtD9woUUFxiMqmcjz5QH0cCmVM+0CBjl1D0UVh39tF4uXXQ3esVL36EwisqKGRxwKnHvB2Rtt02vJinuqmgIk91a5SV6FSCK1dZapu1IYRVzbvu/L1FUPLxrVMLfzoTO3/WGym+1yYgMrqSk5PmCGoaap7Hi3sURMySsfSn7W4a1/fHYyXSwnmNLBhZy+2vMn6CpVQt/oDvYRTdKpzMtMfn2K82HrTeYF0IS5ks5iuXrYPiVjhS0aketzZ12YiJOUPoKUFaQwQb1rm46qoJwwvv/egzAsmg1d2drVVksIBkqJQo9RW+zDgmw5clbn5BEN/RuOpKysOvgZlKUuHuakl50zOdexc7tYcwVbApJ1nVV4OsLlORx98B5MsVImzetXzv5C+mVxMmsiRC3zs1maGSp3kqLzx39NdN61Adq0/dH4pLPzUuLgmOZ7E2IkzEMETZ5iRohHUzPuoLkRmTzGXSLJnQMeteYD6oc6WquvMXtMK75/ZWJSpbRM2YeRw2sa6stWmydDJ1phnWZXP8n84SFHL1cJUOhuGMyORMZrt4ncvMtnnnVCwDNlitYIQoJKUaeS95wJNLEH4ktiaiBdEB23Lckw4alVpSnoV1o+aGzQxcvUMLhUiefWcFOLQuZ6dnKI8zfa6+PlbfnHhunK8BBRrS340RqaDrtPbxW31VZTxoQVkkIcGUWzo9ifhqImWhrxM2Y4yRJ9N5e7iPBxkDclFJwa33cLtfDgce5+uC1z72FR5t8oYh2PATfPqhNLqG8jMMBgNwcF1bjrbhUt+k7fUnef+SowpRfpxH7a+Xx2PTvyQJn/+mNFa0Tp0rz0hPlVDyd+u4O4l0+3YRZxSCkVpwkRagc+hG626INyqcG3B8fbJ+Sn7aPFJ+RlFpExw292IrlTjKdswwgd20+pq7rvtfdItN1qucjXpYRbhWiLGLr71yCnPDscKlCcx58nkS8HmKKd7dUclMfRGwy/aNrkg2NchP7c6Yx8vL9hvZSI/ypFa1ebEsl6jIIy+12h3BL9tdZaVdrKinjAj5Onq3/wWzcEGnl23XluVNF/r51bHlTRszYhMfWDvpsonCn5mPfjrxF1tufpVd5Q6gLaFTIlYnXEgPlr2TKAtHLNlwtEmVurE3ydn4cA2/37y//uXVrdxa9opdx+2cX8Cp27M7509vFesEfj4Y6rRL5QNzS/C1Cvn6rhbP90ZrDNWPBerW0JRxllI3uTWdqvT9aubWyl61NpjqdVLoa/jvP/+FRbM7rGX2bt5iCUuwhy9KdegdtKeerIvO0pQLHvLNYpMba9vOz74sCSxeYmSsMGvi8xZtUehuGpUdiY4qnylW0l9k8k1HqQW/YeIPMrmOpUX5WHXvfMVSB9zl1NPM90z59GbbjQJUW2/iM4yBuCFW7Uq+Sk41wPEYogDmrcXw9JiJ4NnTLAxpsiwBSpakHNGE+0qe9SAdTMtsvkCgx/gm2zWmVhYqVG8yNFTw57AFoF4ZgNxyhxAT/Jy4dBZRchYhc2HlLBsIaZ/qsZo0yKhqAb2taRqqFyStsoaC5KWFStnjrxZ5oVDcAuwOOgPmjZbGErH8zeZWv/kWJ1lSLj3VV8VBy3YQ87SsW+UFyvuMZWZ5nTSiQeu1isk5p2mVVKXmK8+OBR20yhVdaUV373eoplBT0fRZtZjfW8aRryvhSEP5RsylGzmgbCOHlmzk0HJNIRzK5JDSzID3RI0Esj29JDZmWqZ6DYOpHk5n1ONzJD4RrTqL5gaOCZY1GKcKMitY3NSl0RUfObTecxzZfHeeWug1JJRVcbSaGPnO5R8xF3/km0o/mVP3Td9Oyzk7Oai8qdYzjv2N3ThDMdO0EL6pymmmWit/nionc29Qfz3pHfCBV30XOKS+bW5plspZI4uz3oEN17y7SJxtEHzaN88SQ5jTjBM/lvdPaLaaKtwffzRBcdPfnGxapOWvAHi2R+0wDfwxO7Y74J7kfy+Cw01N9IPQaveXJEipKSwYoM2M8An1U6yGzxHgFxgmYw3jX91naOZluI9NfZZGczsAWnTz/EBMcPeo34hT30U2eyVwWuaRgPsNkmjEnCZgMb9R78vJ73B7P3U7BgFpUC8D0n555SGsIZzm3eQmeb5exBgPWWN7aNcXaopijeLd9HpIrc9Dqj0e0iz2QvlJCn+eljB56NeRkDlvDapKamkqATSJQvpf5r5cAPwPN3pVnX8oAAA=' | base64 -d | gunzip > hero.patch
+          git apply hero.patch
+          rm hero.patch
+      - name: Remove one-time workflow
+        run: git rm -q -f .github/workflows/apply-hero.yml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx tsc --noEmit
+      - run: npm run build
+      - run: npm run test:search
+      - run: npm run test:unit
+      - run: npm run test:expanded
+      - name: Push branch
+        run: |
+          git config user.name toolatlas-bot
+          git config user.email toolatlas-bot@users.noreply.github.com
+          git checkout -b feature/hero-categories
+          git add -A
+          git commit -m "Show category cards in the homepage hero"
+          git push origin feature/hero-categories
