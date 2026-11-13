@@ -1,4 +1,5 @@
 // Unit tests for pure calculation and file-format helpers. Run: npm run test:unit
+import {wav, transformAudio, range} from '../src/lib/av';
 import assert from 'node:assert/strict';
 import { incomeTax, gst, tds, gratuity, hra, rd, fd, loan, workingDays, addWorkingDays, rupeesInWords, checkGstin, gstinCheckChar, checkPan, checkIfsc, epf, salaryStructure, parseAmount, type TaxInput } from '../src/lib/india';
 import { ppf, cagr, invoiceTotals, parseInvoiceLines, summarise, textPdf } from '../src/lib/office';
@@ -128,4 +129,7 @@ await t('sections cover every tool exactly once', () => {
   for (const s of SECTIONS.filter((x) => !x.comingSoon)) assert.ok(sectionTools(s.id).length > 0, s.id + ' has no tools');
   for (const s of SECTIONS.filter((x) => x.comingSoon)) assert.equal(sectionTools(s.id).length, 0, s.id + ' marked coming soon but has tools');
 });
+await t('audio range validates nonfinite and reversed ranges',()=>{assert.throws(()=>range(2,1,3));assert.throws(()=>range(NaN,2,3));assert.throws(()=>range(0,4,3));});
+await t('audio transformations trim reverse normalize fade and clip',()=>{const c=[new Float32Array([.1,.2,-.4,.3])];assert.deepEqual([...transformAudio(c,1,3,1,1,false,true,false)[0]], [...new Float32Array([-.4,.2])]);const n=transformAudio(c,0,4,1,1,true,false,false)[0];assert.ok(Math.abs(n[2]+.98)<1e-6);assert.equal(transformAudio(c,0,4,1,10,false,false,false)[0][0],1);assert.equal(transformAudio(c,0,4,1,1,false,false,true)[0][0],0);});
+await t('wav header interleaves stereo and clamps samples',async()=>{const b=await wav([new Float32Array([-2,0]),new Float32Array([2,.5])],22050).arrayBuffer();const v=new DataView(b);assert.equal(v.getUint16(22,true),2);assert.equal(v.getUint32(24,true),22050);assert.equal(v.getUint32(40,true),8);assert.equal(v.getInt16(44,true),-32768);assert.equal(v.getInt16(46,true),32767);assert.equal(v.getInt16(50,true),16384);});
 console.log(`\n${n} unit checks passed`);

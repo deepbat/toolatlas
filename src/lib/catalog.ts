@@ -1,9 +1,12 @@
+import { AV_TOOLS } from './av-catalog';
 import type { Category, CategoryId, ToolMeta } from './types';
 import { EXTRA_TOOLS } from './extra';
 import { MEDIA_TOOLS } from './media';
 import { STUDIO_TOOLS } from './studio';
 
 export const CATEGORIES: Category[] = [
+  {id:'video',name:'Video Tools',shortName:'Video',description:'Trim, resize, mute and capture video locally.',icon:'Video',accent:'var(--cat-generators)'},
+  {id:'audio',name:'Audio Tools',shortName:'Audio',description:'Cut, join, convert and record sound locally.',icon:'Music',accent:'var(--cat-date)'},
   {
     id: 'calculators',
     name: 'Calculators',
@@ -531,7 +534,7 @@ export const TOOLS: ToolMeta[] = [
   },
 ];
 
-TOOLS.push(...EXTRA_TOOLS, ...MEDIA_TOOLS, ...STUDIO_TOOLS);
+TOOLS.push(...AV_TOOLS, ...EXTRA_TOOLS, ...MEDIA_TOOLS, ...STUDIO_TOOLS);
 
 export const TOOL_MAP: Record<string, ToolMeta> = Object.fromEntries(
   TOOLS.map((tool) => [tool.id, tool])

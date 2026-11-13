@@ -208,3 +208,21 @@ Each tool shows the financial year it uses, links its sources and says it is an 
 - **GST Invoice Maker** (`/tools/gst-invoice`): CGST and SGST or IGST, HSN or SAC, total in words, PDF download. A simple layout, not a full statutory invoice.
 - **Expense and Petty Cash Tracker** (`/tools/expense-tracker`): saved in this browser only, CSV export.
 - **CSV and Excel Utilities** (`/tools/csv-excel-tools`): open CSV or XLSX, sort, remove duplicates and empty rows, trim, export. Formula-injection safeguard on export.
+
+## Video and Audio (13 November 2026)
+
+132 tools total across 8 sections and 15 internal collections. Added 5 Video tools and 7 Audio tools:
+
+| Video | Audio |
+| --- | --- |
+| Video Trimmer | Audio Cutter (with 50 ms edge fades) |
+| Video Compressor | Audio to WAV |
+| Mute Video | Audio Joiner (up to 8 files, reorderable) |
+| Video to Image (PNG) | Audio Volume & Peak Normalize |
+| Extract Audio from Video (WAV) | Reverse Audio |
+| | WAV Size Reducer (mono, 8/16/22.05 kHz) |
+| | Voice Recorder |
+
+No new dependencies, codec downloads or external processing. Video input: browser-playable media up to 100 MB, 2 minutes and 1920 px on the longest edge. Exports are re-encoded in real time, WebM by default with MP4 only where MediaRecorder supports it; cuts can differ by a few frames. Compression shows original and output sizes and does not guarantee savings. Audio: browser-decodable mono/stereo media up to 50 MB total and 5 minutes, output 16-bit PCM WAV. Recorder: browser-native WebM/OGG/M4A, microphone permission requested on click, five-minute auto-stop. Files and recording URLs are released when leaving the tool.
+
+Tests: `npm run test:av` covers actual exports, non-silent preserved video sound, removed audio tracks, repeat video exports, cut duration, join duration/order, peak normalization, corrupt inputs, recording and narrow layouts. `scripts/fixtures/media-test.webm` is a synthetic test pattern with a 440 Hz sine tone generated locally, not user media.

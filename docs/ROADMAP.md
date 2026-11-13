@@ -114,3 +114,8 @@ Current release contains 120 tools in 13 categories (Studio batch 1 added 14 PDF
 - Pending: customisable dashboard. Favourites and Recent already cover pinning.
 - Skipped on purpose to keep the interface simple: clipboard history and guided tool chaining.
 - Pending: selective offline downloads, translated tool names and descriptions, a manual screen reader pass, quotation templates, SWP calculator, travel budget.
+
+### Shipped 13 November 2026: media essentials
+- 5 Video and 7 Audio tools, replacing the empty coming-soon sections.
+- Small lazy-loaded native media implementation, zero runtime dependencies added.
+- Deliberately deferred universal MP3/M4A encoding, GIF animation, video merging and AI speech cleanup: native browser codecs do not provide a consistent cross-browser solution, and shipping a large FFmpeg engine would break the current bundle budget. No fake format-renaming tools.
