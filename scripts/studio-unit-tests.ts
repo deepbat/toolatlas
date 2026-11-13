@@ -8,6 +8,8 @@ import { TRANSLATION_KEYS, translation } from '../src/lib/i18n';
 import { crc32, makeZip } from '../src/lib/zip';
 import { parseExif, stripJpeg, stripPng } from '../src/lib/exif';
 import { parseCsv, toCsv, safeCell } from '../src/lib/csvtools';
+import { SECTIONS, sectionTools } from '../src/lib/sections';
+import { TOOLS } from '../src/lib/catalog';
 import { makeXlsx, readXlsx } from '../src/lib/xlsx';
 
 let n = 0;
@@ -118,5 +120,12 @@ await t('every translation key has Hindi and Punjabi text', () => {
       assert.ok(v && v.trim() && v !== en && !/[A-Za-z]{3,}/.test(v), k + ' ' + l);
     }
   }
+});
+await t('sections cover every tool exactly once', () => {
+  const placed = SECTIONS.flatMap((s) => sectionTools(s.id).map((tool) => tool.id));
+  assert.equal(new Set(placed).size, placed.length, 'a tool appears in more than one section');
+  assert.equal(placed.length, TOOLS.length, 'a tool is missing from every section');
+  for (const s of SECTIONS.filter((x) => !x.comingSoon)) assert.ok(sectionTools(s.id).length > 0, s.id + ' has no tools');
+  for (const s of SECTIONS.filter((x) => x.comingSoon)) assert.equal(sectionTools(s.id).length, 0, s.id + ' marked coming soon but has tools');
 });
 console.log(`\n${n} unit checks passed`);

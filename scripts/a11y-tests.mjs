@@ -10,7 +10,7 @@ const ctx = await browser.newContext({ viewport: { width: 393, height: 851 } });
 const page = await ctx.newPage();
 const catalog = JSON.parse(await readFile('dist/catalog.json', 'utf8'));
 const tools = (catalog.tools || catalog).map((t) => '/tools/' + t.id + '/');
-const routes = ['/', '/tools/', '/categories/', '/favorites/', '/recent/', '/workspaces/', '/resources/', '/offline/', '/about/', '/guides/', '/settings/', '/privacy/', ...tools];
+const routes = ['/', '/tools/', '/categories/', '/pdf/', '/image/', '/video/', '/audio/', '/text/', '/converter/', '/web/', '/utilities/', '/favorites/', '/recent/', '/workspaces/', '/resources/', '/offline/', '/about/', '/guides/', '/settings/', '/privacy/', ...tools];
 
 const audit = () => {
   const out = [];

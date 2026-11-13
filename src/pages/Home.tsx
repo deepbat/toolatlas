@@ -4,7 +4,6 @@ import { ArrowRight, Clock, Search, Sparkles, Star, Zap } from 'lucide-react';
 import ToolCard from '../components/ToolCard';
 import { Icon } from '../components/Icon';
 import {
-  CATEGORIES,
   CATEGORY_MAP,
   FEATURED_TOOLS,
   POPULAR_TOOLS,
@@ -12,13 +11,10 @@ import {
   TOOLS,
   TOOL_MAP,
 } from '../lib/catalog';
+import { SECTIONS, sectionTools } from '../lib/sections';
 import { searchTools } from '../lib/search';
 import { useApp } from '../lib/store';
 import { cn, relativeTime, tint } from '../lib/utils';
-
-function categoryCount(categoryId: string): number {
-  return TOOLS.filter((tool) => tool.category === categoryId).length;
-}
 
 function SectionHeader({
   index,
@@ -172,7 +168,7 @@ export default function HomePage() {
           <div className="max-w-5xl">
             <p className="label inline-flex items-center gap-2.5 text-soft">
               <span className="h-1.5 w-1.5 animate-pulse-dot bg-accent" aria-hidden="true" />
-              {TOOLS.length} tools live · {CATEGORIES.length} categories · no sign-up
+              {TOOLS.length} tools live · {SECTIONS.length} categories · no sign-up
             </p>
 
             <p className="label mt-9 text-accent-2">Your everyday tool drawer</p>
@@ -193,7 +189,7 @@ export default function HomePage() {
             <div className="mt-12 flex flex-wrap gap-x-14 gap-y-6">
               {[
                 { label: 'Tools available', value: TOOLS.length },
-                { label: 'Categories', value: CATEGORIES.length },
+                { label: 'Categories', value: SECTIONS.length },
                 { label: 'Data uploaded', value: '0' },
               ].map((stat) => (
                 <div key={stat.label}>
@@ -220,34 +216,61 @@ export default function HomePage() {
           <SectionHeader
             index="01 / Browse"
             title="Find your category"
-            note="Thirteen collections"
+            note="Eight sections"
             to="/categories"
             cta="All categories"
           />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {CATEGORIES.map((category) => (
-              <Link
-                key={category.id}
-                to={`/category/${category.id}`}
-                className="group flex items-center gap-3 border border-line bg-surface/80 p-3 transition hover:border-accent/50 hover:-translate-y-0.5"
-              >
-                <span
-                  className="flex h-9 w-9 shrink-0 items-center justify-center border border-line transition group-hover:border-accent/50"
-                  style={{ backgroundColor: tint(category.accent, 0.12), color: category.accent }}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {SECTIONS.map((section) => {
+              const tools = sectionTools(section.id);
+              return (
+                <Link
+                  key={section.id}
+                  to={`/${section.id}`}
+                  className="group flex flex-col border border-line bg-surface/80 p-5 transition hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lift"
                 >
-                  <Icon name={category.icon} className="h-4 w-4" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate font-display text-sm font-medium text-fg">
-                    {category.shortName}
+                  <div className="flex items-start justify-between">
+                    <span
+                      className="flex h-11 w-11 items-center justify-center border border-line transition group-hover:border-accent/50"
+                      style={{ backgroundColor: tint(section.accent, 0.12), color: section.accent }}
+                    >
+                      <Icon name={section.icon} className="h-5 w-5" />
+                    </span>
+                    <span className="font-mono text-[10px] uppercase tracking-label text-muted">
+                      {tools.length > 0
+                        ? `${tools.length} ${tools.length === 1 ? 'tool' : 'tools'}`
+                        : 'Coming soon'}
+                    </span>
+                  </div>
+                  <h3 className="mt-4 font-display text-base font-semibold tracking-tight text-fg">
+                    {section.name}
+                  </h3>
+                  <p className="mt-1.5 flex-1 text-sm leading-relaxed text-muted">
+                    {section.description}
+                  </p>
+                  {tools.length > 0 && (
+                    <div className="mt-3.5 flex flex-wrap gap-1.5">
+                      {tools.slice(0, 2).map((tool) => (
+                        <span
+                          key={tool.id}
+                          className="border border-line bg-raised/60 px-2 py-0.5 font-mono text-[9px] uppercase tracking-label text-muted"
+                        >
+                          {tool.name}
+                        </span>
+                      ))}
+                      {tools.length > 2 && (
+                        <span className="px-2 py-0.5 font-mono text-[9px] uppercase tracking-label text-muted">
+                          +{tools.length - 2}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <span className="mt-5 inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-label text-accent transition group-hover:gap-2.5">
+                    Explore <ArrowRight className="h-3.5 w-3.5" />
                   </span>
-                  <span className="block font-mono text-[9px] uppercase tracking-label text-muted">
-                    {categoryCount(category.id)}{' '}
-                    {categoryCount(category.id) === 1 ? 'tool' : 'tools'}
-                  </span>
-                </span>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         </section>
 

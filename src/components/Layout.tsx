@@ -4,7 +4,8 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import OfflineBanner from './OfflineBanner';
 import { LANGS, useT, type Lang } from '../lib/i18n';
 import { Github, Menu, Moon, Search, Sun, X } from 'lucide-react';
-import { CATEGORIES, TOOLS } from '../lib/catalog';
+import { TOOLS } from '../lib/catalog';
+import { SECTIONS } from '../lib/sections';
 import { useApp } from '../lib/store';
 import { cn } from '../lib/utils';
 import SearchDialog from './SearchDialog';
@@ -62,7 +63,7 @@ function Footer() {
               utilities — no accounts, no uploads, no waiting.
             </p>
             <p className="mt-4 font-mono text-[10px] uppercase tracking-label text-muted">
-              {TOOLS.length} tools · {CATEGORIES.length} categories · 100% local processing
+              {TOOLS.length} tools · {SECTIONS.length} categories · 100% local processing
             </p>
           </div>
 

@@ -13,6 +13,7 @@ import RecentPage from './pages/Recent';
 import ToolPage from './pages/ToolPage';
 import OfflinePage from './pages/Offline';
 import ResourcesPage from './pages/Resources';
+import SectionPage from './pages/Section';
 import WorkspacesPage from './pages/Workspaces';
 
 export default function App() {
@@ -20,6 +21,14 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
+        <Route path="pdf" element={<SectionPage sectionId="pdf" />} />
+        <Route path="image" element={<SectionPage sectionId="image" />} />
+        <Route path="video" element={<SectionPage sectionId="video" />} />
+        <Route path="audio" element={<SectionPage sectionId="audio" />} />
+        <Route path="text" element={<SectionPage sectionId="text" />} />
+        <Route path="converter" element={<SectionPage sectionId="converter" />} />
+        <Route path="web" element={<SectionPage sectionId="web" />} />
+        <Route path="utilities" element={<SectionPage sectionId="utilities" />} />
         <Route path="tools" element={<BrowsePage />} />
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="category/:categoryId" element={<BrowsePage />} />

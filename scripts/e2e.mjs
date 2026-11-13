@@ -161,7 +161,9 @@ test('Home page renders the hero and catalogue', async () => {
       categories: document.body.innerText.includes('Find your category'),
       recentlyAdded: document.body.innerText.includes('Recently added'),
       toolCards: document.querySelectorAll('a[href^="/toolatlas/tools/"]').length,
-      stats: document.querySelectorAll('a[href^="/toolatlas/category/"]').length,
+      sectionLinks: ['pdf', 'image', 'video', 'audio', 'text', 'converter', 'web', 'utilities'].filter(
+        (slug) => document.querySelector('a[href="/toolatlas/' + slug + '/"]')
+      ).length,
     };
   `);
   check('hero tagline visible', data.hero);
@@ -170,7 +172,7 @@ test('Home page renders the hero and catalogue', async () => {
   check('category navigation visible', data.categories);
   check('recently added visible', data.recentlyAdded);
   check('tool links rendered', data.toolCards > 10, `got ${data.toolCards}`);
-  check('category links rendered', data.stats >= 10, `got ${data.stats}`);
+  check('all eight sections linked from home', data.sectionLinks === 8, `got ${data.sectionLinks}`);
 });
 
 test('Global search filters the catalogue', async () => {
