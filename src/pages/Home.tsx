@@ -125,7 +125,7 @@ function HeroSearch() {
         </div>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+      <div className="mt-3 hidden flex-wrap items-center gap-2 sm:flex">
         {['JSON formatter', 'PDF merge', 'Unit converter', 'BMI', 'Timezone', 'Password'].map((term) => (
           <button
             key={term}
@@ -164,47 +164,65 @@ export default function HomePage() {
           aria-hidden="true"
         />
 
-        <div className="container-page relative z-10 pb-16 pt-14 sm:pt-20">
-          <div className="max-w-5xl">
-            <p className="label inline-flex items-center gap-2.5 text-soft">
-              <span className="h-1.5 w-1.5 animate-pulse-dot bg-accent" aria-hidden="true" />
-              {TOOLS.length} tools live · {SECTIONS.length} categories · no sign-up
-            </p>
-
-            <p className="label mt-9 text-accent-2">Your everyday tool drawer</p>
-
-            <h1 className="mt-4 font-display text-[clamp(2.5rem,6.3vw,5.6rem)] font-medium leading-[0.9] tracking-[-0.055em] text-fg">
-              Small jobs.
-              <br />
-              <em className="not-italic font-bold text-accent">Sorted.</em>
-            </h1>
-
-            <div className="mt-10 grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
-              <p className="max-w-md text-base leading-relaxed text-muted">
-                For the PDF that needs two pages out. The photo that is 12 KB too large. The calculation that does not need a spreadsheet. Open a tool and get on with it.
+        <div className="container-page relative z-10 pb-8 pt-7 sm:pb-12 sm:pt-10">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-7 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:gap-12">
+            <div>
+              <p className="label inline-flex items-center gap-2.5 text-soft">
+                <span className="h-1.5 w-1.5 animate-pulse-dot bg-accent" aria-hidden="true" />
+                {TOOLS.length} tools live · {SECTIONS.length} categories · no sign-up
               </p>
-              <HeroSearch />
+              <h1 className="mt-3 font-display text-[clamp(2.2rem,5.2vw,4.6rem)] font-medium leading-[0.92] tracking-[-0.055em] text-fg">
+                Small jobs.
+                <br />
+                <em className="not-italic font-bold text-accent">Sorted.</em>
+              </h1>
+              <p className="mt-4 hidden max-w-md text-base leading-relaxed text-muted lg:block">
+                For the PDF that needs two pages out. The photo that is 12 KB too large. The calculation that does not need a spreadsheet.
+              </p>
+              <div className="mt-5 lg:mt-7">
+                <HeroSearch />
+              </div>
             </div>
 
-            <div className="mt-12 flex flex-wrap gap-x-14 gap-y-6">
-              {[
-                { label: 'Tools available', value: TOOLS.length },
-                { label: 'Categories', value: SECTIONS.length },
-                { label: 'Data uploaded', value: '0' },
-              ].map((stat) => (
-                <div key={stat.label}>
-                  <p className="font-display text-3xl font-medium tracking-tight text-fg">{stat.value}</p>
-                  <p className="mt-1 font-mono text-[9px] uppercase tracking-label text-muted">
-                    {stat.label}
-                  </p>
-                </div>
-              ))}
+            <div id="categories-heading" aria-label="Find your category">
+              <p className="label mb-2.5 flex items-center justify-between text-accent">
+                <span>Find your category</span>
+                <Link to="/categories" className="text-muted transition hover:text-accent">All categories</Link>
+              </p>
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                {SECTIONS.map((section) => {
+                  const tools = sectionTools(section.id);
+                  return (
+                    <Link
+                      key={section.id}
+                      to={`/${section.id}`}
+                      className="group flex min-w-0 items-center gap-2.5 border border-line bg-surface/80 p-2.5 transition hover:border-accent/60 sm:gap-3 sm:p-3"
+                    >
+                      <span
+                        className="flex h-9 w-9 shrink-0 items-center justify-center border border-line sm:h-10 sm:w-10"
+                        style={{ backgroundColor: tint(section.accent, 0.12), color: section.accent }}
+                      >
+                        <Icon name={section.icon} className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-display text-[13px] font-semibold tracking-tight text-fg sm:text-sm">
+                          {section.name}
+                        </span>
+                        <span className="block truncate font-mono text-[9px] uppercase tracking-label text-muted">
+                          {tools.length > 0 ? `${tools.length} ${tools.length === 1 ? 'tool' : 'tools'}` : 'Coming soon'}
+                        </span>
+                      </span>
+                      <ArrowRight className="hidden h-3.5 w-3.5 shrink-0 text-muted/50 transition group-hover:text-accent sm:block" />
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <div className="container-page space-y-16 pt-14">
+      <div className="container-page space-y-16 pt-12">
         <section className="grid gap-4 sm:grid-cols-3" aria-label="Popular workflows">{[
           {title:'Photo too large?',copy:'Fit an upload form in seconds.',to:'/tools/image-target-size',tag:'20 KB / 50 KB / 100 KB'},
           {title:'PDF needs a quick fix?',copy:'Merge, extract, rotate and number.',to:'/category/pdf',tag:'NO UPLOADS'},
@@ -212,68 +230,6 @@ export default function HomePage() {
         ].map(w=><Link key={w.to} to={w.to} className="group border border-line bg-surface p-5 transition hover:border-accent"><p className="label text-accent">{w.tag}</p><h2 className="mt-4 text-lg">{w.title} ↗</h2><p className="mt-2 text-sm text-muted">{w.copy}</p></Link>)}</section>
         <div className="flex flex-wrap items-center justify-between gap-4 border-y border-line py-5"><p className="text-sm text-muted">Start with a job, not a dozen tabs. Read our practical workflows.</p><Link to="/guides" className="text-sm text-accent">Open field notes ↗</Link></div>
         <details className="border border-line bg-surface p-5"><summary className="cursor-pointer font-display text-lg text-accent">Browse all {TOOLS.length} tools</summary><div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{TOOLS.map(t=><Link key={t.id} to={'/tools/'+t.id} className="border-b border-line py-3 text-sm hover:text-accent">{t.name} ↗</Link>)}</div></details>
-        <section aria-labelledby="categories-heading">
-          <SectionHeader
-            index="01 / Browse"
-            title="Find your category"
-            note="Eight sections"
-            to="/categories"
-            cta="All categories"
-          />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {SECTIONS.map((section) => {
-              const tools = sectionTools(section.id);
-              return (
-                <Link
-                  key={section.id}
-                  to={`/${section.id}`}
-                  className="group flex flex-col border border-line bg-surface/80 p-5 transition hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lift"
-                >
-                  <div className="flex items-start justify-between">
-                    <span
-                      className="flex h-11 w-11 items-center justify-center border border-line transition group-hover:border-accent/50"
-                      style={{ backgroundColor: tint(section.accent, 0.12), color: section.accent }}
-                    >
-                      <Icon name={section.icon} className="h-5 w-5" />
-                    </span>
-                    <span className="font-mono text-[10px] uppercase tracking-label text-muted">
-                      {tools.length > 0
-                        ? `${tools.length} ${tools.length === 1 ? 'tool' : 'tools'}`
-                        : 'Coming soon'}
-                    </span>
-                  </div>
-                  <h3 className="mt-4 font-display text-base font-semibold tracking-tight text-fg">
-                    {section.name}
-                  </h3>
-                  <p className="mt-1.5 flex-1 text-sm leading-relaxed text-muted">
-                    {section.description}
-                  </p>
-                  {tools.length > 0 && (
-                    <div className="mt-3.5 flex flex-wrap gap-1.5">
-                      {tools.slice(0, 2).map((tool) => (
-                        <span
-                          key={tool.id}
-                          className="border border-line bg-raised/60 px-2 py-0.5 font-mono text-[9px] uppercase tracking-label text-muted"
-                        >
-                          {tool.name}
-                        </span>
-                      ))}
-                      {tools.length > 2 && (
-                        <span className="px-2 py-0.5 font-mono text-[9px] uppercase tracking-label text-muted">
-                          +{tools.length - 2}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  <span className="mt-5 inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-label text-accent transition group-hover:gap-2.5">
-                    Explore <ArrowRight className="h-3.5 w-3.5" />
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
         {recentEntries.length > 0 && (
           <section aria-labelledby="recent-heading">
             <SectionHeader
