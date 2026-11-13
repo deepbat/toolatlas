@@ -1,3 +1,4 @@
+import { DEMAND_TOOLS } from '../lib/demand-catalog';
 import { AV_TOOLS } from '../lib/av-catalog';
 import {EXTRA_TOOLS} from '../lib/extra';
 import {MEDIA_TOOLS} from '../lib/media';
@@ -90,6 +91,6 @@ const REGISTRY = {
  * `src/tools/registry.check.ts`.
  */
 const PdfStudio=lazy(()=>import('./studio/PdfStudio'));const ImageStudio=lazy(()=>import('./studio/ImageStudio'));const FinanceTools=lazy(()=>import('./studio/FinanceTools'));
-export const TOOL_COMPONENTS: Record<string, LazyExoticComponent<ComponentType>> = {...REGISTRY, ...Object.fromEntries(AV_TOOLS.map(t=>[t.id,lazy(()=>import('./av/App'))])), ...Object.fromEntries(STUDIO_TOOLS.map(t=>[t.id,STUDIO_PDF.has(t.id)?PdfStudio:STUDIO_FINANCE.has(t.id)?FinanceTools:ImageStudio])), ...Object.fromEntries(EXTRA_TOOLS.map(t=>[t.id,lazy(()=>import('./expanded/UtilityApp'))])), ...Object.fromEntries(MEDIA_TOOLS.map(t=>[t.id,lazy(t.id==='image-contact-sheet'?()=>import('./expanded/ImageContactSheet'):t.category==='image'?()=>import('./expanded/ImageTools'):t.category==='pdf'?()=>import('./expanded/PDFTools'):t.id==='markdown-preview'?()=>import('./expanded/Markdown'):t.id==='stopwatch'?()=>import('./expanded/Stopwatch'):()=>import('./expanded/Invoice'))]))};
+export const TOOL_COMPONENTS: Record<string, LazyExoticComponent<ComponentType>> = {...REGISTRY, ...Object.fromEntries(DEMAND_TOOLS.map(t=>[t.id,lazy(()=>import('./demand/App'))])), ...Object.fromEntries(AV_TOOLS.map(t=>[t.id,lazy(()=>import('./av/App'))])), ...Object.fromEntries(STUDIO_TOOLS.map(t=>[t.id,STUDIO_PDF.has(t.id)?PdfStudio:STUDIO_FINANCE.has(t.id)?FinanceTools:ImageStudio])), ...Object.fromEntries(EXTRA_TOOLS.map(t=>[t.id,lazy(()=>import('./expanded/UtilityApp'))])), ...Object.fromEntries(MEDIA_TOOLS.map(t=>[t.id,lazy(t.id==='image-contact-sheet'?()=>import('./expanded/ImageContactSheet'):t.category==='image'?()=>import('./expanded/ImageTools'):t.category==='pdf'?()=>import('./expanded/PDFTools'):t.id==='markdown-preview'?()=>import('./expanded/Markdown'):t.id==='stopwatch'?()=>import('./expanded/Stopwatch'):()=>import('./expanded/Invoice'))]))};
 
 export default TOOL_COMPONENTS;

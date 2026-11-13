@@ -19,7 +19,9 @@
     "test:quality": "node scripts/quality-checks.mjs",
     "test:a11y": "node scripts/a11y-tests.mjs",
     "test:pdf-editor": "node scripts/pdf-editor-tests.mjs",
-    "test:av": "node scripts/av-tests.mjs"
+    "test:av": "node scripts/av-tests.mjs",
+    "test:directory": "node scripts/directory-tests.mjs",
+    "test:demand": "node scripts/demand-tests.mjs"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.3.0",

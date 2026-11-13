@@ -226,3 +226,7 @@ Each tool shows the financial year it uses, links its sources and says it is an 
 No new dependencies, codec downloads or external processing. Video input: browser-playable media up to 100 MB, 2 minutes and 1920 px on the longest edge. Exports are re-encoded in real time, WebM by default with MP4 only where MediaRecorder supports it; cuts can differ by a few frames. Compression shows original and output sizes and does not guarantee savings. Audio: browser-decodable mono/stereo media up to 50 MB total and 5 minutes, output 16-bit PCM WAV. Recorder: browser-native WebM/OGG/M4A, microphone permission requested on click, five-minute auto-stop. Files and recording URLs are released when leaving the tool.
 
 Tests: `npm run test:av` covers actual exports, non-silent preserved video sound, removed audio tracks, repeat video exports, cut duration, join duration/order, peak normalization, corrupt inputs, recording and narrow layouts. `scripts/fixtures/media-test.webm` is a synthetic test pattern with a 440 Hz sine tone generated locally, not user media.
+
+## Demand-driven utility additions
+
+135 tools total. Create ZIP (up to 100 files / 50 MB, uncompressed store mode), Image to Base64 (up to 5 MB, PNG/JPEG/WebP/GIF), and Screen Colour Test (manual, no flashing or repair claims). Selection evidence and deliberate omissions: [demand research](DEMAND-RESEARCH-2026-11.md). `npm run test:demand` verifies ZIP structure/duplicate names/content, file limits, real data URL output/preview, SVG rejection and narrow layouts.

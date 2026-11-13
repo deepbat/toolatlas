@@ -1,3 +1,4 @@
+import { DEMAND_TOOLS } from './demand-catalog';
 import { AV_TOOLS } from './av-catalog';
 import type { Category, CategoryId, ToolMeta } from './types';
 import { EXTRA_TOOLS } from './extra';
@@ -534,7 +535,7 @@ export const TOOLS: ToolMeta[] = [
   },
 ];
 
-TOOLS.push(...AV_TOOLS, ...EXTRA_TOOLS, ...MEDIA_TOOLS, ...STUDIO_TOOLS);
+TOOLS.push(...DEMAND_TOOLS, ...AV_TOOLS, ...EXTRA_TOOLS, ...MEDIA_TOOLS, ...STUDIO_TOOLS);
 
 export const TOOL_MAP: Record<string, ToolMeta> = Object.fromEntries(
   TOOLS.map((tool) => [tool.id, tool])

@@ -14,9 +14,9 @@ export default function AVApp() {
   const media=useRef<HTMLVideoElement>(null),stop=useRef<(()=>void)|null>(null),alive=useRef(true), urls=useRef<string[]>([]),generation=useRef(0);
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;generation.current++;stop.current?.();urls.current.forEach(URL.revokeObjectURL);};},[]);
   const clearResult=()=>{setResult(null);setError('');setMessage('');};
-  const finish=(blob:Blob,name:string)=>{if(!alive.current)return;if(!blob.size)throw new Error('No output was produced.'); const url=URL.createObjectURL(blob);urls.current.push(url);setResult({url,name,size:blob.size,type:blob.type});setMessage('Ready. Preview your result before downloading.');};
+  const finish=(blob:Blob,name:string)=>{if(!alive.current)return;if(result){URL.revokeObjectURL(result.url);urls.current=urls.current.filter(u=>u!==result.url);}if(!blob.size)throw new Error('No output was produced.'); const url=URL.createObjectURL(blob);urls.current.push(url);setResult({url,name,size:blob.size,type:blob.type});setMessage('Ready. Preview your result before downloading.');};
   async function choose(selected:File[]){
-    const job=++generation.current;clearResult();setDuration(0);setFiles([]);setSource('');setStart('0');setEnd('0');
+    const job=++generation.current;urls.current.forEach(URL.revokeObjectURL);urls.current=[];clearResult();setDuration(0);setFiles([]);setSource('');setStart('0');setEnd('0');
     if(!selected.length)return;
     const max=videoMode?VIDEO_MAX_BYTES:50*1024*1024;
     if(selected.length>8 || selected.some(f=>f.size>max) || selected.reduce((n,f)=>n+f.size,0)>max){setError(`Use up to ${id==='audio-merge'?8:1} files, ${videoMode?100:50} MB total maximum.`);return;}
@@ -72,7 +72,7 @@ export default function AVApp() {
       finish(new Blob(chunks,{type:mime}),id+(mime.includes('mp4')?'.mp4':'.webm'));
     }finally{clearInterval(timer);cancelAnimationFrame(raf);stop.current=null;v.pause();sourceNode?.disconnect();stream.getTracks().forEach(t=>t.stop());await ctx.close();
       // Recreate the preview for the next export, releasing its Web Audio association.
-      setSource(old=>{const u=URL.createObjectURL(files[0]);urls.current.push(u);return old===u?old:u;});
+      setSource(old=>{URL.revokeObjectURL(old);urls.current=urls.current.filter(u=>u!==old);const u=URL.createObjectURL(files[0]);urls.current.push(u);return u;});
     }
   }
   async function run(){clearResult();setBusy(true);try{if(videoMode)await videoExport();else await audioExport();}catch(e){if(alive.current)setError((e as Error).message);}finally{if(alive.current)setBusy(false);}}

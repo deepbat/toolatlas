@@ -2,7 +2,7 @@
 
 ## Release 2
 
-**132 tools. 8 sections. Small jobs. Sorted.**
+**135 tools. 8 sections. Small jobs. Sorted.**
 
 The original foundation is preserved and expanded with 51 new browser-only tools, static deep-link pages, full-release offline caching, six practical guides, local fonts, policy/support pages and inert ad spaces. No ad network is active and no revenue is promised. See [release notes and monetization checklist](docs/RELEASE-2.md), [research](docs/RESEARCH.md), and `npm run test:expanded`.
 
