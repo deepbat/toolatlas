@@ -47,6 +47,12 @@ jobs:
       - name: Run expanded browser regression suite
         run: npm run test:expanded
 
+      - name: Run audio and video browser tests
+        run: npm run test:av
+
+      - name: Run quality gates
+        run: npm run test:quality
+
       - name: Run studio browser tests
         run: npm run test:studio
 
