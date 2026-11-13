@@ -47,6 +47,12 @@ jobs:
       - name: Run expanded browser regression suite
         run: npm run test:expanded
 
+      - name: Run demand-driven utility checks
+        run: npm run test:demand
+
+      - name: Run category first-screen checks
+        run: npm run test:directory
+
       - name: Run audio and video browser tests
         run: npm run test:av
 
