@@ -5,13 +5,14 @@ import ToolCard from '../components/ToolCard';
 import { Icon } from '../components/Icon';
 import {
   CATEGORY_MAP,
+  CATEGORIES,
   FEATURED_TOOLS,
   POPULAR_TOOLS,
   RECENTLY_ADDED,
   TOOLS,
   TOOL_MAP,
 } from '../lib/catalog';
-import { SECTIONS, sectionTools } from '../lib/sections';
+import { SECTIONS } from '../lib/sections';
 import { searchTools } from '../lib/search';
 import { useApp } from '../lib/store';
 import { cn, relativeTime, tint } from '../lib/utils';
@@ -125,7 +126,7 @@ function HeroSearch() {
         </div>
       )}
 
-      <div className="mt-3 hidden flex-wrap items-center gap-2 sm:flex">
+      <div className="mt-3 hidden flex-wrap items-center gap-2 xl:flex">
         {['JSON formatter', 'PDF merge', 'Unit converter', 'BMI', 'Timezone', 'Password'].map((term) => (
           <button
             key={term}
@@ -151,74 +152,43 @@ export default function HomePage() {
 
   return (
     <>
-      <section className="relative overflow-hidden border-b border-line">
-        <div className="hero-grid absolute inset-0 opacity-70" aria-hidden="true" />
-        <div
-          className="halo -right-40 -top-56 h-[36rem] w-[36rem]"
-          style={{ background: 'rgb(var(--accent) / 0.16)' }}
-          aria-hidden="true"
-        />
-        <div
-          className="halo -left-40 top-24 h-[28rem] w-[28rem]"
-          style={{ background: 'rgb(var(--accent-2) / 0.12)' }}
-          aria-hidden="true"
-        />
-
-        <div className="container-page relative z-10 pb-8 pt-7 sm:pb-12 sm:pt-10">
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-7 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:gap-12">
+      <section className="border-b border-line bg-surface/40" aria-label="Tool directory">
+        <div className="container-page pb-7 pt-5 sm:pb-10 sm:pt-8">
+          <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="label inline-flex items-center gap-2.5 text-soft">
-                <span className="h-1.5 w-1.5 animate-pulse-dot bg-accent" aria-hidden="true" />
-                {TOOLS.length} tools live · {SECTIONS.length} categories · no sign-up
-              </p>
-              <h1 className="mt-3 font-display text-[clamp(2.2rem,5.2vw,4.6rem)] font-medium leading-[0.92] tracking-[-0.055em] text-fg">
-                Small jobs.
-                <br />
-                <em className="not-italic font-bold text-accent">Sorted.</em>
-              </h1>
-              <p className="mt-4 hidden max-w-md text-base leading-relaxed text-muted lg:block">
-                For the PDF that needs two pages out. The photo that is 12 KB too large. The calculation that does not need a spreadsheet.
-              </p>
-              <div className="mt-5 lg:mt-7">
-                <HeroSearch />
-              </div>
+              <p className="label text-accent">Small jobs. Sorted.</p>
+              <h1 className="mt-2 font-display text-3xl font-semibold leading-none tracking-tight text-fg sm:text-4xl">Pick your tools.</h1>
             </div>
-
-            <div id="categories-heading" aria-label="Find your category">
-              <p className="label mb-2.5 flex items-center justify-between text-accent">
-                <span>Find your category</span>
-                <Link to="/categories" className="text-muted transition hover:text-accent">All categories</Link>
-              </p>
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                {SECTIONS.map((section) => {
-                  const tools = sectionTools(section.id);
-                  return (
-                    <Link
-                      key={section.id}
-                      to={`/${section.id}`}
-                      className="group flex min-w-0 items-center gap-2.5 border border-line bg-surface/80 p-2.5 transition hover:border-accent/60 sm:gap-3 sm:p-3"
-                    >
-                      <span
-                        className="flex h-9 w-9 shrink-0 items-center justify-center border border-line sm:h-10 sm:w-10"
-                        style={{ backgroundColor: tint(section.accent, 0.12), color: section.accent }}
-                      >
-                        <Icon name={section.icon} className="h-4 w-4 sm:h-5 sm:w-5" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-display text-[13px] font-semibold tracking-tight text-fg sm:text-sm">
-                          {section.name}
-                        </span>
-                        <span className="block truncate font-mono text-[9px] uppercase tracking-label text-muted">
-                          {tools.length > 0 ? `${tools.length} ${tools.length === 1 ? 'tool' : 'tools'}` : 'Coming soon'}
-                        </span>
-                      </span>
-                      <ArrowRight className="hidden h-3.5 w-3.5 shrink-0 text-muted/50 transition group-hover:text-accent sm:block" />
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
+            <div className="w-full lg:max-w-lg"><HeroSearch /></div>
           </div>
+          <div id="categories-heading" className="mb-2 flex items-center justify-between gap-2 font-mono text-[9px] uppercase tracking-label text-muted">
+            <h2>Find your category</h2>
+            <span>{TOOLS.length} tools · no sign-up</span>
+          </div>
+          <nav aria-label="Choose a tool category" className="directory-grid grid grid-cols-2 gap-2 md:grid-cols-5 sm:gap-3">
+            {[
+              {id:'pdf',name:'PDF',hint:'Merge · Split · Edit',to:'/pdf',icon:'FileText'},
+              {id:'image',name:'Images',hint:'Resize · Compress',to:'/image',icon:'Image'},
+              {id:'calculators',name:'Calculators',hint:'Math · Health · Percent',to:'/category/calculators',icon:'Calculator'},
+              {id:'video',name:'Video',hint:'Trim · Mute · Resize',to:'/video',icon:'Video'},
+              {id:'audio',name:'Audio',hint:'Cut · Join · Record',to:'/audio',icon:'Music'},
+              {id:'text',name:'Text',hint:'Count · Clean · Compare',to:'/text',icon:'PenLine'},
+              {id:'converter',name:'Converters',hint:'Units · CSV · JSON',to:'/converter',icon:'Ruler'},
+              {id:'finance',name:'Finance',hint:'GST · Tax · EMI',to:'/category/finance',icon:'Wallet'},
+              {id:'web',name:'Web & code',hint:'JSON · Colours · URLs',to:'/web',icon:'Globe'},
+              {id:'utilities',name:'More tools',hint:'Dates · Files · Notes',to:'/utilities',icon:'Shapes'},
+            ].map((entry,index)=> {
+              const section=SECTIONS.find(x=>x.id===entry.id);
+              const category=CATEGORIES.find(x=>x.id===entry.id);
+              const accent=section?.accent??category?.accent??'rgb(var(--accent))';
+              return <Link key={entry.id} to={entry.to} data-directory-category={entry.id} className="group relative flex min-h-[69px] min-w-0 items-center gap-2.5 border border-line bg-surface px-3 py-3 transition hover:border-accent hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent sm:min-h-[112px] sm:items-start sm:gap-3 sm:px-4 sm:py-4">
+                <span className="mt-0.5 shrink-0" style={{color:accent}}><Icon name={entry.icon} className="h-5 w-5 sm:h-6 sm:w-6" /></span>
+                <span className="min-w-0"><span className="block font-display text-[16px] font-semibold leading-tight tracking-tight text-fg sm:text-lg">{entry.name}</span><span className="mt-1.5 block text-[9px] leading-tight text-muted sm:text-[11px]">{entry.hint}</span></span>
+                <span aria-hidden="true" className="absolute bottom-2 right-3 hidden font-mono text-[9px] text-muted/50 sm:block">{String(index+1).padStart(2,'0')} ↗</span>
+              </Link>;
+            })}
+          </nav>
+          <div className="mt-3 flex items-center justify-between text-[10px] text-muted"><span>Private by design. Files stay on your device.</span><Link to="/tools" className="shrink-0 font-semibold text-accent">All tools ↗</Link></div>
         </div>
       </section>
 

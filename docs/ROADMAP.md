@@ -92,7 +92,7 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 10. Build and relevant regression tests pass.
 
 ## Current scope
-Current release contains 120 tools in 13 categories (Studio batch 1 added 14 PDF and image tools, batch 3 added 7 office and finance tools (salary structure, PPF, CAGR, rent receipt, GST invoice, expense tracker, CSV and Excel utilities), batch 2 added 10 India finance and date tools). This roadmap is a plan, not a claim that unchecked features are already available.
+Current release contains 135 tools in 8 sections and 15 internal collections (Studio batch 1 added 14 PDF and image tools, batch 3 added 7 office and finance tools (salary structure, PPF, CAGR, rent receipt, GST invoice, expense tracker, CSV and Excel utilities), batch 2 added 10 India finance and date tools). The later media batch added 12 tools; demand-driven additions added 3 more. This roadmap is a plan, not a claim that unchecked features are already available.
 
 ## PDF editor responsiveness
 
@@ -119,3 +119,8 @@ Current release contains 120 tools in 13 categories (Studio batch 1 added 14 PDF
 - 5 Video and 7 Audio tools, replacing the empty coming-soon sections.
 - Small lazy-loaded native media implementation, zero runtime dependencies added.
 - Deliberately deferred universal MP3/M4A encoding, GIF animation, video merging and AI speech cleanup: native browser codecs do not provide a consistent cross-browser solution, and shipping a large FFmpeg engine would break the current bundle budget. No fake format-renaming tools.
+
+### Directory-first homepage
+- Replaced the two-column promotional hero with a category directory as the first screen.
+- Ten clear entry points, including Calculators and Finance outside the catch-all Utilities label.
+- Full first-screen bounds and real category-link navigation tested at 360/393/412/820/1280/1440 widths. The original eight section URLs remain unchanged.
