@@ -1,6 +1,6 @@
 # The ToolAtlas catalogue
 
-120 applications, 13 categories. Every tool runs entirely in your browser and works offline once loaded.
+135 applications, 8 top-level sections and 15 internal collections. Every tool runs entirely in your browser and works offline once loaded.
 
 ---
 
@@ -211,7 +211,7 @@ Each tool shows the financial year it uses, links its sources and says it is an 
 
 ## Video and Audio (13 November 2026)
 
-132 tools total across 8 sections and 15 internal collections. Added 5 Video tools and 7 Audio tools:
+The media batch brought the catalog to 132 tools across 8 sections and 15 internal collections. It added 5 Video tools and 7 Audio tools:
 
 | Video | Audio |
 | --- | --- |
