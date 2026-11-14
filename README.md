@@ -1,5 +1,9 @@
 # ToolAtlas
 
+## Exact KB workflow
+
+[Exact KB](https://deepbat.github.io/toolatlas/tools/image-target-size/) upgrades the existing photo-to-KB tool into a guided exam-form workflow: a photo under a chosen KB ceiling, local shadow cleanup for signatures, and multiple PDFs or marksheet photos combined into one size-checked PDF. It complements PDF Studio and the transparent signature pad without adding another catalogue entry. No new services, accounts or dependencies. See [limits and tests](docs/EXACT-KB.md).
+
 ## Release 2
 
 **155 tools. 8 sections. Small jobs. Sorted.**
