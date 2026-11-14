@@ -11,6 +11,7 @@ export const INPUTS: Record<FileKind, string[]> = {
     "pdf-watermark",
     "pdf-page-organiser",
     "pdf-form-filler",
+    "pvc-card-maker",
   ],
   image: [
     "image-compressor",
