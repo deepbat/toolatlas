@@ -184,3 +184,21 @@ export function haversineM(lat1: number, lon1: number, lat2: number, lon2: numbe
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(a));
 }
+
+/* ---- Speech to text ----------------------------------------------------- */
+
+export type SpeechSupport = 'no-api' | 'remote-only' | 'on-device';
+
+/**
+ * Classify what the browser's speech recognition can do. Only 'on-device'
+ * (the `processLocally` switch, Chrome/Edge 139+ on desktop and Firefox
+ * 160+) keeps the site's promise that audio never leaves the device;
+ * 'remote-only' browsers may send voice audio to the browser maker's
+ * speech service, so the tool fails closed there.
+ */
+export function speechSupport(
+  Ctor: (new (...args: never[]) => unknown) | null | undefined,
+): SpeechSupport {
+  if (!Ctor) return 'no-api';
+  return 'processLocally' in Ctor.prototype ? 'on-device' : 'remote-only';
+}

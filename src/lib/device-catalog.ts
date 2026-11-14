@@ -71,7 +71,7 @@ export const DEVICE_TOOLS: ToolMeta[] = [
     category: 'device',
     icon: 'Mic',
     keywords: ['dictation', 'transcribe', 'voice typing', 'stt', 'speech recognition', 'talk to text'],
-    version: '1.0.0',
+    version: '1.1.0',
     status: 'beta',
     added: '2026-11-14',
   },

@@ -9,6 +9,7 @@ import {
   meterLevel,
   morseToText,
   noteFromFreq,
+  speechSupport,
   textToMorse,
 } from '../../lib/device';
 
@@ -542,6 +543,8 @@ interface SpeechRecognitionLite {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
+  /** Web Speech API switch that forces recognition to run on this device. */
+  processLocally: boolean;
   start: () => void;
   stop: () => void;
   onresult: ((event: SpeechRecognitionEventLite) => void) | null;
@@ -549,11 +552,16 @@ interface SpeechRecognitionLite {
   onend: (() => void) | null;
 }
 
+const ON_DEVICE_NOTE = 'On-device dictation works in Chrome or Edge (version 139 or later) on desktop and in Firefox 160 or later.';
+
 export function SpeechToText() {
   const Ctor = typeof window !== 'undefined'
     ? ((window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLite; webkitSpeechRecognition?: new () => SpeechRecognitionLite }).SpeechRecognition
       ?? (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionLite }).webkitSpeechRecognition)
     : undefined;
+  // The site promises that inputs never leave the device, so dictation may
+  // only run where the browser can enforce on-device recognition.
+  const support = speechSupport(Ctor);
   const [finalText, setFinalText] = useState('');
   const [interim, setInterim] = useState('');
   const [listening, setListening] = useState(false);
@@ -568,12 +576,13 @@ export function SpeechToText() {
       setListening(false);
       return;
     }
-    if (!Ctor) return;
+    if (!Ctor || support !== 'on-device') return;
     setError('');
     const rec = new Ctor();
     rec.continuous = true;
     rec.interimResults = true;
     rec.lang = navigator.language || 'en-IN';
+    rec.processLocally = true;
     rec.onresult = (event) => {
       let interimPart = '';
       let finalPart = '';
@@ -586,9 +595,12 @@ export function SpeechToText() {
       setInterim(interimPart);
     };
     rec.onerror = (e) => {
-      setError(e.error === 'not-allowed'
-        ? 'Microphone permission was denied. Allow mic access and try again.'
-        : `Recognition error: ${e.error}.`);
+      setError(
+        e.error === 'not-allowed' || e.error === 'service-not-allowed'
+          ? 'Microphone permission was denied. Allow mic access and try again. Your audio was not sent anywhere.'
+          : e.error === 'language-not-supported'
+            ? 'This language is not available for on-device recognition in your browser. Your audio was not sent anywhere.'
+            : `Recognition error: ${e.error}. Recognition stays on this device, so your audio was not sent anywhere.`);
       setListening(false);
     };
     rec.onend = () => setListening(false);
@@ -597,15 +609,24 @@ export function SpeechToText() {
       rec.start();
       setListening(true);
     } catch {
-      setError('Could not start speech recognition.');
+      setError('Could not start on-device speech recognition. Your audio was not sent anywhere.');
     }
   };
 
-  if (!Ctor) {
+  if (support === 'no-api') {
     return (
       <Note tone="warning">
-        Live dictation needs the Web Speech API, which this browser does not expose. It works in Chrome and Edge on
-        desktop and Android. Audio never leaves your device beyond the browser's own speech service.
+        Live dictation needs the Web Speech API, which this browser does not expose, so nothing is recorded or
+        sent anywhere. {ON_DEVICE_NOTE}
+      </Note>
+    );
+  }
+
+  if (support === 'remote-only') {
+    return (
+      <Note tone="warning">
+        This browser can only recognize speech by sending your voice to the browser maker's online service.
+        ToolAtlas keeps dictation off here so your audio stays on this device. {ON_DEVICE_NOTE}
       </Note>
     );
   }
@@ -614,7 +635,7 @@ export function SpeechToText() {
 
   return (
     <div className="space-y-4">
-      <Panel title="Dictation" description={`Listening in ${navigator.language || 'en-IN'}. Chrome and Edge send audio to their speech service; other text work stays local.`}>
+      <Panel title="Dictation" description={`Listening in ${navigator.language || 'en-IN'}. Recognition runs on this device; your voice is not sent anywhere.`}>
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={toggle}>{listening ? 'Stop dictation' : 'Start dictation'}</Button>
           {listening && <span className="flex items-center gap-2 text-sm text-danger"><span className="h-2 w-2 animate-pulse rounded-full bg-danger" />Listening...</span>}
