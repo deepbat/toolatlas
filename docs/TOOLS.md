@@ -1,6 +1,6 @@
 # The ToolAtlas catalogue
 
-154 applications, 8 top-level sections and 16 internal collections. Every tool runs entirely in your browser and works offline once the release cache has installed successfully (subject to browser storage and codec support).
+155 applications, 8 top-level sections and 16 internal collections. Every tool runs entirely in your browser and works offline once the release cache has installed successfully (subject to browser storage and codec support).
 
 ---
 
@@ -241,6 +241,7 @@ The total is now **141 tools**. Six new routes plus upgraded Invoice & Quotation
 | Bulk File Renamer | `/tools/bulk-renamer/` |
 | List Cleaner & Deduplicator | `/tools/list-cleaner/` |
 | Passport & ID Photo Sheet Maker | `/tools/id-photo-maker/` |
+| PVC Card Maker (Aadhaar, PAN, Ayushman) | `/tools/pvc-card-maker/` |
 | Photo EXIF & Metadata Stripper | `/tools/remove-exif/` |
 | Group Expense & Split Bill Settler | `/tools/split-bill/` |
 | Invoice & Quotation Generator (upgraded existing tool) | `/tools/invoice-generator/` |
@@ -250,7 +251,7 @@ See [the upgrade notes](UPGRADES-2026-11.md) for platform changes, formats, limi
 
 ## Device & Sensor tools (14 November 2026)
 
-The total is now **154 tools**. Thirteen new tools in the Device & Sensor collection (`/category/device/`, inside the Utilities section), benchmarked against the alltools.link app. Microphone, motion-sensor, GPS and screen-capture tools whose hardware or API support varies are marked **beta** and degrade to an honest support note instead of a dead button.
+The total is now **155 tools**. Thirteen new tools in the Device & Sensor collection (`/category/device/`, inside the Utilities section), benchmarked against the alltools.link app. Microphone, motion-sensor, GPS and screen-capture tools whose hardware or API support varies are marked **beta** and degrade to an honest support note instead of a dead button.
 
 | Tool | Route | Notes |
 | --- | --- | --- |

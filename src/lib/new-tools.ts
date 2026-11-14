@@ -228,6 +228,15 @@ export const NEW_TOOL_DATA = [
     keywords: ["email", "mailing list", "duplicate", "dedupe", "clean", "csv"],
   },
   {
+    id: "pvc-card-maker",
+    name: "PVC Card Maker (Aadhaar, PAN, Ayushman)",
+    description:
+      "Turn an ID card PDF or photo into print-ready CR80 PVC cards: auto-detect and crop, 300 DPI, A4 sheets of 2, 4 or 10 cards.",
+    category: "pdf",
+    icon: "FileText",
+    keywords: ["pvc card", "aadhaar", "pan card", "ayushman", "voter id", "driving licence", "cr80", "id card print", "card cropper", "300 dpi"],
+  },
+  {
     id: "id-photo-maker",
     name: "Passport & ID Photo Sheet Maker",
     description:

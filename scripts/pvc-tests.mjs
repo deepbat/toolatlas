@@ -1,0 +1,36 @@
+import { chromium } from 'playwright';
+import { PDFDocument, rgb } from 'pdf-lib';
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+const port = 4199, base = `http://localhost:${port}/toolatlas`;
+const srv = spawn('npx', ['vite', 'preview', '--port', String(port), '--strictPort'], { stdio: 'ignore' });
+await new Promise((r) => setTimeout(r, 3000));
+const doc = await PDFDocument.create(), pg = doc.addPage([595, 842]);
+pg.drawRectangle({ x: 50, y: 560, width: 240, height: 150, color: rgb(0.9, 0.6, 0.2) });
+pg.drawText('FRONT', { x: 80, y: 630, size: 30 });
+pg.drawRectangle({ x: 310, y: 560, width: 240, height: 150, color: rgb(0.2, 0.5, 0.8) });
+pg.drawText('BACK', { x: 340, y: 630, size: 30 });
+fs.writeFileSync('/tmp/cards.pdf', await doc.save());
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1000, height: 1300 }, acceptDownloads: true });
+const errs = []; page.on('pageerror', (e) => errs.push(e.message));
+try {
+  await page.goto(base + '/tools/pvc-card-maker/');
+  await page.getByLabel('Upload card PDF or image').setInputFiles('/tmp/cards.pdf');
+  await page.getByTestId('pvc-cards').waitFor();
+  assert.equal(await page.getByTestId('pvc-cards').locator('canvas').count(), 2, 'two cards detected');
+  const d = page.waitForEvent('download');
+  await page.getByRole('button', { name: /Download A4 PDF/ }).click();
+  const dl = await d; await dl.saveAs('/tmp/pvc-out.pdf');
+  const out = await PDFDocument.load(fs.readFileSync('/tmp/pvc-out.pdf'));
+  assert.equal(out.getPageCount(), 1); const s = out.getPage(0).getSize();
+  assert.ok(Math.abs(s.width - 595.3) < 1 && Math.abs(s.height - 841.9) < 1, 'A4');
+  await page.screenshot({ path: '/tmp/pvc-tool.png', fullPage: true });
+  await page.goto(base + '/');
+  await page.screenshot({ path: '/tmp/pvc-home.png' });
+  const first = await page.locator('[data-app-browser] section a[href*="/tools/"]').first().getAttribute('href');
+  assert.ok(first.includes('pvc-card-maker'), 'pinned first: ' + first);
+  assert.deepEqual(errs, []);
+  console.log('PASS pvc tool end-to-end');
+} finally { await browser.close(); srv.kill(); }

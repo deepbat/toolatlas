@@ -23,10 +23,14 @@ interface BrowseEntry {
   tools: () => ToolMeta[];
 }
 
+/** Featured tools pinned to the top of their rail entry and flagged NEW. */
+const PINNED = ['pvc-card-maker'];
+const pin = (list: ToolMeta[]) => [...list.filter((t) => PINNED.includes(t.id)), ...list.filter((t) => !PINNED.includes(t.id))];
+
 const byCategory = (id: ToolMeta['category']) => () => TOOLS.filter((tool) => tool.category === id);
 
 const ENTRIES: BrowseEntry[] = [
-  { id: 'pdf', label: 'PDF', heading: 'PDF Tools', glyph: '📕', accent: 'var(--cat-pdf)', to: '/pdf', tools: () => sectionTools('pdf') },
+  { id: 'pdf', label: 'PDF', heading: 'PDF Tools', glyph: '📕', accent: 'var(--cat-pdf)', to: '/pdf', tools: () => pin(sectionTools('pdf')) },
   { id: 'image', label: 'Images', heading: 'Image Tools', glyph: '🏞️', accent: 'var(--cat-image)', to: '/image', tools: () => sectionTools('image') },
   { id: 'calculators', label: 'Calculators', heading: 'Calculators', glyph: '🧮', accent: 'var(--cat-calculators)', to: '/category/calculators', tools: byCategory('calculators') },
   { id: 'video', label: 'Video', heading: 'Video Tools', glyph: '📹', accent: 'var(--cat-generators)', to: '/video', tools: () => sectionTools('video') },
@@ -127,6 +131,9 @@ export default function AppBrowser() {
               <span className="line-clamp-2 text-[10px] font-medium leading-tight text-muted transition group-hover:text-fg sm:text-[11px]">
                 {tool.name}
               </span>
+              {PINNED.includes(tool.id) && (
+                <span className="-mt-0.5 rounded-full bg-accent px-1.5 text-[8px] font-bold uppercase tracking-label text-on-accent">New</span>
+              )}
             </Link>
           ))}
         </div>
