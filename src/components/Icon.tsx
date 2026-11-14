@@ -77,6 +77,15 @@ import {
   X,
   Zap,
   type LucideIcon,
+  Activity,
+  Gauge,
+  Mic,
+  Move,
+  Navigation,
+  Radio,
+  Smartphone,
+  Volume2,
+  Waves,
 } from 'lucide-react';
 
 /**
@@ -161,6 +170,15 @@ const ICONS: Record<string, LucideIcon> = {
   Wallet,
   X,
   Zap,
+  Activity,
+  Gauge,
+  Mic,
+  Move,
+  Navigation,
+  Radio,
+  Smartphone,
+  Volume2,
+  Waves,
 };
 
 export function Icon({

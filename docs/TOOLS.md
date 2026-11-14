@@ -1,6 +1,6 @@
 # The ToolAtlas catalogue
 
-141 applications, 8 top-level sections and 15 internal collections. Every tool runs entirely in your browser and works offline once the release cache has installed successfully (subject to browser storage and codec support).
+154 applications, 8 top-level sections and 16 internal collections. Every tool runs entirely in your browser and works offline once the release cache has installed successfully (subject to browser storage and codec support).
 
 ---
 
@@ -247,3 +247,25 @@ The total is now **141 tools**. Six new routes plus upgraded Invoice & Quotation
 | Fuel Cost Calculator (upgraded existing tool) | `/tools/fuel-cost/` |
 
 See [the upgrade notes](UPGRADES-2026-11.md) for platform changes, formats, limits, storage/URL privacy, offline conditions and intentional departures from the brief.
+
+## Device & Sensor tools (14 November 2026)
+
+The total is now **154 tools**. Thirteen new tools in the Device & Sensor collection (`/category/device/`, inside the Utilities section), benchmarked against the alltools.link app. Microphone, motion-sensor, GPS and screen-capture tools whose hardware or API support varies are marked **beta** and degrade to an honest support note instead of a dead button.
+
+| Tool | Route | Notes |
+| --- | --- | --- |
+| Sound Level Meter | `/tools/sound-meter/` | Relative 0-100 loudness, not calibrated SPL (beta) |
+| Metronome | `/tools/metronome/` | 30-300 BPM, tap tempo, accented downbeat |
+| Instrument Tuner | `/tools/tuner/` | Autocorrelation pitch, note + cents (beta) |
+| Tone Generator & Sweep | `/tools/tone-generator/` | 20 Hz-20 kHz, four waveforms, white noise, 12 s sweep |
+| Text to Speech | `/tools/text-to-speech/` | Device voices, rate and pitch, 4000 character cap |
+| Speech to Text | `/tools/speech-to-text/` | Web Speech API, Chrome/Edge only (beta) |
+| Compass | `/tools/compass/` | Magnetic heading, phone only (beta) |
+| Spirit Level | `/tools/spirit-level/` | Bubble level with zero calibration (beta) |
+| GPS Speedometer | `/tools/gps-speedometer/` | km/h, mph, knots; top speed and trip distance (beta) |
+| Screen Ruler | `/tools/screen-ruler/` | Calibrated against an 85.6 mm bank card, saved per device |
+| Morse Code Translator | `/tools/morse-code/` | Two-way, audio playback at 5-40 WPM |
+| QR & Barcode Scanner | `/tools/qr-barcode-scanner/` | Barcode Detection API, camera or photo (beta) |
+| Screen Recorder | `/tools/screen-recorder/` | getDisplayMedia + optional mic, WebM download (beta) |
+
+Deliberately not copied from the reference app: native app wrappers, a paid ads-free tier, office document editors (duplicate the existing PDF studio), PIN-code lookup (needs an external API, against the local-only rule) and network speed test (needs a measurement server). `npm run test:device` verifies all thirteen routes, static SEO shells, Morse conversion, ruler calibration, tempo clamping, tone start/stop and the honest fallback states for microphone, sensor, GPS and camera denials.
