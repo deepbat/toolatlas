@@ -4,6 +4,11 @@
 
 ---
 
+## Form-ready files
+
+### Exact KB - Photo, Signature & PDF - `/tools/image-target-size/`
+Fit a JPG to a chosen 5-20,000 KB ceiling, whiten shadowed signature paper, or merge PDFs and marksheet images into one PDF under the limit. Decimal KB (1,000 bytes), strict final byte check, page order controls and image previews. PDF image conversion is opt-in and loses text/form/signature features. A limit may be impossible without damaging readability; no over-limit file is marked successful. See [EXACT-KB.md](EXACT-KB.md).
+
 ## Calculators
 
 ### Standard Calculator — `/tools/calculator`

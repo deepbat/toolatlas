@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test:e2e": "node scripts/e2e.mjs",
-    "test:expanded": "node scripts/expanded-tests.mjs",
+    "test:expanded": "node scripts/expanded-tests.mjs && node scripts/exact-kb-tests.mjs",
     "prebuild": "node -e \"require('fs').copyFileSync('node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs','public/pdfjs.worker.min.js')\"",
     "test:search": "tsx scripts/search-tests.ts",
     "test:unit": "tsx scripts/studio-unit-tests.ts && tsx scripts/upgrades-unit.ts && tsx scripts/device-unit.ts && tsx scripts/glyph-unit.ts && tsx scripts/pvc-unit.ts",
