@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   DEFAULT_PX_PER_MM,
   cardinalFromHeading,
@@ -12,6 +13,7 @@ import {
   noteFromFreq,
   pxPerMm,
   rulerTicks,
+  speechSupport,
   textToMorse,
 } from "../src/lib/device";
 import { TOOL_MAP } from "../src/lib/catalog";
@@ -112,6 +114,27 @@ test("tempo and frequency clamps hold the documented ranges", () => {
   assert.equal(clampBpm(120.4), 120);
   assert.equal(clampFreq(5), 20);
   assert.equal(clampFreq(99000), 20000);
+});
+
+
+test("speech support detection separates no-api, remote-only and on-device", () => {
+  assert.equal(speechSupport(undefined), "no-api");
+  assert.equal(speechSupport(null), "no-api");
+  class RemoteOnly {}
+  assert.equal(speechSupport(RemoteOnly as never), "remote-only");
+  class OnDevice {}
+  Object.assign(OnDevice.prototype, { processLocally: false });
+  assert.equal(speechSupport(OnDevice as never), "on-device");
+});
+
+test("speech-to-text enforces on-device recognition before it can start", () => {
+  const src = readFileSync(new URL("../src/tools/device/Audio.tsx", import.meta.url), "utf8");
+  const setIdx = src.indexOf("processLocally = true");
+  const startIdx = src.indexOf("rec.start()");
+  assert.ok(setIdx !== -1, "Audio.tsx must set processLocally before starting recognition");
+  assert.ok(startIdx !== -1 && setIdx < startIdx, "processLocally must be set before rec.start()");
+  assert.ok(src.includes("support !== 'on-device'"), "remote-only browsers must fail closed");
+  assert.ok(!src.includes("beyond the browser's own speech service"), "old misleading wording must stay gone");
 });
 
 console.log(`\n${n} device unit checks passed`);

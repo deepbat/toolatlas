@@ -259,7 +259,7 @@ The total is now **154 tools**. Thirteen new tools in the Device & Sensor collec
 | Instrument Tuner | `/tools/tuner/` | Autocorrelation pitch, note + cents (beta) |
 | Tone Generator & Sweep | `/tools/tone-generator/` | 20 Hz-20 kHz, four waveforms, white noise, 12 s sweep |
 | Text to Speech | `/tools/text-to-speech/` | Device voices, rate and pitch, 4000 character cap |
-| Speech to Text | `/tools/speech-to-text/` | Web Speech API, Chrome/Edge only (beta) |
+| Speech to Text | `/tools/speech-to-text/` | Web Speech API with on-device recognition enforced (`processLocally`); stays off where a browser would send audio to a speech service (beta) |
 | Compass | `/tools/compass/` | Magnetic heading, phone only (beta) |
 | Spirit Level | `/tools/spirit-level/` | Bubble level with zero calibration (beta) |
 | GPS Speedometer | `/tools/gps-speedometer/` | km/h, mph, knots; top speed and trip distance (beta) |
@@ -268,4 +268,4 @@ The total is now **154 tools**. Thirteen new tools in the Device & Sensor collec
 | QR & Barcode Scanner | `/tools/qr-barcode-scanner/` | Barcode Detection API, camera or photo (beta) |
 | Screen Recorder | `/tools/screen-recorder/` | getDisplayMedia + optional mic, WebM download (beta) |
 
-Deliberately not copied from the reference app: native app wrappers, a paid ads-free tier, office document editors (duplicate the existing PDF studio), PIN-code lookup (needs an external API, against the local-only rule) and network speed test (needs a measurement server). `npm run test:device` verifies all thirteen routes, static SEO shells, Morse conversion, ruler calibration, tempo clamping, tone start/stop and the honest fallback states for microphone, sensor, GPS and camera denials.
+Deliberately not copied from the reference app: native app wrappers, a paid ads-free tier, office document editors (duplicate the existing PDF studio), PIN-code lookup (needs an external API, against the local-only rule) and network speed test (needs a measurement server). `npm run test:device` verifies all thirteen routes, static SEO shells, Morse conversion, ruler calibration, tempo clamping, tone start/stop, the honest fallback states for microphone, sensor, GPS and camera denials, and the speech-to-text privacy gates: browsers without the Web Speech API get a support note, browsers that can only recognize speech remotely fail closed with no dictation control, and supported browsers always start recognition with `processLocally=true`.
