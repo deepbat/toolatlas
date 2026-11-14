@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { Icon } from '../components/Icon';
+import { Glyph } from '../components/Glyph';
+import { CATEGORY_GLYPHS, SECTION_GLYPHS } from '../lib/glyphs';
 import { CATEGORIES, TOOLS } from '../lib/catalog';
 import { SECTIONS, sectionTools } from '../lib/sections';
 import { tint } from '../lib/utils';
@@ -33,12 +34,12 @@ export default function CategoriesPage() {
               className="group flex flex-col border border-line bg-surface/80 p-5 transition hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lift"
             >
               <div className="flex items-start justify-between">
-                <span
-                  className="flex h-11 w-11 items-center justify-center border border-line transition group-hover:border-accent/50"
-                  style={{ backgroundColor: tint(section.accent, 0.12), color: section.accent }}
-                >
-                  <Icon name={section.icon} className="h-5 w-5" />
-                </span>
+                <Glyph
+                  emoji={SECTION_GLYPHS[section.id]}
+                  accent={section.accent}
+                  className="h-11 w-11 rounded-xl transition group-hover:border-accent/50"
+                  emojiClassName="text-[22px]"
+                />
                 <span className="font-mono text-[10px] uppercase tracking-label text-muted">
                   {tools.length > 0
                     ? `${tools.length} ${tools.length === 1 ? 'tool' : 'tools'}`
@@ -99,12 +100,12 @@ export default function CategoriesPage() {
                 to={`/category/${category.id}`}
                 className="group flex items-center gap-3 border border-line bg-surface/80 p-3 transition hover:-translate-y-0.5 hover:border-accent/50"
               >
-                <span
-                  className="flex h-9 w-9 shrink-0 items-center justify-center border border-line transition group-hover:border-accent/50"
-                  style={{ backgroundColor: tint(category.accent, 0.12), color: category.accent }}
-                >
-                  <Icon name={category.icon} className="h-4 w-4" />
-                </span>
+                <Glyph
+                  emoji={CATEGORY_GLYPHS[category.id]}
+                  accent={category.accent}
+                  className="h-9 w-9 rounded-lg transition group-hover:border-accent/50"
+                  emojiClassName="text-lg"
+                />
                 <span className="min-w-0">
                   <span className="block truncate font-display text-sm font-medium text-fg">
                     {category.shortName}

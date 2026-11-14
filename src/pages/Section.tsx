@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, ChevronRight, Search, Star, X } from 'lucide-react';
-import { Icon } from '../components/Icon';
+import { ToolGlyph } from '../components/Glyph';
 import { EmptyState } from '../components/ui';
+import { SECTION_GLYPHS } from '../lib/glyphs';
 import { CATEGORY_MAP } from '../lib/catalog';
 import {
   SECTIONS,
@@ -24,12 +25,12 @@ function LaunchCard({ tool }: { tool: ToolMeta }) {
   return (
     <div className="group relative flex flex-col border border-line bg-surface/90 p-4 transition duration-300 ease-out hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lift">
       <div className="flex items-start justify-between gap-2">
-        <span
-          className="flex h-10 w-10 shrink-0 items-center justify-center border border-line transition group-hover:border-accent/50"
-          style={{ backgroundColor: tint(category.accent, 0.12), color: category.accent }}
-        >
-          <Icon name={tool.icon} className="h-4.5 w-4.5" />
-        </span>
+        <ToolGlyph
+          tool={tool}
+          accent={category.accent}
+          className="h-11 w-11 rounded-xl transition group-hover:border-accent/50"
+          emojiClassName="text-[22px]"
+        />
         <button
           type="button"
           onClick={() => toggleFavorite(tool.id)}
@@ -135,7 +136,7 @@ export default function SectionPage({ sectionId }: { sectionId: SectionId }) {
                 : 'border-line text-muted hover:border-accent/40 hover:text-fg'
             )}
           >
-            <Icon name={item.icon} className="h-3 w-3" />
+            <span aria-hidden="true" className="text-xs leading-none">{SECTION_GLYPHS[item.id]}</span>
             {item.shortName}
           </Link>
         ))}

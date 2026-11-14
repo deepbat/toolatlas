@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Clock, Trash2 } from 'lucide-react';
-import { Icon } from '../components/Icon';
+import { ToolGlyph } from '../components/Glyph';
 import { EmptyState } from '../components/ui';
 import { CATEGORY_MAP, TOOL_MAP } from '../lib/catalog';
 import { useApp } from '../lib/store';
@@ -65,12 +65,12 @@ export default function RecentPage() {
                     <span className="w-6 shrink-0 text-center font-mono text-[10px] text-muted/60">
                       {String(index + 1).padStart(2, '0')}
                     </span>
-                    <span
-                      className="flex h-10 w-10 shrink-0 items-center justify-center border border-line"
-                      style={{ backgroundColor: tint(category.accent, 0.12), color: category.accent }}
-                    >
-                      <Icon name={tool.icon} className="h-4 w-4" />
-                    </span>
+                    <ToolGlyph
+                      tool={tool}
+                      accent={category.accent}
+                      className="h-10 w-10 rounded-xl"
+                      emojiClassName="text-xl"
+                    />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-display text-sm font-semibold text-fg">
                         {tool.name}

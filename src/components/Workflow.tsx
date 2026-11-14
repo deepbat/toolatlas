@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "../lib/store";
 import { copyText } from "../lib/utils";
 import { TOOL_MAP } from "../lib/catalog";
+import { glyphFor } from "../lib/glyphs";
 import {
   matchingTools,
   storeTransfer,
@@ -36,7 +37,7 @@ export function PersonalStrip() {
             className="flex shrink-0 items-center border border-line text-[11px]"
           >
             <Link className="px-2 py-1" to={"/tools/" + id}>
-              ★ {TOOL_MAP[id].name}
+              ★ {glyphFor(TOOL_MAP[id])} {TOOL_MAP[id].name}
             </Link>
             <button
               aria-label={"Unpin " + TOOL_MAP[id].name}
@@ -53,7 +54,7 @@ export function PersonalStrip() {
             className="shrink-0 border border-line px-2 py-1 text-[11px] text-muted"
             to={"/tools/" + id}
           >
-            {TOOL_MAP[id].name}
+            {glyphFor(TOOL_MAP[id])} {TOOL_MAP[id].name}
           </Link>
         ))}
       </div>
