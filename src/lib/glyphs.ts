@@ -85,6 +85,7 @@ export const TOOL_GLYPHS: Record<string, string> = {
   'image-upscale': '🔭',
   'signature-maker': '✒️',
   'id-photo-maker': '🪪',
+  'pvc-card-maker': '🖨️',
   'remove-exif': '🕵️',
   'image-base64': '💽',
   'aspect-ratio': '🎦',
