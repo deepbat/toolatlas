@@ -49,7 +49,7 @@ try {
   const imageInfo=await page.getByRole('img',{name:'Processed image preview',exact:true}).evaluate(i=>({w:i.naturalWidth,h:i.naturalHeight}));
   check('photo dimensions reduced with aspect ratio preserved',imageInfo.w<1600&&Math.abs(imageInfo.w/imageInfo.h-4/3)<.01);
   await page.getByRole('button',{name:'50 KB',exact:true}).click();
-  check('changed limit clears stale download',await page.getByTestId('exact-kb-result').count()===0);
+  check('changed limit clears stale download and handoff',await page.getByTestId('exact-kb-result').count()===0&&await page.getByLabel('Continue with output',{exact:true}).count()===0);
   await limit().fill('0');await page.getByRole('button',{name:'Process image',exact:true}).click();await page.getByRole('alert').waitFor();
   check('invalid limits rejected',/5 to 20,000/.test(await page.getByRole('alert').innerText()));
   await limit().fill('5');await page.getByLabel('Allow smaller pixel dimensions if needed').uncheck();
