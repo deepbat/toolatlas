@@ -2,7 +2,7 @@ import type {ToolMeta} from './types';
 const rows = [
  ['video-trim','Video Trimmer','Keep a selected time range and export a new video.','video'],
  ['video-compress','Video Compressor','Reduce resolution and bitrate for a smaller video. Savings depend on the source.','video'],
- ['video-mute','Mute Video','Save a video without its audio track.','video'],
+ ['video-mute','Mute Video','Save a video without its audio track, processed locally on your device.','video'],
  ['video-frame','Video to Image','Pick a moment and save a full-resolution PNG still.','video'],
  ['video-audio','Extract Audio from Video','Save the audio of a browser-supported video as a WAV file.','video'],
  ['audio-trim','Audio Cutter','Trim songs, voice notes and ringtones with optional edge fades. WAV output.','audio'],
