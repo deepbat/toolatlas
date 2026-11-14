@@ -3,6 +3,7 @@ import { Suspense, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowRight, ChevronRight, Github, Star } from 'lucide-react';
 import { Icon } from '../components/Icon';
+import { ToolGlyph } from '../components/Glyph';
 import ToolCard from '../components/ToolCard';
 import { Badge, CopyButton, Note } from '../components/ui';
 import { CATEGORY_MAP, TOOL_MAP, relatedTools } from '../lib/catalog';
@@ -66,12 +67,12 @@ export default function ToolPage() {
 
       <header className="mt-6 flex flex-col gap-5 border-b border-line pb-7 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 gap-4">
-          <span
-            className="flex h-14 w-14 shrink-0 items-center justify-center border border-line"
-            style={{ backgroundColor: tint(category.accent, 0.12), color: category.accent }}
-          >
-            <Icon name={tool.icon} className="h-6 w-6" />
-          </span>
+          <ToolGlyph
+            tool={tool}
+            accent={category.accent}
+            className="h-14 w-14 rounded-2xl"
+            emojiClassName="text-[28px]"
+          />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-display text-2xl font-semibold tracking-tight text-fg sm:text-3xl">

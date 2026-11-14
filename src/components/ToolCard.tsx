@@ -3,8 +3,8 @@ import { Star } from 'lucide-react';
 import { CATEGORY_MAP } from '../lib/catalog';
 import { useApp } from '../lib/store';
 import type { ToolMeta } from '../lib/types';
-import { cn, tint } from '../lib/utils';
-import { Icon } from './Icon';
+import { cn } from '../lib/utils';
+import { ToolGlyph } from './Glyph';
 
 export default function ToolCard({ tool, className }: { tool: ToolMeta; className?: string }) {
   const category = CATEGORY_MAP[tool.category];
@@ -20,12 +20,12 @@ export default function ToolCard({ tool, className }: { tool: ToolMeta; classNam
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <span
-          className="flex h-10 w-10 shrink-0 items-center justify-center border border-line transition group-hover:border-accent/50"
-          style={{ backgroundColor: tint(category.accent, 0.12), color: category.accent }}
-        >
-          <Icon name={tool.icon} className="h-4.5 w-4.5" />
-        </span>
+        <ToolGlyph
+          tool={tool}
+          accent={category.accent}
+          className="h-11 w-11 rounded-xl transition group-hover:border-accent/50"
+          emojiClassName="text-[22px]"
+        />
         <button
           type="button"
           onClick={(event) => {

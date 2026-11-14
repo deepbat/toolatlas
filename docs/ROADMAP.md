@@ -122,6 +122,7 @@ Current release contains 154 tools in 8 sections and 16 internal collections (St
 
 ### Directory-first homepage
 - Replaced the two-column promotional hero with a category directory as the first screen.
+- 2026-11-14: the directory is now an app-style browser - a pictorial category rail beside a tile grid where each of the 154 tools has its own unique emoji glyph, so tools are recognisable at a glance without reading labels. Selection is deep-linkable via ?browse=.
 - Ten clear entry points, including Calculators and Finance outside the catch-all Utilities label.
 - Full first-screen bounds and real category-link navigation tested at 360/393/412/820/1280/1440 widths. The original eight section URLs remain unchanged.
 

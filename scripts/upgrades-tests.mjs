@@ -560,12 +560,11 @@ try {
       await go("");
       await page.evaluate(() => document.fonts.ready);
       const bottom = await page
-        .locator("[data-directory-category]")
-        .last()
+        .locator("[data-app-browser]")
         .evaluate((e) => e.getBoundingClientRect().bottom);
       assert.ok(
         bottom < (width === 1280 ? 900 : 852),
-        width + ": categories bottom " + bottom,
+        width + ": app browser bottom " + bottom,
       );
       assert.ok(
         await page

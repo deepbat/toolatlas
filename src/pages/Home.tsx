@@ -3,17 +3,18 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Clock, Search, Sparkles, Star, Zap } from 'lucide-react';
 import ToolCard from '../components/ToolCard';
+import AppBrowser from '../components/AppBrowser';
+import { ToolGlyph } from '../components/Glyph';
 import { Icon } from '../components/Icon';
+import { glyphFor } from '../lib/glyphs';
 import {
   CATEGORY_MAP,
-  CATEGORIES,
   FEATURED_TOOLS,
   POPULAR_TOOLS,
   RECENTLY_ADDED,
   TOOLS,
   TOOL_MAP,
 } from '../lib/catalog';
-import { SECTIONS } from '../lib/sections';
 import { searchTools } from '../lib/search';
 import { useApp } from '../lib/store';
 import { cn, relativeTime, tint } from '../lib/utils';
@@ -99,15 +100,12 @@ function HeroSearch() {
               to={`/tools/${tool.id}`}
               className="flex items-center gap-3 px-3 py-2 transition hover:bg-raised"
             >
-              <span
-                className="flex h-8 w-8 shrink-0 items-center justify-center border border-line"
-                style={{
-                  backgroundColor: tint(CATEGORY_MAP[tool.category].accent, 0.12),
-                  color: CATEGORY_MAP[tool.category].accent,
-                }}
-              >
-                <Icon name={tool.icon} className="h-3.5 w-3.5" />
-              </span>
+              <ToolGlyph
+                tool={tool}
+                accent={CATEGORY_MAP[tool.category].accent}
+                className="h-8 w-8 rounded-lg"
+                emojiClassName="text-base"
+              />
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-display text-sm font-medium text-fg">{tool.name}</span>
                 <span className="block truncate font-mono text-[9px] uppercase tracking-label text-muted">
@@ -162,34 +160,12 @@ export default function HomePage() {
             </div>
             <div className="w-full lg:max-w-lg"><HeroSearch /></div>
           </div>
-          <PersonalStrip /><div id="categories-heading" className="mb-2 flex items-center justify-between gap-2 font-mono text-[9px] uppercase tracking-label text-muted">
+          <div id="categories-heading" className="mb-2 flex items-center justify-between gap-2 font-mono text-[9px] uppercase tracking-label text-muted">
             <h2>Find your category</h2>
             <span>{TOOLS.length} tools · no sign-up</span>
           </div>
-          <nav aria-label="Choose a tool category" className="directory-grid grid grid-cols-2 gap-2 md:grid-cols-5 sm:gap-3">
-            {[
-              {id:'pdf',name:'PDF',hint:'Merge · Split · Edit',to:'/pdf',icon:'FileText'},
-              {id:'image',name:'Images',hint:'Resize · Compress',to:'/image',icon:'Image'},
-              {id:'calculators',name:'Calculators',hint:'Math · Health · Percent',to:'/category/calculators',icon:'Calculator'},
-              {id:'video',name:'Video',hint:'Trim · Mute · Resize',to:'/video',icon:'Video'},
-              {id:'audio',name:'Audio',hint:'Cut · Join · Record',to:'/audio',icon:'Music'},
-              {id:'text',name:'Text',hint:'Count · Clean · Compare',to:'/text',icon:'PenLine'},
-              {id:'converter',name:'Converters',hint:'Units · CSV · JSON',to:'/converter',icon:'Ruler'},
-              {id:'finance',name:'Finance',hint:'GST · Tax · EMI',to:'/category/finance',icon:'Wallet'},
-              {id:'web',name:'Web & code',hint:'JSON · Colours · URLs',to:'/web',icon:'Globe'},
-              {id:'utilities',name:'More tools',hint:'Dates · Files · Notes',to:'/utilities',icon:'Shapes'},
-            ].map((entry,index)=> {
-              const section=SECTIONS.find(x=>x.id===entry.id);
-              const category=CATEGORIES.find(x=>x.id===entry.id);
-              const accent=section?.accent??category?.accent??'rgb(var(--accent))';
-              return <Link key={entry.id} to={entry.to} data-directory-category={entry.id} className="group relative flex min-h-[69px] min-w-0 items-center gap-2.5 border border-line bg-surface px-3 py-3 transition hover:border-accent hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent sm:min-h-[112px] sm:items-start sm:gap-3 sm:px-4 sm:py-4">
-                <span className="mt-0.5 shrink-0" style={{color:accent}}><Icon name={entry.icon} className="h-5 w-5 sm:h-6 sm:w-6" /></span>
-                <span className="min-w-0"><span className="block font-display text-[16px] font-semibold leading-tight tracking-tight text-fg sm:text-lg">{entry.name}</span><span className="mt-1.5 block text-[9px] leading-tight text-muted sm:text-[11px]">{entry.hint}</span></span>
-                <span aria-hidden="true" className="absolute bottom-2 right-3 hidden font-mono text-[9px] text-muted/50 sm:block">{String(index+1).padStart(2,'0')} ↗</span>
-              </Link>;
-            })}
-          </nav>
-          <FileDrop /><div className="mt-3 flex items-center justify-between text-[10px] text-muted"><span>Private by design. Files stay on your device.</span><Link to="/tools" className="shrink-0 font-semibold text-accent">All tools ↗</Link></div>
+          <AppBrowser />
+          <PersonalStrip /><FileDrop /><div className="mt-3 flex items-center justify-between text-[10px] text-muted"><span>Private by design. Files stay on your device.</span><Link to="/tools" className="shrink-0 font-semibold text-accent">All tools ↗</Link></div>
         </div>
       </section>
 
@@ -217,9 +193,12 @@ export default function HomePage() {
                   to={`/tools/${tool.id}`}
                   className="flex items-center gap-3 border border-line bg-surface/80 p-3 transition hover:border-accent/50"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-line bg-raised text-accent">
-                    <Icon name={tool.icon} className="h-4 w-4" />
-                  </span>
+                  <ToolGlyph
+                    tool={tool}
+                    accent={CATEGORY_MAP[tool.category].accent}
+                    className="h-9 w-9 rounded-lg"
+                    emojiClassName="text-lg"
+                  />
                   <span className="min-w-0">
                     <span className="block truncate font-display text-sm font-medium text-fg">{tool.name}</span>
                     <span className="block font-mono text-[9px] uppercase tracking-label text-muted">
@@ -276,9 +255,12 @@ export default function HomePage() {
                   to={`/tools/${tool.id}`}
                   className="group flex items-center gap-3 border-b border-line px-4 py-3 transition last:border-b-0 hover:bg-raised/60"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center border border-line bg-raised text-accent">
-                    <Icon name={tool.icon} className="h-4 w-4" />
-                  </span>
+                  <ToolGlyph
+                    tool={tool}
+                    accent={CATEGORY_MAP[tool.category].accent}
+                    className="h-8 w-8 rounded-lg"
+                    emojiClassName="text-base"
+                  />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-display text-sm font-medium text-fg">{tool.name}</span>
                     <span className="block truncate text-[11px] text-muted">{tool.description}</span>
@@ -316,7 +298,7 @@ export default function HomePage() {
                           to={`/tools/${tool.id}`}
                           className="flex items-center gap-2 py-1 text-sm text-muted transition hover:text-fg"
                         >
-                          <Icon name={tool.icon} className="h-3.5 w-3.5 text-accent" />
+                          <span aria-hidden="true" className="text-sm leading-none">{glyphFor(tool)}</span>
                           <span className="truncate">{tool.name}</span>
                         </Link>
                       </li>

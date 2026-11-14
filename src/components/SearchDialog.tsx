@@ -4,7 +4,7 @@ import { ArrowRight, Search, X } from 'lucide-react';
 import { CATEGORY_MAP, POPULAR_TOOLS, TOOLS } from '../lib/catalog';
 import { searchTools, suggestQuery } from '../lib/search';
 import { cn, tint } from '../lib/utils';
-import { Icon } from './Icon';
+import { ToolGlyph } from './Glyph';
 
 export default function SearchDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [query, setQuery] = useState('');
@@ -126,12 +126,12 @@ export default function SearchDialog({ open, onClose }: { open: boolean; onClose
                       index === active ? 'bg-accent/10' : 'hover:bg-raised'
                     )}
                   >
-                    <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center border border-line"
-                      style={{ backgroundColor: tint(category.accent, 0.12), color: category.accent }}
-                    >
-                      <Icon name={tool.icon} className="h-4 w-4" />
-                    </span>
+                    <ToolGlyph
+                      tool={tool}
+                      accent={category.accent}
+                      className="h-9 w-9 rounded-lg"
+                      emojiClassName="text-lg"
+                    />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-display text-sm font-medium text-fg">
                         {tool.name}
