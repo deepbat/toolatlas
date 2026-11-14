@@ -5,6 +5,7 @@ import type { Category, CategoryId, ToolMeta } from './types';
 import { EXTRA_TOOLS } from './extra';
 import { MEDIA_TOOLS } from './media';
 import { STUDIO_TOOLS } from './studio';
+import { DEVICE_TOOLS } from './device-catalog';
 
 export const CATEGORIES: Category[] = [
   {id:'video',name:'Video Tools',shortName:'Video',description:'Trim, resize, mute and capture video locally.',icon:'Video',accent:'var(--cat-generators)'},
@@ -104,6 +105,14 @@ export const CATEGORIES: Category[] = [
     description: 'Passwords, QR codes, identifiers and colour systems.',
     icon: 'Sparkles',
     accent: 'var(--cat-generators)',
+  },
+  {
+    id: 'device',
+    name: 'Device & Sensor Tools',
+    shortName: 'Device',
+    description: 'Microphone, motion sensor, GPS and screen tools that run on your own hardware.',
+    icon: 'Smartphone',
+    accent: 'var(--cat-productivity)',
   },
   {
     id: 'misc',
@@ -536,7 +545,7 @@ export const TOOLS: ToolMeta[] = [
   },
 ];
 
-TOOLS.push(...NEW_TOOL_DATA.map(t=>({...t,category:t.category as CategoryId,status:'stable' as const,version:'1.0.0',added:'2026-11-13',layout:'wide' as const})),...DEMAND_TOOLS, ...AV_TOOLS, ...EXTRA_TOOLS, ...MEDIA_TOOLS, ...STUDIO_TOOLS);
+TOOLS.push(...NEW_TOOL_DATA.map(t=>({...t,category:t.category as CategoryId,status:'stable' as const,version:'1.0.0',added:'2026-11-13',layout:'wide' as const})),...DEMAND_TOOLS, ...AV_TOOLS, ...EXTRA_TOOLS, ...MEDIA_TOOLS, ...STUDIO_TOOLS, ...DEVICE_TOOLS);
 
 export const TOOL_MAP: Record<string, ToolMeta> = Object.fromEntries(
   TOOLS.map((tool) => [tool.id, tool])
@@ -554,7 +563,7 @@ export function toolsByCategory(category: CategoryId): ToolMeta[] {
 }
 
 export function relatedTools(tool: ToolMeta, limit = 3): ToolMeta[] {
-  const workflows:Record<string,string[]>={ 'pdf-merge':['pdf-compress','pdf-watermark','pdf-page-organiser'],'pdf-split':['pdf-merge','pdf-compress','pdf-editor'],'image-resizer':['image-compressor','image-bulk-convert','image-to-pdf'],'image-bulk-convert':['image-compressor','remove-exif','image-to-pdf'],'signature-maker':['pdf-editor','invoice-generator','image-to-pdf'],'invoice-generator':['gst-calculator','signature-maker','pdf-merge'],'fuel-cost':['split-bill','tip-calculator','unit-converter'],'list-cleaner':['sort-lines','csv-to-json','word-counter']};
+  const workflows:Record<string,string[]>={ 'pdf-merge':['pdf-compress','pdf-watermark','pdf-page-organiser'],'pdf-split':['pdf-merge','pdf-compress','pdf-editor'],'image-resizer':['image-compressor','image-bulk-convert','image-to-pdf'],'image-bulk-convert':['image-compressor','remove-exif','image-to-pdf'],'signature-maker':['pdf-editor','invoice-generator','image-to-pdf'],'invoice-generator':['gst-calculator','signature-maker','pdf-merge'],'fuel-cost':['split-bill','tip-calculator','unit-converter'],'list-cleaner':['sort-lines','csv-to-json','word-counter'],'tuner':['metronome','tone-generator','voice-recorder'],'metronome':['tuner','tone-generator','pomodoro'],'sound-meter':['voice-recorder','tone-generator','screen-recorder'],'speech-to-text':['text-to-speech','voice-recorder','quick-notes'],'text-to-speech':['speech-to-text','word-counter','reading-time'],'morse-code':['tone-generator','text-to-speech','base64'],'qr-barcode-scanner':['qr-code-generator','image-to-pdf','file-checksum'],'screen-recorder':['video-trim','video-compress','video-mute'],'compass':['gps-speedometer','spirit-level','screen-ruler'],'gps-speedometer':['compass','pace-calculator','countdown'],'spirit-level':['screen-ruler','compass','screen-test'],'screen-ruler':['spirit-level','screen-test','image-resizer'],'tone-generator':['metronome','tuner','sound-meter']};
   if(workflows[tool.id]) return workflows[tool.id].map(id=>TOOL_MAP[id]).filter(Boolean).slice(0,limit);
   const sameCategory = TOOLS.filter((t) => t.category === tool.category && t.id !== tool.id);
   if (sameCategory.length >= limit) return sameCategory.slice(0, limit);

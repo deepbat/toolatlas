@@ -92,7 +92,7 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 10. Build and relevant regression tests pass.
 
 ## Current scope
-Current release contains 141 tools in 8 sections and 15 internal collections (Studio batch 1 added 14 PDF and image tools, batch 3 added 7 office and finance tools (salary structure, PPF, CAGR, rent receipt, GST invoice, expense tracker, CSV and Excel utilities), batch 2 added 10 India finance and date tools). The later media batch added 12 tools; demand-driven additions added 3 more. This roadmap is a plan, not a claim that unchecked features are already available.
+Current release contains 154 tools in 8 sections and 16 internal collections (Studio batch 1 added 14 PDF and image tools, batch 3 added 7 office and finance tools (salary structure, PPF, CAGR, rent receipt, GST invoice, expense tracker, CSV and Excel utilities), batch 2 added 10 India finance and date tools). The later media batch added 12 tools; demand-driven additions added 3 more. This roadmap is a plan, not a claim that unchecked features are already available.
 
 ## PDF editor responsiveness
 

@@ -13,6 +13,7 @@ export type CategoryId =
   | 'developer'
   | 'internet'
   | 'generators'
+  | 'device'
   | 'misc';
 
 export type ToolStatus = 'stable' | 'beta';

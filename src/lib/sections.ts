@@ -120,6 +120,7 @@ const SECTION_BY_CATEGORY: Record<CategoryId, SectionId> = {
   productivity: 'utilities',
   generators: 'utilities',
   file: 'utilities',
+  device: 'utilities',
   misc: 'utilities',
 };
 
