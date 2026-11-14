@@ -20,7 +20,7 @@ export default function ExactKB() {
   const [original, setOriginal] = useState('');
   const [dimensions, setDimensions] = useState('');
   const alive = useRef(true);
-  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
+  useEffect(() => { alive.current = true; window.dispatchEvent(new CustomEvent('toolatlas:output', { detail: null })); return () => { alive.current = false; }; }, []);
   useEffect(() => {
     const u = out?.previews.map((b) => URL.createObjectURL(b)) ?? [];
     setUrls(u); return () => u.forEach((x) => URL.revokeObjectURL(x));
@@ -29,7 +29,7 @@ export default function ExactKB() {
     if (!files[0] || isPdf(files[0])) { setOriginal(''); return; }
     const u = URL.createObjectURL(files[0]); setOriginal(u); return () => URL.revokeObjectURL(u);
   }, [files]);
-  const reset = () => { setOut(null); setError(''); };
+  const reset = () => { setOut(null); setError(''); window.dispatchEvent(new CustomEvent('toolatlas:output', { detail: null })); };
   const pick = (selected: File[]) => {
     if (busy) return;
     reset();
@@ -108,4 +108,4 @@ export default function ExactKB() {
     </Panel>}
     <p className="text-sm text-muted">Need a different output? <Link className="underline" to="/tools/signature-maker/">Transparent signature PNG</Link> | <Link className="underline" to="/tools/image-compressor/">Manual image settings</Link> | <Link className="underline" to="/tools/pdf-compress/">PDF quality controls</Link></p>
   </div>;
-        }
+}
