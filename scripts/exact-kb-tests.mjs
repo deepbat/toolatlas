@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { PDFDocument, rgb } from 'pdf-lib';
+import { inflateSync } from 'node:zlib';
 const BASE = process.env.E2E_BASE_URL || 'http://127.0.0.1:4173/toolatlas';
 let server;
 if (!process.env.E2E_BASE_URL) {
@@ -73,6 +74,10 @@ try {
   await page.getByRole('button',{name:'Combine and fit to limit',exact:true}).click();await page.getByTestId('exact-kb-result').waitFor({timeout:60000});
   const merged=await download('Download PDF','test-artifacts/exact-kb/merged.pdf'),mp=await PDFDocument.load(merged);
   check('PDF merge keeps every page under cap',mp.getPageCount()===2&&merged.length<200000);
+  const content = mp.getPage(0).node.Contents();
+  const firstStream = mp.context.lookup(content.get(0));
+  const firstText = inflateSync(firstStream.getContents()).toString();
+  check('file reorder controls change actual PDF page order',firstText.includes(Buffer.from('Marksheet 2').toString('hex').toUpperCase()));
   check('already-fitting PDF remains unrasterised',/without rasterising/.test(await page.getByTestId('exact-kb-result').innerText()));
   await limit().fill('20');await page.getByRole('button',{name:'Combine and fit to limit',exact:true}).click();await page.getByRole('alert').waitFor({timeout:60000});
   check('PDF flattening requires opt-in',/Enable page-image conversion/.test(await page.getByRole('alert').innerText()));
