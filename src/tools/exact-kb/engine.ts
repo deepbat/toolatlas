@@ -85,7 +85,7 @@ function scaleWarning(source: HTMLCanvasElement, w: number, h: number) {
 }
 
 export async function fitPdf(files: File[], cap: number, flatten: boolean, status: (s: string) => void): Promise<FitResult> {
-  const opened: { file: File; doc?: Awaited<ReturnType<typeof openPdfjs>>['doc']; bitmap?: ImageBitmap }[] = [];
+  const opened: { file: File; doc?: Awaited<ReturnType<typeof openPdfjs>>['doc'] }[] = [];
   let count = 0;
   try {
     // Open once; never retain full-page canvases across passes.
@@ -93,7 +93,7 @@ export async function fitPdf(files: File[], cap: number, flatten: boolean, statu
       status(`Opening ${file.name}`); await tick();
       if (isPdf(file)) {
         const { doc } = await openPdfjs(file); opened.push({ file, doc }); count += doc.numPages;
-      } else { const b = await bitmap(file); opened.push({ file, bitmap: b }); count++; }
+      } else { opened.push({ file }); count++; }
       if (count > LIMITS.pages) throw Error('Use at most 24 pages in one run. No pages have been dropped.');
     }
     if (files.every(isPdf)) {
@@ -116,10 +116,13 @@ export async function fitPdf(files: File[], cap: number, flatten: boolean, statu
           let c: HTMLCanvasElement, w: number, h: number;
           if (item.doc) { const r = await renderPage(item.doc, i, dpi / 72); c = r.canvas; w = r.widthPt; h = r.heightPt; }
           else {
-            const b = item.bitmap!, a4 = b.width > b.height ? [842, 595] : [595, 842];
-            [w, h] = a4;
-            const factor = Math.min(1, Math.max(w, h) * dpi / 72 / Math.max(b.width, b.height));
-            c = sizeCanvas(b, b.width * factor, b.height * factor);
+            const b = await bitmap(item.file);
+            try {
+              const a4 = b.width > b.height ? [842, 595] : [595, 842];
+              [w, h] = a4;
+              const factor = Math.min(1, Math.max(w, h) * dpi / 72 / Math.max(b.width, b.height));
+              c = sizeCanvas(b, b.width * factor, b.height * factor);
+            } finally { b.close(); }
           }
           try {
             const jpg = await blob(c, 'image/jpeg', quality), img = await dst.embedJpg(await jpg.arrayBuffer());
@@ -150,6 +153,6 @@ export async function fitPdf(files: File[], cap: number, flatten: boolean, statu
     }
     throw Error(`Could not fit all ${count} pages without going below 47 dpi. Smallest attempt: ${(smallest/1000).toFixed(1)} KB. Use a higher limit or fewer pages. Nothing has been dropped.`);
   } finally {
-    for (const item of opened) { item.bitmap?.close(); if (item.doc) await item.doc.destroy(); }
+    for (const item of opened) { if (item.doc) await item.doc.destroy(); }
   }
-          }
+}
