@@ -51,4 +51,38 @@ await check('third-party notices list every runtime dependency', async () => {
   const notice = await readFile('public/THIRD_PARTY_NOTICES.txt', 'utf8');
   for (const d of Object.keys(pkg.dependencies)) assert.ok(notice.includes('## ' + d) || notice.includes(d), d + ' missing from notices');
 });
+await check('prerendered pages carry complete and unique SEO tags', async () => {
+  const pages = (await walk('dist')).filter((f) => f.endsWith('/index.html') || f === 'dist/index.html');
+  assert.ok(pages.length >= 185, 'expected ~190 prerendered pages, found ' + pages.length);
+  const titles = new Map();
+  const root = 'https://deepbat.github.io/toolatlas';
+  for (const f of pages) {
+    const html = await readFile(f, 'utf8');
+    const rel = f === 'dist/index.html' ? '' : f.slice('dist/'.length, -'/index.html'.length) + '/';
+    const url = root + '/' + rel;
+    const title = html.match(/<title>([^<]+)<\/title>/)?.[1];
+    assert.ok(title && title.endsWith('| ToolAtlas'), f + ' missing ToolAtlas title');
+    assert.ok(!titles.has(title), 'duplicate page title: ' + title);
+    titles.set(title, f);
+    assert.ok(/<meta name="description" content="[^"]{40,}"/.test(html), f + ' weak or missing description');
+    assert.ok(html.includes(`<link rel="canonical" href="${url}"/>`), f + ' canonical mismatch, expected ' + url);
+    assert.ok(html.includes(`<meta property="og:url" content="${url}"/>`), f + ' og:url mismatch');
+    assert.ok(html.includes('og:site_name') && html.includes('twitter:card'), f + ' missing social tags');
+    const ld = html.match(/<script id="page-schema" type="application\/ld\+json">([^<]+)<\/script>/)?.[1];
+    assert.ok(ld, f + ' missing JSON-LD');
+    const graph = JSON.parse(ld)['@graph'];
+    assert.ok(Array.isArray(graph) && graph.length >= 1, f + ' JSON-LD has no @graph');
+    if (/^dist\/tools\/[^/]+\/index\.html$/.test(f)) {
+      assert.ok(graph.some((n) => n['@type'] === 'WebApplication'), f + ' tool page lacks WebApplication schema');
+      assert.ok(graph.some((n) => n['@type'] === 'BreadcrumbList'), f + ' tool page lacks BreadcrumbList schema');
+    }
+  }
+  const sitemap = await readFile('dist/sitemap.xml', 'utf8');
+  const locs = sitemap.match(/<loc>/g) || [];
+  const mods = sitemap.match(/<lastmod>/g) || [];
+  assert.equal(locs.length, pages.length, 'sitemap URL count != prerendered page count');
+  assert.equal(mods.length, pages.length, 'every sitemap URL needs a lastmod');
+  const robots = await readFile('dist/robots.txt', 'utf8');
+  assert.ok(robots.includes('Sitemap: ' + root + '/sitemap.xml'), 'robots.txt must reference the sitemap');
+});
 console.log(`\n${n} quality checks passed`);
