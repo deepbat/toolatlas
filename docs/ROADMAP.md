@@ -92,7 +92,7 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 10. Build and relevant regression tests pass.
 
 ## Current scope
-Current release contains 154 tools in 8 sections and 16 internal collections (Studio batch 1 added 14 PDF and image tools, batch 3 added 7 office and finance tools (salary structure, PPF, CAGR, rent receipt, GST invoice, expense tracker, CSV and Excel utilities), batch 2 added 10 India finance and date tools). The later media batch added 12 tools; demand-driven additions added 3 more. This roadmap is a plan, not a claim that unchecked features are already available.
+Current release contains 155 tools in 8 sections and 16 internal collections (Studio batch 1 added 14 PDF and image tools, batch 3 added 7 office and finance tools (salary structure, PPF, CAGR, rent receipt, GST invoice, expense tracker, CSV and Excel utilities), batch 2 added 10 India finance and date tools). The later media batch added 12 tools; demand-driven additions added 3 more. This roadmap is a plan, not a claim that unchecked features are already available.
 
 ## PDF editor responsiveness
 
@@ -132,3 +132,9 @@ Current release contains 154 tools in 8 sections and 16 internal collections (St
 - Done: opt-in URL input sharing for calculator/date/converter/text tools, with an explicit history/privacy notice; local-processing workspace badge. Files and sensitive generator/accounting tools are excluded from URL state.
 - Done: signature maker, bulk renamer, list cleaner, ID photo print sheets, batch EXIF stripping and exact group settlement. Upgraded the existing invoice generator to support quotations, logos, per-line taxes and paginated A4 PDF, and fuel calculator to support round-trips, four unit modes, driver exclusion and saved vehicles.
 - Intentional limits and departures from the prompt: see [UPGRADES-2026-11.md](UPGRADES-2026-11.md). No new dependencies. Browser-only processing and all media beta limits remain.
+
+
+### Exact KB form workflow, 14 November 2026
+- Upgraded the existing photo-to-KB tool into a guided workflow for photo KB ceilings, adaptive white-paper signature cleanup and combining marksheets under a PDF byte ceiling. Existing manual tools remain available, not duplicated as separate catalogue entries.
+- No dependencies or external processing. Automatic JPEG quality/dimension fitting and PDF quality/resolution fitting verify final output bytes. PDF text conversion is explicit opt-in; no pages silently dropped.
+- Limits, readability caveats and regression coverage: [EXACT-KB.md](EXACT-KB.md).
