@@ -56,6 +56,9 @@ jobs:
       - name: Run audio and video browser tests
         run: npm run test:av
 
+      - name: Run device and sensor browser tests
+        run: npm run test:device
+
       - name: Run quality gates
         run: npm run test:quality
 
