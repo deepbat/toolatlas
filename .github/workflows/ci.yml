@@ -53,6 +53,9 @@ jobs:
       - name: Run category first-screen checks
         run: npm run test:directory
 
+      - name: Run pictorial icon browser checks
+        run: npm run test:icons
+
       - name: Run audio and video browser tests
         run: npm run test:av
 
