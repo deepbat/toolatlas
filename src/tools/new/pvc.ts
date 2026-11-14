@@ -68,4 +68,4 @@ export function sheetCells(rows: number, gap = 4) {
   for (let r = 0; r < rows; r++)
     for (const c of [0, 1] as const) cells.push({ x: x0 + c * (CR80.w + gap), y: y0 + r * (CR80.h + gap), col: c, row: r });
   return cells;
-       }
+                                                                            }
