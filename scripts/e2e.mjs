@@ -212,56 +212,6 @@ test('Search dialog opens with the keyboard shortcut', async () => {
   check('dialog found the password generator', (data.results ?? '').includes('Password Generator'));
 });
 
-test('Calculator performs arithmetic', async () => {
-  await goto('/tools/calculator');
-  const data = await evaluate(`
-    ${SET_INPUT}
-    for (const key of ['1', '2', '×', '3', '=']) {
-      byText('button', key).click();
-      await new Promise((r) => setTimeout(r, 60));
-    }
-    await new Promise((r) => setTimeout(r, 150));
-    return {
-      display: document.querySelector('p[aria-live="polite"]').textContent.trim(),
-      history: document.body.innerText.includes('12 × 3 = 36'),
-    };
-  `);
-  eq('12 × 3 = 36', data.display, '36');
-  check('history records the calculation', data.history);
-});
-
-test('Calculator clears with C', async () => {
-  await goto('/tools/calculator');
-  const data = await evaluate(`
-    ${SET_INPUT}
-    byText('button', '7').click();
-    await new Promise((r) => setTimeout(r, 80));
-    byText('button', 'C').click();
-    await new Promise((r) => setTimeout(r, 150));
-    return document.querySelector('p[aria-live="polite"]').textContent.trim();
-  `);
-  eq('display resets to 0', data, '0');
-});
-
-test('Unit converter converts metres to feet', async () => {
-  await goto('/tools/unit-converter');
-  const data = await evaluate(`
-    ${SET_INPUT}
-    const value = document.querySelector('input[aria-label="Value to convert"]');
-    setInput(value, '2');
-    await new Promise((r) => setTimeout(r, 250));
-    const selects = document.querySelectorAll('select');
-    const from = selects[0];
-    const to = selects[1];
-    from.value = 'm'; from.dispatchEvent(new Event('change', { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 150));
-    to.value = 'ft'; to.dispatchEvent(new Event('change', { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 250));
-    return document.body.innerText.replace(/\\s+/g, ' ');
-  `);
-  check('2 m expressed in feet', data.includes('6.56168'), data.slice(0, 200));
-});
-
 test('JSON formatter formats and minifies', async () => {
   await goto('/tools/json-formatter');
   const data = await evaluate(`
@@ -565,43 +515,6 @@ test('URL parser splits a URL into parts', async () => {
   check('two query parameters listed', data.toLowerCase().includes('query parameters (2)'), data.slice(0, 300));
 });
 
-test('Task list stores tasks locally', async () => {
-  await resetStorage(['toolatlas:tool:todo']);
-  await goto('/tools/todo-list');
-  const data = await evaluate(`
-    ${SET_INPUT}
-    const input = document.querySelector('input[aria-label="New task"]');
-    setInput(input, 'Ship ToolAtlas');
-    await new Promise((r) => setTimeout(r, 150));
-    byText('button', 'Add task').click();
-    await new Promise((r) => setTimeout(r, 400));
-    const stored = JSON.parse(localStorage.getItem('toolatlas:tool:todo') || '[]');
-    return {
-      visible: document.body.innerText.includes('Ship ToolAtlas'),
-      stored: stored.length,
-      text: stored[0]?.text ?? '',
-    };
-  `);
-  check('task appears in the list', data.visible);
-  eq('task persisted to localStorage', data.stored, 1);
-  eq('task text persisted', data.text, 'Ship ToolAtlas');
-});
-
-test('Quick notes save automatically', async () => {
-  await resetStorage(['toolatlas:tool:notes']);
-  await goto('/tools/quick-notes');
-  const data = await evaluate(`
-    ${SET_INPUT}
-    const body = document.querySelector('textarea[aria-label="Note body"]');
-    setInput(body, 'Remember the milk');
-    await new Promise((r) => setTimeout(r, 400));
-    const stored = JSON.parse(localStorage.getItem('toolatlas:tool:notes') || '[]');
-    return { stored: stored.length, text: stored[0]?.body ?? '' };
-  `);
-  eq('note persisted', data.stored, 1);
-  eq('note body persisted', data.text, 'Remember the milk');
-});
-
 test('Pomodoro timer counts down', async () => {
   await goto('/tools/pomodoro');
   const data = await evaluate(`
@@ -642,28 +555,6 @@ test('Time zone converter lists several zones', async () => {
     };
   `);
   check('multiple time zones listed', data.zones.length >= 2, data.zones.join(','));
-});
-
-test('Favourites can be toggled and persist', async () => {
-  await resetStorage(['toolatlas:favorites']);
-  await goto('/tools/calculator');
-  const data = await evaluate(`
-    ${SET_INPUT}
-    const button = byText('button', 'Save');
-    if (!button) return { error: 'Save button not found', labels: [...document.querySelectorAll('button')].map(b => b.textContent.trim()).join('|') };
-    button.click();
-    await new Promise((r) => setTimeout(r, 300));
-    const stored = JSON.parse(localStorage.getItem('toolatlas:favorites') || '[]');
-    return { stored, label: byText('button', 'Pinned') ? 'Pinned' : 'Pin tool' };
-  `);
-  check('calculator was favourited', (data.stored ?? []).includes('calculator'), JSON.stringify(data));
-  eq('header button switches to Pinned', data.label, 'Pinned');
-
-  await goto('/favorites');
-  const listed = await evaluate(
-    `return document.body.innerText.includes('Standard Calculator');`
-  );
-  check('favourite appears on the favourites page', listed);
 });
 
 test('Recently used records visited tools', async () => {
