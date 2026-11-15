@@ -1,4 +1,4 @@
-y<!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -16,7 +16,7 @@ y<!doctype html>
     <meta
       property="og:description"
       content="A growing atlas of free, privacy-first browser tools. No accounts, no uploads, no waiting."
-    />x
+    />
     <meta property="og:type" content="website" />
     <script>
       try {
@@ -24,7 +24,7 @@ y<!doctype html>
         if (stored && stored.charAt(0) === '"') {
           stored = JSON.parse(stored);
         }
-        var dark = !stored || stored === 'dark' || (stored === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        var dark = stored === 'dark' || (stored === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.classList.toggle('dark', dark);
       } catch (e) {}
     </script>
