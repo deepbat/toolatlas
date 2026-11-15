@@ -53,7 +53,8 @@ await check('third-party notices list every runtime dependency', async () => {
 });
 await check('prerendered pages carry complete and unique SEO tags', async () => {
   const pages = (await walk('dist')).filter((f) => f.endsWith('/index.html') || f === 'dist/index.html');
-  assert.ok(pages.length >= 185, 'expected ~190 prerendered pages, found ' + pages.length);
+  const catalog = JSON.parse(await readFile('dist/catalog.json', 'utf8'));
+  assert.equal(pages.length, catalog.length + new Set(catalog.map(t => t.category)).size + 8 + 12, 'every tool, collection, section and support page is prerendered');
   const titles = new Map();
   const root = 'https://deepbat.github.io/toolatlas';
   for (const f of pages) {
@@ -84,5 +85,16 @@ await check('prerendered pages carry complete and unique SEO tags', async () => 
   assert.equal(mods.length, pages.length, 'every sitemap URL needs a lastmod');
   const robots = await readFile('dist/robots.txt', 'utf8');
   assert.ok(robots.includes('Sitemap: ' + root + '/sitemap.xml'), 'robots.txt must reference the sitemap');
+});
+await check('retired tools have no generated pages, sitemap entries or offline files', async () => {
+  const retired = ['calculator','unit-converter','temperature-converter','todo-list','quick-notes','speech-to-text','screen-recorder','video-trim','voice-recorder','image-rotate','image-filters','stopwatch','find-replace'];
+  const files = await walk('dist');
+  const sitemap = await readFile('dist/sitemap.xml', 'utf8');
+  const offline = await readFile('dist/offline-files.json', 'utf8');
+  for (const id of retired) {
+    assert.ok(!files.includes(`dist/tools/${id}/index.html`), id);
+    assert.ok(!sitemap.includes(`/tools/${id}/`), id);
+    assert.ok(!offline.includes(`/tools/${id}/`), id);
+  }
 });
 console.log(`\n${n} quality checks passed`);
