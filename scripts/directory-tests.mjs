@@ -18,30 +18,32 @@ for(const id of ['pdf','image','calculators','audio','video']){const a=page.loca
 await page.waitForTimeout(750);await page.screenshot({path:`test-artifacts/directory/home-${width}.png`});
 await page.locator('[data-directory-category=calculators]').click();await page.getByRole('heading',{name:'Calculators',exact:true}).waitFor();await page.goBack();await page.locator('[data-directory-category=video]').click();await page.getByRole('heading',{name:'Video Tools',exact:true}).waitFor();
 await page.close();console.log('PASS first screen + navigation '+width+'x'+height);n++;}
-// The unfiltered wall reshuffles itself, pauses under the pointer and stays still under reduced motion.
-{const page=await browser.newPage({viewport:{width:1280,height:800}});await page.goto(base+'/');await page.locator('[data-tool-wall] a[href*="/tools/"]').first().waitFor();
-const order=()=>page.locator('[data-tool-wall] a[href*="/tools/"]').evaluateAll(els=>els.map(a=>a.getAttribute('href')));
-const before=await order();await page.waitForTimeout(5600);const after=await order();
-assert.notDeepEqual(after,before,'wall reshuffles on its own');assert.equal(after.length,before.length);assert.equal(after[0],before[0],'pinned card keeps the front spot');
-const settled=await order();await page.hover('[data-tool-wall]');await page.waitForTimeout(4800);
-assert.deepEqual(await order(),settled,'wall pauses under the pointer');await page.close();
-const calm=await browser.newPage({viewport:{width:1280,height:800},reducedMotion:'reduce'});await calm.goto(base+'/');await calm.locator('[data-tool-wall] a[href*="/tools/"]').first().waitFor();
-const stillBefore=await calm.locator('[data-tool-wall] a[href*="/tools/"]').evaluateAll(els=>els.map(a=>a.getAttribute('href')));await calm.waitForTimeout(5600);
-const stillAfter=await calm.locator('[data-tool-wall] a[href*="/tools/"]').evaluateAll(els=>els.map(a=>a.getAttribute('href')));
-assert.deepEqual(stillAfter,stillBefore,'reduced motion keeps the wall still');await calm.close();
-console.log('PASS wall auto-rotation');n++;}
-// On a phone a tap leaves a sticky hover and transient focus on the wall; neither may pause the reshuffle.
-{const page=await browser.newPage({viewport:{width:393,height:740},hasTouch:true,isMobile:true});await page.goto(base+'/');await page.locator('[data-tool-wall] a[href*="/tools/"]').first().waitFor();
-const order=()=>page.locator('[data-tool-wall] a[href*="/tools/"]').evaluateAll(els=>els.map(a=>a.getAttribute('href')));
+// The unfiltered wall is a slow continuous marquee: columns drift nonstop, neighbouring columns in opposite directions.
+{const page=await browser.newPage({viewport:{width:1280,height:800}});await page.goto(base+'/');await page.locator('[data-wall-track]').first().waitFor();await page.waitForTimeout(1200);
+const y=()=>page.locator('[data-wall-track]').evaluateAll(els=>els.map(el=>new DOMMatrix(getComputedStyle(el).transform).f));
+const first=await page.locator('[data-tool-wall] a[href*="/tools/"]').first().getAttribute('href');assert.ok(first.includes('pvc-card-maker'),'pinned card keeps the front spot: '+first);
+const cols=(await y()).length;assert.ok(cols>=4,'desktop shows several marquee columns: '+cols);
+assert.equal(await page.locator('[data-wall-copy]').count(),cols*2,'each column renders two seamless copies');
+assert.equal(await page.locator('[data-wall-copy][aria-hidden=true] a').first().getAttribute('tabindex'),'-1','duplicate copy links leave the tab order');
+const a=await y();await page.waitForTimeout(4200);const b=await y();
+const deltas=a.map((v,i)=>b[i]-v);for(const d of deltas)assert.ok(Math.abs(d)>20,'every column drifts continuously: '+deltas);
+for(let i=1;i<deltas.length;i++)assert.ok(Math.sign(deltas[i])!==Math.sign(deltas[i-1]),'adjacent columns drift in opposite directions: '+deltas);
+// A mouse hover pauses the drift so a card can be clicked.
+await page.hover('[data-tool-wall]');const e1=await y();await page.waitForTimeout(2600);const e2=await y();
+assert.ok(e2.every((v,i)=>Math.abs(v-e1[i])<2),'mouse hover pauses the marquee');
+await page.close();console.log('PASS wall marquee');n++;}
+// On a phone a tap leaves a sticky hover and transient focus on the wall; the marquee must drift on regardless.
+{const page=await browser.newPage({viewport:{width:393,height:740},hasTouch:true,isMobile:true});await page.goto(base+'/');await page.locator('[data-wall-track]').first().waitFor();await page.waitForTimeout(1200);
+const y=()=>page.locator('[data-wall-track]').evaluateAll(els=>els.map(el=>new DOMMatrix(getComputedStyle(el).transform).f));
+assert.equal((await y()).length,2,'phone shows two marquee columns');
 assert.equal(await page.evaluate(()=>matchMedia('(pointer: coarse)').matches),true,'touch emulation reports a coarse pointer');
 await page.locator('[data-tool-wall]').dispatchEvent('pointerenter',{pointerType:'touch'});
 await page.locator('[data-tool-wall] a[href*="/tools/"]').first().dispatchEvent('focusin');
-const before=await order();await page.waitForTimeout(5000);const after=await order();
-assert.notDeepEqual(after,before,'touch hover and tap focus do not pause the wall');
+const a=await y();await page.waitForTimeout(3600);const b=await y();
+assert.ok(b.some((v,i)=>Math.abs(v-a[i])>10),'touch hover and tap focus never freeze the marquee');
 await page.locator('[data-tool-wall]').dispatchEvent('pointerleave',{pointerType:'touch'});
-// A precise pointer hover still pauses the same wall.
-await page.locator('[data-tool-wall]').dispatchEvent('pointerenter',{pointerType:'mouse'});
-const settled=await order();await page.waitForTimeout(5000);
-assert.deepEqual(await order(),settled,'mouse hover still pauses the wall');
-await page.close();console.log('PASS wall touch keeps rotating');n++;}
+await page.close();
+const calm=await browser.newPage({viewport:{width:1280,height:800},reducedMotion:'reduce'});await calm.goto(base+'/');await calm.locator('[data-tool-wall] a[href*="/tools/"]').first().waitFor();
+assert.equal(await calm.locator('[data-wall-track]').count(),0,'reduced motion renders a static wall');
+await calm.close();console.log('PASS wall marquee touch + reduced motion');n++;}
 }finally{await browser.close();server?.kill();}console.log(`${n} directory checks passed`);
