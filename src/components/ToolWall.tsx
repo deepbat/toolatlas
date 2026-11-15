@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CATEGORY_MAP, TOOLS } from '../lib/catalog';
 import { sectionTools } from '../lib/sections';
@@ -13,13 +13,15 @@ import { tint } from '../lib/utils';
  * filter the wall; the selection lives in the `?browse=` URL parameter so
  * back/forward and sharing work naturally.
  *
- * On the unfiltered "All" view the wall is alive: every few seconds a pair of
- * same-height cards trade places with a FLIP animation, so the masonry slowly
- * reshuffles itself like a living wall. The reshuffle pauses under a precise
- * (mouse/pen) hover, keyboard focus and hidden tabs, is disabled under
- * prefers-reduced-motion and never runs while a category filter is active.
- * Touch taps never pause it: on phones a tap leaves a sticky hover and a
- * transient focus on the wall, which would otherwise freeze it for good.
+ * On the unfiltered "All" view the wall is alive: each column is a seamless
+ * vertical marquee that drifts slowly and nonstop, neighbouring columns
+ * moving in opposite directions (one up, the next down). The loop is pure
+ * CSS: the column's cards render twice and the track translates from 0 to
+ * -50%, so it never jumps and costs only a transform. A fine-pointer hover
+ * pauses the drift so a card can be clicked; touch never pauses it (a tap's
+ * sticky hover would otherwise freeze the wall on phones), background tabs
+ * pause it natively, and prefers-reduced-motion gets a fully static wall.
+ * A filtered wall is always static.
  */
 interface WallEntry {
   id: string;
@@ -73,11 +75,36 @@ function heightFor(id: string): number {
   return PREVIEW_HEIGHTS[hash % PREVIEW_HEIGHTS.length];
 }
 
-/** Reshuffle pacing: a slow first move, then a gentle steady rhythm. */
-const SHUFFLE_FIRST_MS = 2000;
-const SHUFFLE_INTERVAL_MS = 2000;
-const FLIP_DURATION_MS = 1100;
-const FLIP_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
+/** Marquee pacing: a very slow ambient crawl, the same speed on every column. */
+const MARQUEE_SPEED_PX_S = 16;
+
+/** Column count mirrors the masonry breakpoints of the static grid. */
+function columnCountFor(width: number): number {
+  if (width >= 1400) return 5;
+  if (width >= 1024) return 4;
+  if (width >= 640) return 3;
+  return 2;
+}
+
+/** Rough card height (preview tile plus the text/meta block) for balancing. */
+function estimatedCardHeight(tool: ToolMeta): number {
+  return heightFor(tool.id) + 134;
+}
+
+/** Deal cards to the currently shortest column so the columns stay even. */
+function splitColumns(tools: ToolMeta[], count: number): ToolMeta[][] {
+  const columns: ToolMeta[][] = Array.from({ length: count }, () => []);
+  const heights = new Array<number>(count).fill(0);
+  for (const tool of tools) {
+    let target = 0;
+    for (let index = 1; index < count; index += 1) {
+      if (heights[index] < heights[target]) target = index;
+    }
+    columns[target].push(tool);
+    heights[target] += estimatedCardHeight(tool);
+  }
+  return columns;
+}
 
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(
@@ -92,52 +119,21 @@ function usePrefersReducedMotion(): boolean {
   return reduced;
 }
 
-/**
- * Pick the next wall order by swapping a few pairs of same-height cards.
- * Same-height swaps leave every other card's slot untouched in the balanced
- * columns, so only the swapped pair travels - the reflow stays cheap and the
- * motion stays calm. Falls back to a linear scan so a move is always found.
- */
-function nextOrder(order: string[], rects: Map<string, DOMRect>, pinnedCount: number, pairs: number): string[] {
-  const eligible = order.length - pinnedCount;
-  if (eligible < 4) return order;
-  const next = [...order];
-  const used = new Set<number>();
-  // Keep swaps in a local neighbourhood so cards glide, not fly.
-  const maxDistance = Math.min(48, Math.max(8, Math.floor(eligible / 4)));
-  const sameHeight = (a: string, b: string) => {
-    const ra = rects.get(a);
-    const rb = rects.get(b);
-    return !!ra && !!rb && Math.abs(ra.height - rb.height) <= 6;
-  };
-  const swap = (i: number, j: number) => {
-    [next[i], next[j]] = [next[j], next[i]];
-    used.add(i);
-    used.add(j);
-  };
-  let made = 0;
-  for (let attempt = 0; attempt < 60 && made < pairs; attempt += 1) {
-    const i = pinnedCount + Math.floor(Math.random() * eligible);
-    const span = 2 + Math.floor(Math.random() * (maxDistance - 1));
-    const direction = Math.random() < 0.5 ? -1 : 1;
-    const j = i + span * direction;
-    if (j < pinnedCount || j >= order.length || used.has(i) || used.has(j)) continue;
-    if (!sameHeight(order[i], order[j])) continue;
-    swap(i, j);
-    made += 1;
-  }
-  for (let i = pinnedCount; made < pairs && i < order.length - 2; i += 1) {
-    for (let j = i + 2; j < Math.min(i + maxDistance, order.length); j += 1) {
-      if (used.has(i) || used.has(j) || !sameHeight(order[i], order[j])) continue;
-      swap(i, j);
-      made += 1;
-      break;
-    }
-  }
-  return made > 0 ? next : order;
+function useColumnCount(ref: React.RefObject<HTMLDivElement | null>): number {
+  const [count, setCount] = useState(4);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const update = () => setCount(columnCountFor(el.getBoundingClientRect().width));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref]);
+  return count;
 }
 
-function WallCard({ tool, index }: { tool: ToolMeta; index: number }) {
+function WallCard({ tool, index, duplicate }: { tool: ToolMeta; index: number; duplicate?: boolean }) {
   const category = CATEGORY_MAP[tool.category];
   const glyph = glyphFor(tool);
   return (
@@ -145,6 +141,7 @@ function WallCard({ tool, index }: { tool: ToolMeta; index: number }) {
       to={`/tools/${tool.id}`}
       className="wall-card group"
       data-wall-id={tool.id}
+      tabIndex={duplicate ? -1 : undefined}
       style={{ animationDelay: `${Math.min(index, 14) * 28}ms` }}
     >
       <span
@@ -173,129 +170,91 @@ function WallCard({ tool, index }: { tool: ToolMeta; index: number }) {
   );
 }
 
+/**
+ * The living wall: one clipped viewport of columns, each a seamless marquee.
+ * The track holds the column's cards twice; translating from 0 to -50% loops
+ * with no seam. Column direction alternates up/down. The per-column animation
+ * duration comes from the measured track height so every column drifts at the
+ * same slow speed whatever it holds.
+ */
+function WallMarquee({ tools }: { tools: ToolMeta[] }) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const trackRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const columnCount = useColumnCount(rootRef);
+  const columns = useMemo(() => splitColumns(tools, columnCount), [tools, columnCount]);
+  const [durations, setDurations] = useState<number[]>([]);
+
+  useEffect(() => {
+    let frame = 0;
+    const measure = () => {
+      const next = columns.map((_, index) => {
+        const track = trackRefs.current[index];
+        const half = track ? track.scrollHeight / 2 : 0;
+        return half > 0 ? Math.max(60, half / MARQUEE_SPEED_PX_S) : 0;
+      });
+      // Only update when the duration meaningfully changed: applying a fresh
+      // animation-duration restarts the loop with a visible jump.
+      setDurations((prev) =>
+        prev.length === next.length && next.every((d, i) => Math.abs(d - prev[i]) <= Math.max(4, d * 0.03))
+          ? prev
+          : next
+      );
+    };
+    const onResize = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    };
+    measure();
+    document.fonts?.ready.then(measure).catch(() => undefined);
+    window.addEventListener('resize', onResize);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [columns]);
+
+  return (
+    <div data-tool-wall ref={rootRef} className="wall-marquee mt-4">
+      <div className="wall-cols">
+        {columns.map((column, columnIndex) => (
+          <div className="wall-col" data-wall-col data-dir={columnIndex % 2 === 0 ? 'up' : 'down'} key={columnIndex}>
+            <div
+              className="wall-track"
+              data-wall-track
+              ref={(el) => {
+                trackRefs.current[columnIndex] = el;
+              }}
+              style={
+                durations[columnIndex]
+                  ? {
+                      animation: `${columnIndex % 2 === 0 ? 'wall-drift-up' : 'wall-drift-down'} ${durations[columnIndex]}s linear infinite`,
+                    }
+                  : undefined
+              }
+            >
+              {[0, 1].map((copy) => (
+                <div className="wall-copy" data-wall-copy key={copy} aria-hidden={copy === 1 || undefined}>
+                  {column.map((tool, cardIndex) => (
+                    <WallCard key={tool.id} tool={tool} index={cardIndex} duplicate={copy === 1} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ToolWall() {
   const [params] = useSearchParams();
   const requested = params.get('browse');
   const active = WALL_ENTRIES.find((entry) => entry.id === requested);
   const tools = useMemo(() => (active ? active.tools() : pin(TOOLS)), [active]);
   const heading = active ? active.heading : 'All tools';
-
-  const gridRef = useRef<HTMLDivElement | null>(null);
-  const hoverPausedRef = useRef(false);
-  const focusPausedRef = useRef(false);
-  const positionsRef = useRef<Map<string, DOMRect>>(new Map());
   const reducedMotion = usePrefersReducedMotion();
-  const [order, setOrder] = useState<string[] | null>(null);
-
-  // A category filter freezes the wall and restores the natural order.
-  useEffect(() => {
-    setOrder(null);
-    positionsRef.current = new Map();
-  }, [active]);
-
-  const displayTools = useMemo(() => {
-    if (!order || active) return tools;
-    const byId = new Map(tools.map((tool) => [tool.id, tool]));
-    const rearranged = order.map((id) => byId.get(id)).filter((tool): tool is ToolMeta => !!tool);
-    return rearranged.length === tools.length ? rearranged : tools;
-  }, [order, active, tools]);
-
-  // Pause the reshuffle while a precise pointer hovers the wall or keyboard
-  // focus sits inside it. Touch is ignored on purpose: a tap fires
-  // pointerenter (sticky hover) and a transient focus that never reliably
-  // clears on phones, so treating them as a pause froze the wall.
-  useEffect(() => {
-    const grid = gridRef.current;
-    if (!grid) return undefined;
-    const hoverIn = (event: PointerEvent) => {
-      if (event.pointerType !== 'touch') hoverPausedRef.current = true;
-    };
-    const hoverOut = (event: PointerEvent) => {
-      if (event.pointerType !== 'touch') hoverPausedRef.current = false;
-    };
-    const focusIn = (event: FocusEvent) => {
-      // :focus-visible matches keyboard-driven focus, not a tap's focus ring.
-      if (event.target instanceof HTMLElement && event.target.matches(':focus-visible')) {
-        focusPausedRef.current = true;
-      }
-    };
-    const focusOut = () => {
-      focusPausedRef.current = false;
-    };
-    grid.addEventListener('pointerenter', hoverIn);
-    grid.addEventListener('pointerleave', hoverOut);
-    grid.addEventListener('focusin', focusIn);
-    grid.addEventListener('focusout', focusOut);
-    return () => {
-      grid.removeEventListener('pointerenter', hoverIn);
-      grid.removeEventListener('pointerleave', hoverOut);
-      grid.removeEventListener('focusin', focusIn);
-      grid.removeEventListener('focusout', focusOut);
-    };
-  }, []);
-
-  const tick = useCallback(() => {
-    if (hoverPausedRef.current || focusPausedRef.current || document.hidden) return;
-    const grid = gridRef.current;
-    if (!grid) return;
-    // First: record where every card is (the "First" of FLIP).
-    const rects = new Map<string, DOMRect>();
-    grid.querySelectorAll<HTMLElement>('[data-wall-id]').forEach((el) => {
-      if (el.dataset.wallId) rects.set(el.dataset.wallId, el.getBoundingClientRect());
-    });
-    positionsRef.current = rects;
-    const width = grid.getBoundingClientRect().width;
-    const pairs = width >= 1024 ? 2 : 1;
-    setOrder((previous) => {
-      const current = previous ?? tools.map((tool) => tool.id);
-      return nextOrder(current, rects, tools.filter((tool) => PINNED.includes(tool.id)).length, pairs);
-    });
-  }, [tools]);
-
-  useEffect(() => {
-    if (active || reducedMotion) return undefined;
-    let timer = 0;
-    const loop = () => {
-      tick();
-      timer = window.setTimeout(loop, SHUFFLE_INTERVAL_MS);
-    };
-    timer = window.setTimeout(loop, SHUFFLE_FIRST_MS);
-    return () => window.clearTimeout(timer);
-  }, [active, reducedMotion, tick]);
-
-  // Last + Invert + Play: after React commits the new order, measure where
-  // each card landed and glide it there from where it was.
-  useLayoutEffect(() => {
-    const grid = gridRef.current;
-    const before = positionsRef.current;
-    if (!grid || before.size === 0) return;
-    positionsRef.current = new Map();
-    if (reducedMotion) return;
-    grid.querySelectorAll<HTMLElement>('[data-wall-id]').forEach((el) => {
-      const id = el.dataset.wallId;
-      const from = id ? before.get(id) : undefined;
-      if (!from) return;
-      const to = el.getBoundingClientRect();
-      const dx = from.left - to.left;
-      const dy = from.top - to.top;
-      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
-      // React's keyed reorder re-inserts the swapped nodes, which restarts
-      // their CSS wall-in entrance animation: the cards faded in from
-      // transparent with their mount delay (a late blink) and the CSS
-      // transform fought this glide. Cancel it so only the FLIP shows.
-      for (const animation of el.getAnimations()) {
-        if (animation instanceof CSSAnimation && animation.animationName === 'wall-in') animation.cancel();
-      }
-      el.animate(
-        [
-          { transform: `translate(${dx}px, ${dy}px) scale(1)`, opacity: 0.55 },
-          { transform: `translate(${dx * 0.5}px, ${dy * 0.5}px) scale(0.97)`, opacity: 0.9, offset: 0.55 },
-          { transform: 'translate(0px, 0px) scale(1)', opacity: 1 },
-        ],
-        { duration: FLIP_DURATION_MS, easing: FLIP_EASING }
-      );
-    });
-  }, [displayTools, reducedMotion]);
+  const marquee = !active && !reducedMotion;
 
   return (
     <div className="mt-7 sm:mt-9">
@@ -339,11 +298,15 @@ export default function ToolWall() {
         )}
       </div>
 
-      <div data-tool-wall ref={gridRef} className="wall-grid mt-4">
-        {displayTools.map((tool, index) => (
-          <WallCard key={tool.id} tool={tool} index={index} />
-        ))}
-      </div>
+      {marquee ? (
+        <WallMarquee tools={tools} />
+      ) : (
+        <div data-tool-wall className="wall-grid mt-4">
+          {tools.map((tool, index) => (
+            <WallCard key={tool.id} tool={tool} index={index} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
