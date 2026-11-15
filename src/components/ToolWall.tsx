@@ -15,9 +15,11 @@ import { tint } from '../lib/utils';
  *
  * On the unfiltered "All" view the wall is alive: every few seconds a pair of
  * same-height cards trade places with a FLIP animation, so the masonry slowly
- * reshuffles itself like a living wall. The reshuffle pauses on hover, focus
- * and hidden tabs, is disabled under prefers-reduced-motion and never runs
- * while a category filter is active.
+ * reshuffles itself like a living wall. The reshuffle pauses under a precise
+ * (mouse/pen) hover, keyboard focus and hidden tabs, is disabled under
+ * prefers-reduced-motion and never runs while a category filter is active.
+ * Touch taps never pause it: on phones a tap leaves a sticky hover and a
+ * transient focus on the wall, which would otherwise freeze it for good.
  */
 interface WallEntry {
   id: string;
@@ -179,7 +181,8 @@ export default function ToolWall() {
   const heading = active ? active.heading : 'All tools';
 
   const gridRef = useRef<HTMLDivElement | null>(null);
-  const pausedRef = useRef(false);
+  const hoverPausedRef = useRef(false);
+  const focusPausedRef = useRef(false);
   const positionsRef = useRef<Map<string, DOMRect>>(new Map());
   const reducedMotion = usePrefersReducedMotion();
   const [order, setOrder] = useState<string[] | null>(null);
@@ -197,30 +200,42 @@ export default function ToolWall() {
     return rearranged.length === tools.length ? rearranged : tools;
   }, [order, active, tools]);
 
-  // Pause the reshuffle while the wall is hovered, focused or the tab hidden.
+  // Pause the reshuffle while a precise pointer hovers the wall or keyboard
+  // focus sits inside it. Touch is ignored on purpose: a tap fires
+  // pointerenter (sticky hover) and a transient focus that never reliably
+  // clears on phones, so treating them as a pause froze the wall.
   useEffect(() => {
     const grid = gridRef.current;
     if (!grid) return undefined;
-    const pause = () => {
-      pausedRef.current = true;
+    const hoverIn = (event: PointerEvent) => {
+      if (event.pointerType !== 'touch') hoverPausedRef.current = true;
     };
-    const resume = () => {
-      pausedRef.current = false;
+    const hoverOut = (event: PointerEvent) => {
+      if (event.pointerType !== 'touch') hoverPausedRef.current = false;
     };
-    grid.addEventListener('pointerenter', pause);
-    grid.addEventListener('pointerleave', resume);
-    grid.addEventListener('focusin', pause);
-    grid.addEventListener('focusout', resume);
+    const focusIn = (event: FocusEvent) => {
+      // :focus-visible matches keyboard-driven focus, not a tap's focus ring.
+      if (event.target instanceof HTMLElement && event.target.matches(':focus-visible')) {
+        focusPausedRef.current = true;
+      }
+    };
+    const focusOut = () => {
+      focusPausedRef.current = false;
+    };
+    grid.addEventListener('pointerenter', hoverIn);
+    grid.addEventListener('pointerleave', hoverOut);
+    grid.addEventListener('focusin', focusIn);
+    grid.addEventListener('focusout', focusOut);
     return () => {
-      grid.removeEventListener('pointerenter', pause);
-      grid.removeEventListener('pointerleave', resume);
-      grid.removeEventListener('focusin', pause);
-      grid.removeEventListener('focusout', resume);
+      grid.removeEventListener('pointerenter', hoverIn);
+      grid.removeEventListener('pointerleave', hoverOut);
+      grid.removeEventListener('focusin', focusIn);
+      grid.removeEventListener('focusout', focusOut);
     };
   }, []);
 
   const tick = useCallback(() => {
-    if (pausedRef.current || document.hidden) return;
+    if (hoverPausedRef.current || focusPausedRef.current || document.hidden) return;
     const grid = gridRef.current;
     if (!grid) return;
     // First: record where every card is (the "First" of FLIP).
@@ -264,8 +279,19 @@ export default function ToolWall() {
       const dx = from.left - to.left;
       const dy = from.top - to.top;
       if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+      // React's keyed reorder re-inserts the swapped nodes, which restarts
+      // their CSS wall-in entrance animation: the cards faded in from
+      // transparent with their mount delay (a late blink) and the CSS
+      // transform fought this glide. Cancel it so only the FLIP shows.
+      for (const animation of el.getAnimations()) {
+        if (animation instanceof CSSAnimation && animation.animationName === 'wall-in') animation.cancel();
+      }
       el.animate(
-        [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0px, 0px)' }],
+        [
+          { transform: `translate(${dx}px, ${dy}px) scale(1)`, opacity: 0.55 },
+          { transform: `translate(${dx * 0.5}px, ${dy * 0.5}px) scale(0.97)`, opacity: 0.9, offset: 0.55 },
+          { transform: 'translate(0px, 0px) scale(1)', opacity: 1 },
+        ],
         { duration: FLIP_DURATION_MS, easing: FLIP_EASING }
       );
     });
