@@ -92,7 +92,7 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 10. Build and relevant regression tests pass.
 
 ## Current scope
-Current release contains 155 tools in 8 sections and 16 internal collections (Studio batch 1 added 14 PDF and image tools, batch 3 added 7 office and finance tools (salary structure, PPF, CAGR, rent receipt, GST invoice, expense tracker, CSV and Excel utilities), batch 2 added 10 India finance and date tools). The later media batch added 12 tools; demand-driven additions added 3 more. This roadmap is a plan, not a claim that unchecked features are already available.
+Current release contains 142 tools in 8 sections and 16 internal collections (Studio batch 1 added 14 PDF and image tools, batch 3 added 7 office and finance tools (salary structure, PPF, CAGR, rent receipt, GST invoice, expense tracker, CSV and Excel utilities), batch 2 added 10 India finance and date tools). The later media batch added 12 tools; demand-driven additions added 3 more. This roadmap is a plan, not a claim that unchecked features are already available.
 
 ## PDF editor responsiveness
 
@@ -141,3 +141,5 @@ Current release contains 155 tools in 8 sections and 16 internal collections (St
 - Upgraded the existing photo-to-KB tool into a guided workflow for photo KB ceilings, adaptive white-paper signature cleanup and combining marksheets under a PDF byte ceiling. Existing manual tools remain available, not duplicated as separate catalogue entries.
 - No dependencies or external processing. Automatic JPEG quality/dimension fitting and PDF quality/resolution fitting verify final output bytes. PDF text conversion is explicit opt-in; no pages silently dropped.
 - Limits, readability caveats and regression coverage: [EXACT-KB.md](EXACT-KB.md).
+
+- 2026-11-15: removed 13 approved stock-app duplicates, leaving 142 tools. Registry, app code, navigation, cached preferences, generated pages and tests follow the smaller catalogue.
