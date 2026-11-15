@@ -1,277 +1,431 @@
-# The ToolAtlas catalogue
+# ToolAtlas catalogue
 
-155 applications, 8 top-level sections and 16 internal collections. Every tool runs entirely in your browser and works offline once the release cache has installed successfully (subject to browser storage and codec support).
+142 applications, 8 top-level sections and 16 internal collections. Processing runs in your browser, subject to browser, codec and device support.
 
----
+The 13 approved stock-app duplicates were removed on 15 November 2026.
 
-## Form-ready files
+### Percentage Calculator - `/tools/percentage-calculator/`
+Work out percentages, increases, decreases and percentage change.
+
+### BMI Calculator - `/tools/bmi-calculator/`
+Body mass index with metric or imperial inputs and a healthy range guide.
+
+### Tip & Bill Splitter - `/tools/tip-calculator/`
+Split a bill fairly with tip presets and per-person totals.
+
+### Age Calculator - `/tools/age-calculator/`
+Exact age in years, months and days, plus the next birthday countdown.
+
+### Date Difference - `/tools/date-difference/`
+Count days, weeks and business days between two dates.
+
+### Time Zone Converter - `/tools/timezone-converter/`
+Translate a meeting time across zones with day offset and UTC labels.
+
+### Countdown Timer - `/tools/countdown/`
+Live countdown to any date, or a custom hour and minute timer.
+
+### Loan EMI Calculator - `/tools/loan-emi-calculator/`
+Monthly payments, total interest and an amortisation summary.
+
+### Compound Interest - `/tools/compound-interest/`
+Project growth with monthly, quarterly or yearly compounding.
+
+### Savings Goal Planner - `/tools/savings-goal/`
+Find the monthly amount needed to reach a target on time.
+
+### Word & Character Counter - `/tools/word-counter/`
+Live words, characters, sentences, paragraphs and reading time.
+
+### Case Converter - `/tools/case-converter/`
+Switch between sentence, title, upper, lower, camel and snake case.
+
+### Text Diff Checker - `/tools/text-diff/`
+Compare two blocks of text and highlight added or removed lines.
+
+### Lorem Ipsum Generator - `/tools/lorem-ipsum/`
+Generate clean placeholder paragraphs, sentences or words.
+
+### Image to PDF - `/tools/image-to-pdf/`
+Turn photos and scans into a single tidy PDF, right in your browser.
+
+### PDF Merge - `/tools/pdf-merge/`
+Combine several PDF files into one document without uploading them.
+
+### PDF Editor - `/tools/pdf-editor/`
+Edit, annotate, sign and fill PDFs on your device: text, highlights, whiteout, drawing, shapes, images, links and form fields.
+
+### Image Compressor - `/tools/image-compressor/`
+Resize and compress JPG, PNG and WebP images with a live preview.
+
+### File Checksum - `/tools/file-checksum/`
+Compute SHA-1, SHA-256 and SHA-512 hashes of any local file.
+
+### Pomodoro Timer - `/tools/pomodoro/`
+Focus sessions with short and long breaks, all tracked locally.
+
+### JSON Formatter - `/tools/json-formatter/`
+Format, minify and validate JSON with clear error positions.
+
+### Base64 Encoder - `/tools/base64/`
+Encode and decode Base64 text or files with URL-safe options.
+
+### Hash Generator - `/tools/hash-generator/`
+Create SHA-1, SHA-256 and SHA-384 digests of any text.
+
+### JWT Decoder - `/tools/jwt-decoder/`
+Inspect JWT header and payload claims offline, with expiry warnings.
+
+### Regex Tester - `/tools/regex-tester/`
+Test regular expressions with flags, highlights and match groups.
+
+### Password Generator - `/tools/password-generator/`
+Strong random passwords with length, symbol and readability controls.
+
+### QR Code Generator - `/tools/qr-code-generator/`
+Create downloadable QR codes for links, text, Wi-Fi and email.
+
+### UUID Generator - `/tools/uuid-generator/`
+Bulk generate RFC 4122 version 4 identifiers, one click to copy.
+
+### Colour Palette Generator - `/tools/color-palette/`
+Build harmonious palettes and copy hex, RGB or Tailwind-ready values.
+
+### Colour Converter - `/tools/color-converter/`
+Convert between HEX, RGB, HSL and HSV with a live colour preview.
+
+### URL Parser - `/tools/url-parser/`
+Break a URL into protocol, host, path and query parameters.
+
+### Signature Pad & Transparent PNG - `/tools/signature-maker/`
+Draw or clean a scanned signature, remove paper and auto-crop a transparent PNG.
+
+### Bulk File Renamer - `/tools/bulk-renamer/`
+Stack filename rules, preview every change and export renamed files in a ZIP.
+
+### List Cleaner & Deduplicator - `/tools/list-cleaner/`
+Trim, sort and deduplicate lists, extract email addresses and export TXT or CSV.
+
+### PVC Card Maker (Aadhaar, PAN, Ayushman) - `/tools/pvc-card-maker/`
+Turn an ID card PDF or photo into print-ready CR80 PVC cards: auto-detect and crop, 300 DPI, A4 sheets of 2, 4 or 10 cards.
+
+### Passport & ID Photo Sheet Maker - `/tools/id-photo-maker/`
+Crop a portrait and tile exact-size photos on a 4×6 inch or A4 print sheet.
+
+### Photo EXIF & Metadata Stripper - `/tools/remove-exif/`
+Inspect and remove hidden photo metadata in batches. JPEG/PNG support lossless stripping.
+
+### Group Expense & Split Bill Settler - `/tools/split-bill/`
+Split unequal group expenses and find the fewest payments needed to settle.
+
+### Create ZIP - `/tools/zip-create/`
+Bundle files into one ZIP archive locally. Stored without compression.
+
+### Image to Base64 - `/tools/image-base64/`
+Turn a PNG, JPEG or WebP image into a data URL for HTML and CSS.
+
+### Screen Colour Test - `/tools/screen-test/`
+Inspect solid colours for dead pixels, stuck pixels and uneven brightness.
+
+### Sound Level Meter - `/tools/sound-meter/`
+Live microphone loudness reading with average and peak levels on an analogue-style gauge.
+
+### Metronome - `/tools/metronome/`
+Steady practice clicks from 30 to 300 BPM with tap tempo, accents and time signatures.
+
+### Instrument Tuner - `/tools/tuner/`
+Tune a guitar, violin or voice by microphone: shows the nearest note and how many cents off you are.
+
+### Tone Generator & Sweep - `/tools/tone-generator/`
+Play test tones from 20 Hz to 20 kHz with four waveforms, noise and an automatic sweep for hearing and speaker checks.
+
+### Text to Speech - `/tools/text-to-speech/`
+Read any text aloud with the voices built into your device, with speed and pitch controls.
+
+### Compass - `/tools/compass/`
+Live heading dial using your phone\'s motion sensors, with degrees and cardinal direction.
+
+### Spirit Level - `/tools/spirit-level/`
+Bubble level using your phone\'s tilt sensors, with degrees and a zero calibration button.
+
+### GPS Speedometer - `/tools/gps-speedometer/`
+Live speed from GPS in km/h, mph or knots, with top speed and trip distance.
+
+### Screen Ruler - `/tools/screen-ruler/`
+On-screen ruler in centimetres and inches, calibrated against a bank card for real-world accuracy.
+
+### Morse Code Translator - `/tools/morse-code/`
+Convert text to Morse code and back, then play it as audio beeps at your chosen speed.
+
+### QR & Barcode Scanner - `/tools/qr-barcode-scanner/`
+Scan QR codes and barcodes with your camera or from a photo, then copy or open the result.
+
+### Video Compressor - `/tools/video-compress/`
+Reduce resolution and bitrate for a smaller video. Savings depend on the source.
+
+### Mute Video - `/tools/video-mute/`
+Save a video without its audio track, processed locally on your device.
+
+### Video to Image - `/tools/video-frame/`
+Pick a moment and save a full-resolution PNG still.
+
+### Extract Audio from Video - `/tools/video-audio/`
+Save the audio of a browser-supported video as a WAV file.
+
+### Audio Cutter - `/tools/audio-trim/`
+Trim songs, voice notes and ringtones with optional edge fades. WAV output.
+
+### Audio to WAV - `/tools/audio-convert/`
+Convert browser-supported MP3, M4A, OGG and other audio to PCM WAV.
+
+### Audio Joiner - `/tools/audio-merge/`
+Put up to eight clips in your chosen order and save one WAV.
+
+### Audio Volume & Normalize - `/tools/audio-volume/`
+Change gain or peak-normalize a quiet recording. WAV output.
+
+### Reverse Audio - `/tools/audio-reverse/`
+Play an audio clip backwards and save it as WAV.
+
+### WAV Size Reducer - `/tools/audio-size/`
+Reduce WAV sample rate and mix stereo to mono for smaller speech files.
+
+### Image Resizer - `/tools/image-resizer/`
+Resize to exact pixels or keep the original aspect ratio.
+
+### Image Format Converter - `/tools/image-converter/`
+Convert browser-supported photos into JPEG, PNG or WebP.
+
+### Center Crop Image - `/tools/image-crop/`
+Crop to a new aspect ratio and output size.
+
+### Image Watermark - `/tools/image-watermark/`
+Add a readable text watermark to your photo.
 
 ### Exact KB - Photo, Signature & PDF - `/tools/image-target-size/`
-Fit a JPG to a chosen 5-20,000 KB ceiling, whiten shadowed signature paper, or merge PDFs and marksheet images into one PDF under the limit. Decimal KB (1,000 bytes), strict final byte check, page order controls and image previews. PDF image conversion is opt-in and loses text/form/signature features. A limit may be impossible without damaging readability; no over-limit file is marked successful. See [EXACT-KB.md](EXACT-KB.md).
+Fit photos to a KB limit, whiten signature paper and combine marksheets into one size-checked PDF.
 
-## Calculators
+### Image Contact Sheet - `/tools/image-contact-sheet/`
+Arrange multiple images in a labelled grid and download one contact sheet.
 
-### Standard Calculator — `/tools/calculator`
-A keypad calculator with memory of the last six calculations, percentage handling, a sign toggle and full keyboard support (digits, `+ - * /`, `Enter`, `Esc`, `Backspace`, `%`).
+### Extract / Reorder PDF Pages - `/tools/pdf-extract/`
+Save selected pages and ranges into a new PDF.
 
-### Percentage Calculator — `/tools/percentage-calculator`
-Three modes: *X % of Y*, *X is what percent of Y*, and *percentage change*. Shows the arithmetic it used so the answer can be checked by hand.
+### PDF Page Organiser - `/tools/pdf-page-organiser/`
+Reorder, duplicate or remove pages and save a new PDF.
 
-### BMI Calculator — `/tools/bmi-calculator`
-Metric or imperial input, body mass index with the standard four bands, a healthy-weight range for the entered height, and a marker on a 15–40 scale. Includes a note that BMI is a screening measure, not a diagnosis.
+### Rotate PDF Pages - `/tools/pdf-rotate/`
+Rotate all or selected pages without rasterizing.
 
-### Tip & Bill Splitter — `/tools/tip-calculator`
-Tip amount, total and per-person split, with preset tips from 0 % to 25 %, eight currencies, and a "round the total up" suggestion.
+### Watermark PDF - `/tools/pdf-watermark/`
+Add a faint diagonal text label to every page.
 
----
+### Add PDF Page Numbers - `/tools/pdf-page-numbers/`
+Put a centered page count in each page footer.
 
-## Measurement Converters
+### Clear Standard PDF Metadata - `/tools/pdf-metadata/`
+Clear standard document information fields. Not forensic sanitization.
 
-### Unit Converter — `/tools/unit-converter`
-Seven families — length, mass, area, volume, speed, digital storage and time — with 47 units in total, a swap button and a table of every equivalent value for the current input.
+### Markdown Preview - `/tools/markdown-preview/`
+Preview sanitized Markdown and export clean HTML without remote images.
 
-### Temperature Converter — `/tools/temperature-converter`
-Celsius, Fahrenheit and Kelvin with a reference table (absolute zero, freezing, body temperature, boiling, moderate oven).
+### Invoice & Quotation Generator - `/tools/invoice-generator/`
+Create itemized invoices or quotations with a logo, per-item tax and a local A4 PDF download.
 
----
+### PDF Compressor - `/tools/pdf-compress/`
+Shrink a PDF to a quality level or a target size. Shows the saving and warns when text would turn into pictures.
 
-## Date & Time Tools
+### PDF to Images - `/tools/pdf-to-images/`
+Save each PDF page as a PNG or JPEG at the resolution you choose, with a ZIP download.
 
-### Age Calculator — `/tools/age-calculator`
-Exact age in years, months and days, plus totals in months, weeks, days and hours, and a countdown to the next birthday.
+### PDF Background and Colour - `/tools/pdf-background/`
+Change the page background, make a PDF greyscale or black and white, or adjust brightness and contrast for scans.
 
-### Date Difference — `/tools/date-difference`
-Days between two dates, converted to weeks, months, years, hours and minutes. Also counts business days, with an option to include the end date.
+### PDF Compare - `/tools/pdf-compare/`
+Compare two PDFs by text and by page picture to see what changed.
 
-### Time Zone Converter — `/tools/timezone-converter`
-One reference time, many zones. Adds a UTC offset per zone, flags your own local zone, and lets you add or remove zones from the list.
+### PDF Splitter - `/tools/pdf-split/`
+Split a PDF into single pages, fixed-size chunks or custom ranges.
 
-### Countdown Timer — `/tools/countdown`
-A live countdown to any date, or a custom minute-and-second timer with a progress bar and start/pause/reset.
+### PDF Text Extractor - `/tools/pdf-extract-text/`
+Copy or save the text from a PDF. Warns when a file is a scan with no text layer.
 
----
+### PDF Form Filler - `/tools/pdf-form-filler/`
+Fill the fields of a fillable PDF form and save it, with an option to flatten the result.
 
-## Financial Tools
+### Background Remover (colour based) - `/tools/image-bg-remove/`
+Remove a plain background by colour. Works on studio and white backgrounds. Not an AI cut-out.
 
-### Loan EMI Calculator — `/tools/loan-emi-calculator`
-Monthly payment, total interest and total repayment for any principal, rate and term, with a year-by-year amortisation table showing how the principal/interest split changes.
+### Image Enlarger - `/tools/image-upscale/`
+Enlarge a picture 2x to 4x with smooth resampling and light sharpening. No AI.
 
-### Compound Interest — `/tools/compound-interest`
-Starting amount plus a monthly contribution, compounded monthly, quarterly or yearly. Includes a growth chart, a yearly table and a breakdown of contributions versus growth.
+### Bulk Image Resizer and Converter - `/tools/image-bulk-convert/`
+Resize and convert up to 100 images at once to JPEG, PNG, WebP or AVIF and download a ZIP.
 
-### Savings Goal Planner — `/tools/savings-goal`
-Given a target, what you have already saved and a monthly amount, it works out how long the goal takes — with or without an expected annual return.
+### Passport Photo Maker (India) - `/tools/passport-photo/`
+Crop a portrait to India passport 35x45 mm, PAN 25x35 mm or a custom size, and print a sheet of copies.
 
----
+### Collage Maker - `/tools/image-collage/`
+Combine up to 12 pictures into a grid, row, column or hero layout.
 
-## Text & Writing Tools
+### Image Annotator and Editor - `/tools/image-annotate/`
+Draw arrows, boxes and text, hide private areas, rotate, crop and adjust light.
 
-### Word & Character Counter — `/tools/word-counter`
-Live counts of words, characters (with and without spaces), sentences, paragraphs and lines, plus reading and speaking time and the most-used words with stop words removed.
+### Image Metadata Viewer and Remover - `/tools/image-metadata/`
+See EXIF, GPS and camera details inside a photo and save a clean copy without them.
 
-### Case Converter — `/tools/case-converter`
-Ten styles: UPPER, lower, Sentence, Title, camelCase, PascalCase, snake_case, kebab-case, URL slug and aLTeRNAtiNg. Every result is one click to copy.
+### Income Tax Calculator (India, FY 2025-26 and 2026-27) - `/tools/income-tax-india/`
+Compare new and old regime tax by financial year, age and deductions, with slab breakdown, rebate, surcharge and cess.
 
-### Text Diff Checker — `/tools/text-diff`
-Compares two blocks of text line by line with added and removed lines highlighted, and a count of each.
+### TDS Calculator (India) - `/tools/tds-calculator/`
+Work out TDS by section for contractors, professionals, rent, interest and more, with the threshold and rate shown.
 
-### Lorem Ipsum Generator — `/tools/lorem-ipsum`
-Placeholder paragraphs in a chosen number of paragraphs and sentences, optionally wrapped in `<p>` tags, with the classic opening.
+### EPF Calculator - `/tools/epf-calculator/`
+Project your EPF corpus at retirement with salary growth, employer split and interest rate.
 
----
+### Gratuity Calculator - `/tools/gratuity-calculator/`
+Estimate gratuity from last drawn salary and years of service using the 15/26 formula.
 
-## PDF & Document Tools
+### HRA Exemption Calculator - `/tools/hra-calculator/`
+Find the exempt part of your HRA using the least-of-three rule, with the metro list for the chosen financial year.
 
-### Image to PDF — `/tools/image-to-pdf`
-Turns photos and scans into a single PDF. JPG and PNG are embedded directly; other formats are converted through a canvas first. Choose A4, US Letter or fit-to-image, set the margin, and reorder the pages.
+### FD and RD Calculator - `/tools/fd-rd-calculator/`
+Maturity value for fixed deposits (compound or simple) and recurring deposits.
 
-### PDF Merge — `/tools/pdf-merge`
-Combines any number of PDFs into one document, in the order you choose, with page counts shown per file. Password-protected files are skipped with a clear message.
+### Loan Amortisation Schedule - `/tools/loan-schedule/`
+Month by month EMI schedule with optional extra monthly payment and the interest it saves.
 
----
+### Working Days Calculator - `/tools/working-days/`
+Count working days between dates or find the date after N working days, with your own weekly off and holidays.
 
-## Image & Media Tools
+### Number to Words (Rupees) - `/tools/number-to-words-inr/`
+Write an amount in Indian words with lakh and crore, for cheques and invoices.
 
-### Image Compressor — `/tools/image-compressor`
-Resize and re-encode JPG, PNG or WebP with a quality slider and a live before/after preview. Shows the exact size reduction.
+### GSTIN, PAN and IFSC Checker - `/tools/gst-pan-validator/`
+Check the format of a GSTIN (including its check character), PAN and IFSC offline.
 
-### Image Contact Sheet — `/tools/image-contact-sheet`
-Arrange up to 20 local images in a configurable grid. Choose columns, tile width, background, output format and optional file-name labels, then download a single contact sheet.
+### Salary Structure Calculator - `/tools/salary-structure/`
+Split a CTC into basic, HRA, special allowance and PF, and see the estimated monthly take-home.
 
----
+### PPF Calculator - `/tools/ppf-calculator/`
+Maturity value of a Public Provident Fund account with yearly deposits, rate and deposit timing.
 
-## File Utilities
+### CAGR Calculator - `/tools/cagr-calculator/`
+Find the yearly growth rate between a starting and an ending value.
 
-### File Checksum — `/tools/file-checksum`
-Computes SHA-1, SHA-256, SHA-384 and SHA-512 digests of any local file with the Web Crypto API, each one click to copy.
+### Rent Receipt Maker - `/tools/rent-receipt/`
+Make monthly rent receipts in one PDF for an HRA claim, with the landlord PAN check.
 
----
+### GST Invoice Maker - `/tools/gst-invoice/`
+Make a simple GST tax invoice PDF with CGST, SGST or IGST, HSN codes and the total in words.
 
-## Productivity Applications
+### Expense and Petty Cash Tracker - `/tools/expense-tracker/`
+Log money in and out, see the balance and spend by category, and export CSV. Saved only in your browser.
 
-### Task List — `/tools/todo-list`
-Add tasks with low, normal or high priority, tick them off, filter by all/active/done, and watch the completion bar. Everything is saved in your browser.
+### CSV and Excel Utilities - `/tools/csv-excel-tools/`
+Open a CSV or XLSX, sort, remove duplicates and empty rows, trim spaces, and save as CSV or XLSX.
 
-### Quick Notes — `/tools/quick-notes`
-A notepad with multiple notes, a search box and automatic saving as you type.
+### GST Calculator - `/tools/gst-calculator/`
+Add or remove GST with a clear base, tax and total breakdown.
 
-### Pomodoro Timer — `/tools/pomodoro`
-Focus, short break and long break sessions with a circular progress ring, adjustable durations (the classic 25 / 5 / 15) and a long break every fourth session.
+### Discount Calculator - `/tools/discount-calculator/`
+Find the sale price, savings and price after optional tax.
 
----
+### SIP Calculator - `/tools/sip-calculator/`
+Estimate a monthly investment with adjustable return and duration.
 
-## Developer Tools
+### Simple Interest Calculator - `/tools/simple-interest/`
+Calculate interest on a principal without compounding over time.
 
-### JSON Formatter — `/tools/json-formatter`
-Format, minify and sort keys, with the indentation width configurable. Shows whether the input is valid, the number of keys, the nesting depth and the line and column of any error.
+### Salary to Hourly - `/tools/salary-converter/`
+Compare annual, monthly, weekly and hourly gross pay.
 
-### Base64 Encoder — `/tools/base64`
-Encodes and decodes text, with a URL-safe alphabet option and file support. Includes a reminder that Base64 is an encoding, not encryption.
+### Fuel Cost Calculator - `/tools/fuel-cost/`
+Estimate trip fuel use and split the fuel bill.
 
-### Hash Generator — `/tools/hash-generator`
-SHA-1, SHA-256, SHA-384 and SHA-512 digests of any text, updated as you type.
+### Running Pace Calculator - `/tools/pace-calculator/`
+Convert distance and elapsed time into pace and speed.
 
-### JWT Decoder — `/tools/jwt-decoder`
-Decodes a JWT's header and payload, highlights the standard claims with human-readable dates, and warns when the token has expired. Signature verification is explicitly not performed.
+### Ratio Calculator - `/tools/ratio-calculator/`
+Simplify an integer ratio and scale it to a new first value.
 
-### Regex Tester — `/tools/regex-tester`
-Live regular-expression testing with the `g`, `i`, `m`, `s` and `u` flags, highlighted matches in the text, a match list with capture groups, and a readable error for an invalid pattern.
+### Fraction Calculator - `/tools/fraction-calculator/`
+Add, subtract, multiply or divide two fractions.
 
----
+### Add or Subtract Days - `/tools/date-add/`
+Move forward or backward from a calendar date.
 
-## Generators
+### Unix Timestamp Converter - `/tools/unix-timestamp/`
+Convert Unix seconds, milliseconds and ISO dates.
 
-### Password Generator — `/tools/password-generator`
-Cryptographically random passwords with a length slider (8–64), optional character sets and an option to avoid look-alike characters. Shows the estimated entropy in bits and a strength label.
+### Number Base Converter - `/tools/number-base/`
+Convert large integers between binary, octal, decimal and hex.
 
-### QR Code Generator — `/tools/qr-code-generator`
-QR codes for text or links, Wi-Fi networks and email addresses, with size, error-correction level and colour settings, plus a PNG download.
+### Data Size Converter - `/tools/data-size/`
+Convert bytes with explicit binary or decimal units.
 
-### UUID Generator — `/tools/uuid-generator`
-Bulk-generates RFC 4122 version 4 identifiers, with optional hyphens and uppercase, and copy-one or copy-all.
+### URL Encoder / Decoder - `/tools/url-encoder/`
+Encode or decode a URL component safely.
 
-### Colour Palette Generator — `/tools/color-palette`
-Builds analogous, complementary, triadic, tetradic and monochrome palettes from a base colour. Copies individual swatches or the whole palette as CSS custom properties.
+### HTML Entity Encoder / Decoder - `/tools/html-entities/`
+Escape text for HTML or decode character entities.
 
----
+### URL Slug Generator - `/tools/slug-generator/`
+Make a readable, lowercase URL slug from a title.
 
-## Internet & Network Utilities
+### Remove Duplicate Lines - `/tools/duplicate-lines/`
+Keep the first occurrence of every distinct line.
 
-### URL Parser — `/tools/url-parser`
-Breaks a URL into protocol, host, port, path, hash and origin, lists every query parameter in order, and exports the whole thing as JSON.
+### Sort Lines - `/tools/sort-lines/`
+Sort lines alphabetically, numerically or by length.
 
----
+### Whitespace Cleaner - `/tools/text-cleaner/`
+Clean repeated spaces, trailing spaces or blank lines.
 
-## Miscellaneous Utilities
+### Reverse Text - `/tools/reverse-text/`
+Reverse visible characters, word order or line order.
 
-### Colour Converter — `/tools/color-converter`
-Converts any colour between HEX, RGB, HSL, HSV and CMYK, with a preview, channel sliders and a random colour button.
+### CSV to JSON - `/tools/csv-to-json/`
+Parse quoted CSV into a JSON array of records.
 
----
+### JSON to CSV - `/tools/json-to-csv/`
+Export a flat array of JSON objects as quoted CSV.
 
-## Related reading
+### JSON Key Sorter - `/tools/json-sort/`
+Recursively sort object keys without reordering arrays.
 
-- [`ARCHITECTURE.md`](ARCHITECTURE.md) — how the platform is built
-- [`ADDING_A_TOOL.md`](ADDING_A_TOOL.md) — how to add the next one
+### Text / Binary Converter - `/tools/text-to-binary/`
+Convert Unicode text to UTF-8 binary bytes and back.
 
+### Unicode Inspector - `/tools/unicode-inspector/`
+Inspect code points and UTF-8 bytes in text.
 
----
+### UTM Campaign URL Builder - `/tools/utm-builder/`
+Build campaign links with correctly encoded tracking parameters.
 
-## Studio batch 1 (added 12 November 2026)
+### WhatsApp Link Generator - `/tools/whatsapp-link/`
+Create a click-to-chat link with an optional draft message.
 
-All of these run in the browser. Files are not uploaded. Outputs can be passed to another tool with the "Use this result in another tool" strip.
+### Secure Random Number - `/tools/random-number/`
+Generate unbiased random integers with browser cryptography.
 
-### PDF
-- **PDF Compressor** (`/tools/pdf-compress`): quality or target-size modes. Warns when compression rasterises text.
-- **PDF to Images** (`/tools/pdf-to-images`): PNG or JPEG per page, ZIP download. Page size is capped at 8 megapixels.
-- **PDF Background and Colour** (`/tools/pdf-background`): background fill, greyscale, black and white, brightness and contrast.
-- **PDF Compare** (`/tools/pdf-compare`): text and page-picture differences.
-- **PDF Splitter** (`/tools/pdf-split`): single pages, fixed chunks or custom ranges.
-- **PDF Text Extractor** (`/tools/pdf-extract-text`): copies the text layer. Scans without a text layer are reported, not OCR'd.
-- **PDF Form Filler** (`/tools/pdf-form-filler`): fills AcroForm fields, optional flatten.
+### Random Name Picker - `/tools/random-picker/`
+Pick entries from a list without replacement.
 
-### Image
-- **Background Remover, colour based** (`/tools/image-bg-remove`): removes a plain background by colour. It is not an AI cut-out and struggles with busy backgrounds.
-- **Image Enlarger** (`/tools/image-upscale`): 2x to 4x resampling with sharpening. Does not add detail.
-- **Bulk Image Resizer and Converter** (`/tools/image-bulk-convert`): up to 100 images to JPEG, PNG, WebP or AVIF. AVIF saving depends on the browser.
-- **Passport Photo Maker, India** (`/tools/passport-photo`): 35 x 45 mm, PAN 25 x 35 mm, 2 x 2 inch and custom sizes at 300 dpi, plus a print sheet. Always check the current rules of the office you apply to.
-- **Collage Maker** (`/tools/image-collage`), **Image Annotator and Editor** (`/tools/image-annotate`), **Image Metadata Viewer and Remover** (`/tools/image-metadata`).
+### Color Contrast Checker - `/tools/color-contrast/`
+Measure WCAG contrast for foreground and background colors.
 
-## Studio batch 2: India finance and date tools (added 12 November 2026)
+### CSS Gradient Generator - `/tools/css-gradient/`
+Build a two-color linear gradient and copy the CSS.
 
-Each tool shows the financial year it uses, links its sources and says it is an estimate, not tax, legal or payroll advice. Rules were reviewed in November 2026.
+### CSS Box Shadow Generator - `/tools/box-shadow/`
+Create a shadow declaration from simple controls.
 
-- **Income Tax Calculator** (`/tools/income-tax-india`): FY 2025-26 and 2026-27, new and old regime, age bands, 87A rebate, surcharge, cess and a side-by-side other-regime total.
-- **TDS Calculator** (`/tools/tds-calculator`): common sections with 1961 numbering and the 2025 Act reference.
-- **EPF Calculator** (`/tools/epf-calculator`), **Gratuity Calculator** (`/tools/gratuity-calculator`), **HRA Exemption Calculator** (`/tools/hra-calculator`, metro list depends on the FY).
-- **FD and RD Calculator** (`/tools/fd-rd-calculator`), **Loan Amortisation Schedule** (`/tools/loan-schedule`), **Working Days Calculator** (`/tools/working-days`).
-- **Number to Words, Rupees** (`/tools/number-to-words-inr`), **GSTIN, PAN and IFSC Checker** (`/tools/gst-pan-validator`, format checks only, no registry lookup).
-- **Salary Structure Calculator** (`/tools/salary-structure`): CTC split into basic, HRA, special allowance and PF with an estimated take-home. HRA exemption and other deductions are not applied.
-- **PPF Calculator** (`/tools/ppf-calculator`): yearly compounding with an editable rate. Real PPF works out interest monthly, so the result is a close estimate.
-- **CAGR Calculator** (`/tools/cagr-calculator`)
-- **Rent Receipt Maker** (`/tools/rent-receipt`): monthly receipts in one PDF, landlord PAN checked when rent is above 1,00,000 a year.
-- **GST Invoice Maker** (`/tools/gst-invoice`): CGST and SGST or IGST, HSN or SAC, total in words, PDF download. A simple layout, not a full statutory invoice.
-- **Expense and Petty Cash Tracker** (`/tools/expense-tracker`): saved in this browser only, CSV export.
-- **CSV and Excel Utilities** (`/tools/csv-excel-tools`): open CSV or XLSX, sort, remove duplicates and empty rows, trim, export. Formula-injection safeguard on export.
+### Aspect Ratio Calculator - `/tools/aspect-ratio/`
+Calculate proportional image dimensions without uploading a file.
 
-## Video and Audio (13 November 2026)
+### Reading and Speech Time - `/tools/reading-time/`
+Estimate reading and speaking duration with adjustable speeds.
 
-The media batch brought the catalog to 132 tools across 8 sections and 15 internal collections. It added 5 Video tools and 7 Audio tools:
-
-| Video | Audio |
-| --- | --- |
-| Video Trimmer | Audio Cutter (with 50 ms edge fades) |
-| Video Compressor | Audio to WAV |
-| Mute Video | Audio Joiner (up to 8 files, reorderable) |
-| Video to Image (PNG) | Audio Volume & Peak Normalize |
-| Extract Audio from Video (WAV) | Reverse Audio |
-| | WAV Size Reducer (mono, 8/16/22.05 kHz) |
-| | Voice Recorder |
-
-No new dependencies, codec downloads or external processing. Video input: browser-playable media up to 100 MB, 2 minutes and 1920 px on the longest edge. Exports are re-encoded in real time, WebM by default with MP4 only where MediaRecorder supports it; cuts can differ by a few frames. Compression shows original and output sizes and does not guarantee savings. Audio: browser-decodable mono/stereo media up to 50 MB total and 5 minutes, output 16-bit PCM WAV. Recorder: browser-native WebM/OGG/M4A, microphone permission requested on click, five-minute auto-stop. Files and recording URLs are released when leaving the tool.
-
-Tests: `npm run test:av` covers actual exports, non-silent preserved video sound, removed audio tracks, repeat video exports, cut duration, join duration/order, peak normalization, corrupt inputs, recording and narrow layouts. `scripts/fixtures/media-test.webm` is a synthetic test pattern with a 440 Hz sine tone generated locally, not user media.
-
-## Demand-driven utility additions
-
-141 tools total. Create ZIP (up to 100 files / 50 MB, uncompressed store mode), Image to Base64 (up to 5 MB, PNG/JPEG/WebP/GIF), and Screen Colour Test (manual, no flashing or repair claims). Selection evidence and deliberate omissions: [demand research](DEMAND-RESEARCH-2026-11.md). `npm run test:demand` verifies ZIP structure/duplicate names/content, file limits, real data URL output/preview, SVG rejection and narrow layouts.
-
-## Practical tools and platform upgrade (13 November 2026)
-
-The total is now **141 tools**. Six new routes plus upgraded Invoice & Quotation and Fuel Cost:
-
-| Tool | Route |
-| --- | --- |
-| Signature Pad & Transparent PNG | `/tools/signature-maker/` |
-| Bulk File Renamer | `/tools/bulk-renamer/` |
-| List Cleaner & Deduplicator | `/tools/list-cleaner/` |
-| Passport & ID Photo Sheet Maker | `/tools/id-photo-maker/` |
-| PVC Card Maker (Aadhaar, PAN, Ayushman) | `/tools/pvc-card-maker/` |
-| Photo EXIF & Metadata Stripper | `/tools/remove-exif/` |
-| Group Expense & Split Bill Settler | `/tools/split-bill/` |
-| Invoice & Quotation Generator (upgraded existing tool) | `/tools/invoice-generator/` |
-| Fuel Cost Calculator (upgraded existing tool) | `/tools/fuel-cost/` |
-
-See [the upgrade notes](UPGRADES-2026-11.md) for platform changes, formats, limits, storage/URL privacy, offline conditions and intentional departures from the brief.
-
-## Device & Sensor tools (14 November 2026)
-
-The total is now **155 tools**. Thirteen new tools in the Device & Sensor collection (`/category/device/`, inside the Utilities section), benchmarked against the alltools.link app. Microphone, motion-sensor, GPS and screen-capture tools whose hardware or API support varies are marked **beta** and degrade to an honest support note instead of a dead button.
-
-| Tool | Route | Notes |
-| --- | --- | --- |
-| Sound Level Meter | `/tools/sound-meter/` | Relative 0-100 loudness, not calibrated SPL (beta) |
-| Metronome | `/tools/metronome/` | 30-300 BPM, tap tempo, accented downbeat |
-| Instrument Tuner | `/tools/tuner/` | Autocorrelation pitch, note + cents (beta) |
-| Tone Generator & Sweep | `/tools/tone-generator/` | 20 Hz-20 kHz, four waveforms, white noise, 12 s sweep |
-| Text to Speech | `/tools/text-to-speech/` | Device voices, rate and pitch, 4000 character cap |
-| Speech to Text | `/tools/speech-to-text/` | Web Speech API with on-device recognition enforced (`processLocally`); stays off where a browser would send audio to a speech service (beta) |
-| Compass | `/tools/compass/` | Magnetic heading, phone only (beta) |
-| Spirit Level | `/tools/spirit-level/` | Bubble level with zero calibration (beta) |
-| GPS Speedometer | `/tools/gps-speedometer/` | km/h, mph, knots; top speed and trip distance (beta) |
-| Screen Ruler | `/tools/screen-ruler/` | Calibrated against an 85.6 mm bank card, saved per device |
-| Morse Code Translator | `/tools/morse-code/` | Two-way, audio playback at 5-40 WPM |
-| QR & Barcode Scanner | `/tools/qr-barcode-scanner/` | Barcode Detection API, camera or photo (beta) |
-| Screen Recorder | `/tools/screen-recorder/` | getDisplayMedia + optional mic, WebM download (beta) |
-
-Deliberately not copied from the reference app: native app wrappers, a paid ads-free tier, office document editors (duplicate the existing PDF studio), PIN-code lookup (needs an external API, against the local-only rule) and network speed test (needs a measurement server). `npm run test:device` verifies all thirteen routes, static SEO shells, Morse conversion, ruler calibration, tempo clamping, tone start/stop, the honest fallback states for microphone, sensor, GPS and camera denials, and the speech-to-text privacy gates: browsers without the Web Speech API get a support note, browsers that can only recognize speech remotely fail closed with no dictation control, and supported browsers always start recognition with `processLocally=true`.
+### Query String Editor - `/tools/url-query/`
+Inspect a URL query as readable JSON or replace it from JSON.

@@ -24,15 +24,9 @@ import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
  * missing or unknown id fails loudly instead of rendering an empty page.
  */
 const REGISTRY = {
-  // Calculators
-  calculator: lazy(() => import('./calculator/App')),
   'percentage-calculator': lazy(() => import('./percentage-calculator/App')),
   'bmi-calculator': lazy(() => import('./bmi-calculator/App')),
   'tip-calculator': lazy(() => import('./tip-calculator/App')),
-
-  // Converters
-  'unit-converter': lazy(() => import('./unit-converter/App')),
-  'temperature-converter': lazy(() => import('./temperature-converter/App')),
 
   // Date & time
   'age-calculator': lazy(() => import('./age-calculator/App')),
@@ -61,10 +55,6 @@ const REGISTRY = {
 
   // File utilities
   'file-checksum': lazy(() => import('./file-checksum/App')),
-
-  // Productivity
-  'todo-list': lazy(() => import('./todo-list/App')),
-  'quick-notes': lazy(() => import('./quick-notes/App')),
   pomodoro: lazy(() => import('./pomodoro/App')),
 
   // Developer
@@ -92,7 +82,7 @@ const REGISTRY = {
  * `src/tools/registry.check.ts`.
  */
 const PdfStudio=lazy(()=>import('./studio/PdfStudio'));const ImageStudio=lazy(()=>import('./studio/ImageStudio'));const FinanceTools=lazy(()=>import('./studio/FinanceTools'));
-export const TOOL_COMPONENTS: Record<string, LazyExoticComponent<ComponentType>> = {...REGISTRY, ...Object.fromEntries(DEMAND_TOOLS.map(t=>[t.id,lazy(()=>import('./demand/App'))])), ...Object.fromEntries(AV_TOOLS.map(t=>[t.id,lazy(()=>import('./av/App'))])), ...Object.fromEntries(STUDIO_TOOLS.map(t=>[t.id,STUDIO_PDF.has(t.id)?PdfStudio:STUDIO_FINANCE.has(t.id)?FinanceTools:ImageStudio])), ...Object.fromEntries(EXTRA_TOOLS.map(t=>[t.id,lazy(()=>import('./expanded/UtilityApp'))])), ...Object.fromEntries(DEVICE_TOOLS.map(t=>[t.id,lazy(()=>import('./device/App'))])), ...Object.fromEntries(MEDIA_TOOLS.map(t=>[t.id,lazy(t.id==='image-contact-sheet'?()=>import('./expanded/ImageContactSheet'):t.category==='image'?()=>import('./expanded/ImageTools'):t.category==='pdf'?()=>import('./expanded/PDFTools'):t.id==='markdown-preview'?()=>import('./expanded/Markdown'):t.id==='stopwatch'?()=>import('./expanded/Stopwatch'):()=>import('./expanded/Invoice'))]))};
+export const TOOL_COMPONENTS: Record<string, LazyExoticComponent<ComponentType>> = {...REGISTRY, ...Object.fromEntries(DEMAND_TOOLS.map(t=>[t.id,lazy(()=>import('./demand/App'))])), ...Object.fromEntries(AV_TOOLS.map(t=>[t.id,lazy(()=>import('./av/App'))])), ...Object.fromEntries(STUDIO_TOOLS.map(t=>[t.id,STUDIO_PDF.has(t.id)?PdfStudio:STUDIO_FINANCE.has(t.id)?FinanceTools:ImageStudio])), ...Object.fromEntries(EXTRA_TOOLS.map(t=>[t.id,lazy(()=>import('./expanded/UtilityApp'))])), ...Object.fromEntries(DEVICE_TOOLS.map(t=>[t.id,lazy(()=>import('./device/App'))])), ...Object.fromEntries(MEDIA_TOOLS.map(t=>[t.id,lazy(t.id==='image-contact-sheet'?()=>import('./expanded/ImageContactSheet'):t.category==='image'?()=>import('./expanded/ImageTools'):t.category==='pdf'?()=>import('./expanded/PDFTools'):t.id==='markdown-preview'?()=>import('./expanded/Markdown'):()=>import('./expanded/Invoice'))]))};
 
 Object.assign(TOOL_COMPONENTS,{'image-target-size':lazy(()=>import('./exact-kb/App')),'signature-maker':lazy(()=>import('./new/Signature')),'bulk-renamer':lazy(()=>import('./new/BulkRenamer')),'list-cleaner':lazy(()=>import('./new/ListCleaner')),'pvc-card-maker':lazy(()=>import('./new/PvcCard')),'id-photo-maker':lazy(()=>import('./new/IdPhoto')),'remove-exif':lazy(()=>import('./new/ExifStripper')),'split-bill':lazy(()=>import('./new/SplitBill')),'fuel-cost':lazy(()=>import('./new/Fuel'))});
 

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { TOOLS } from '../src/lib/catalog';
+import { TOOLS, relatedTools } from '../src/lib/catalog';
 import { CATEGORIES } from '../src/lib/catalog';
 import { TOOL_GLYPHS, CATEGORY_GLYPHS, SECTION_GLYPHS, glyphFor } from '../src/lib/glyphs';
 import { SECTIONS } from '../src/lib/sections';
@@ -21,3 +21,10 @@ for (const category of CATEGORIES) assert.ok(CATEGORY_GLYPHS[category.id], `${ca
 for (const section of SECTIONS) assert.ok(SECTION_GLYPHS[section.id], `${section.id} missing a section glyph`);
 
 console.log(`PASS glyph coverage and uniqueness for ${TOOLS.length} tools, ${CATEGORIES.length} categories and ${SECTIONS.length} sections`);
+
+// The approved removal is exact: no substitute tools were removed.
+const retired = ['calculator','unit-converter','temperature-converter','todo-list','quick-notes','speech-to-text','screen-recorder','video-trim','voice-recorder','image-rotate','image-filters','stopwatch','find-replace'];
+assert.equal(TOOLS.length, 142);
+for (const id of retired) assert.ok(!TOOLS.some(t => t.id === id), `${id} must stay retired`);
+for (const tool of TOOLS) for (const related of relatedTools(tool)) assert.ok(TOOLS.some(t => t.id === related.id));
+console.log('PASS exact 13-tool removal and remaining related-tool coverage');

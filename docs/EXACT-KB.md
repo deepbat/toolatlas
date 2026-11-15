@@ -1,6 +1,6 @@
 # Exact KB form workflow
 
-The existing `/tools/image-target-size/` tool now has three modes, keeping its route and the 155-tool catalogue intact.
+The existing `/tools/image-target-size/` tool now has three modes, keeping its route and the 142-tool catalogue intact.
 
 - Photo: choose a decimal KB ceiling. Search JPEG quality first, then reduce dimensions only if permitted. The aspect ratio is kept. Final bytes must be strictly below the limit; files are never padded.
 - Signature: adaptive local paper-brightness estimates whiten grey shadows, with a strength slider and before/after previews. Ink is rendered blue on white. Best for dark handwriting on plain paper; faint strokes or textured backgrounds need inspection. The separate signature pad still exports transparent PNG.

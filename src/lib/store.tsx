@@ -1,3 +1,4 @@
+import { TOOL_MAP } from './catalog';
 import {
   createContext,
   useCallback,
@@ -82,8 +83,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [systemDark, setSystemDark] = useState<boolean>(() =>
     typeof window === 'undefined' ? true : window.matchMedia('(prefers-color-scheme: dark)').matches
   );
-  const [favorites, setFavorites] = useState<string[]>(() => read<unknown[]>(STORAGE.favorites, []).filter((v):v is string=>typeof v==='string'));
-  const [recents, setRecents] = useState<RecentEntry[]>(() => read<unknown[]>(STORAGE.recents, []).filter((v):v is RecentEntry=>!!v&&typeof v==='object'&&typeof (v as RecentEntry).id==='string'&&Number.isFinite((v as RecentEntry).at)).slice(0,6));
+  const [favorites, setFavorites] = useState<string[]>(() => read<unknown[]>(STORAGE.favorites, []).filter((v):v is string=>typeof v==='string'&&!!TOOL_MAP[v]));
+  const [recents, setRecents] = useState<RecentEntry[]>(() => read<unknown[]>(STORAGE.recents, []).filter((v):v is RecentEntry=>!!v&&typeof v==='object'&&typeof (v as RecentEntry).id==='string'&&!!TOOL_MAP[(v as RecentEntry).id]&&Number.isFinite((v as RecentEntry).at)).slice(0,6));
 
   const resolvedTheme: 'light' | 'dark' = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme;
 
@@ -107,6 +108,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toggleFavorite = useCallback((id: string) => {
+    if (!TOOL_MAP[id]) return;
     setFavorites((current) => {
       const next = current.includes(id) ? current.filter((item) => item !== id) : [id, ...current];
       write(STORAGE.favorites, next);
@@ -117,6 +119,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const isFavorite = useCallback((id: string) => favorites.includes(id), [favorites]);
 
   const recordVisit = useCallback((id: string) => {
+    if (!TOOL_MAP[id]) return;
     setRecents((current) => {
       const next = [{ id, at: Date.now() }, ...current.filter((entry) => entry.id !== id)].slice(0, 6);
       write(STORAGE.recents, next);

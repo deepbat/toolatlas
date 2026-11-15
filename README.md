@@ -6,7 +6,7 @@
 
 ## Release 2
 
-**155 tools. 8 sections. Small jobs. Sorted.**
+**142 tools. 8 sections. Small jobs. Sorted.**
 
 The original foundation is preserved and expanded with browser-only tools, static deep-link pages, full-release offline caching, six practical guides, local fonts, policy/support pages and inert ad spaces. No ad network is active and no revenue is promised. See [release notes and monetization checklist](docs/RELEASE-2.md), [research](docs/RESEARCH.md), and `npm run test:expanded`.
 
@@ -39,7 +39,7 @@ ToolAtlas is a growing collection of free, privacy-first browser utilities — c
 
 ## Highlights
 
-- **155 local browser tools** across **8 sections and 16 collections** — no placeholders, no dead buttons.
+- **142 local browser tools** across **8 sections and 16 collections** — no placeholders, no dead buttons.
 - **Every tool has its own URL** (`/tools/<id>`) so it can be linked, bookmarked and shared.
 - **Global search** — typo-tolerant matching and practical synonyms; press `⌘K` / `Ctrl+K` (or `/`) from anywhere.
 - **Favourites and recently used** tools, stored in your browser only.
@@ -60,7 +60,7 @@ ToolAtlas is a growing collection of free, privacy-first browser utilities — c
 
 ## The tools
 
-The current catalogue contains **155 tools organised into 8 top-level sections** — [PDF](https://deepbat.github.io/toolatlas/pdf/), [Image](https://deepbat.github.io/toolatlas/image/), [Video](https://deepbat.github.io/toolatlas/video/), [Audio](https://deepbat.github.io/toolatlas/audio/), [Text](https://deepbat.github.io/toolatlas/text/), [File Conversion](https://deepbat.github.io/toolatlas/converter/), [Web](https://deepbat.github.io/toolatlas/web/) and [Other Utilities](https://deepbat.github.io/toolatlas/utilities/) — each with its own page and URL. The 13 original collections plus Audio, Video and Device & Sensor are available as 16 sub-collections inside the sections. The generated catalogue at [docs/TOOLS.md](docs/TOOLS.md) is the complete reference for Release 2.
+The current catalogue contains **142 tools organised into 8 top-level sections** — [PDF](https://deepbat.github.io/toolatlas/pdf/), [Image](https://deepbat.github.io/toolatlas/image/), [Video](https://deepbat.github.io/toolatlas/video/), [Audio](https://deepbat.github.io/toolatlas/audio/), [Text](https://deepbat.github.io/toolatlas/text/), [File Conversion](https://deepbat.github.io/toolatlas/converter/), [Web](https://deepbat.github.io/toolatlas/web/) and [Other Utilities](https://deepbat.github.io/toolatlas/utilities/) — each with its own page and URL. The 13 original collections plus Audio, Video and Device & Sensor are available as 16 sub-collections inside the sections. The generated catalogue at [docs/TOOLS.md](docs/TOOLS.md) is the complete reference for Release 2.
 
 Browse the [live tool library](https://deepbat.github.io/toolatlas/tools/) or open a category from the website. New tools are added only after implementation and verification.
 
@@ -258,7 +258,7 @@ Because the tokens swap under the `.dark` class, every tool supports both themes
 
 - **All processing is local.** Images are resized with `Canvas`, PDFs are assembled with `pdf-lib`, hashes are computed with the Web Crypto API, QR codes are rendered with `qrcode` — all inside your browser.
 - **Nothing is uploaded.** There is no backend, no database and no analytics.
-- **Your preferences stay yours.** Theme, favourites, recent history and tool-specific state (your task list, your notes) live in `localStorage` under `toolatlas:*` keys. Export a backup from [Data & Settings](https://deepbat.github.io/toolatlas/settings/) before clearing browser data or moving devices.
+- **Your preferences stay yours.** Theme, favourites, recent history and tool-specific state (including legacy notes and tasks from older releases) live in `localStorage` under `toolatlas:*` keys. Export a backup from [Data & Settings](https://deepbat.github.io/toolatlas/settings/) before clearing browser data or moving devices.
 - **No accounts.** Nothing to sign up for, nothing to leak.
 
 ---
@@ -296,7 +296,7 @@ Enable **Settings → Pages → Build and deployment → Source: GitHub Actions*
 
 ### Deep links on GitHub Pages
 
-GitHub Pages has no rewrite rules, so a direct visit to `/toolatlas/tools/calculator` would 404. `public/404.html` solves this: it stores the requested path in `sessionStorage` and redirects to the app root, and `src/main.tsx` restores the original URL with `history.replaceState` — no extra round-trip, no flash.
+GitHub Pages has no rewrite rules, so a direct visit to `/toolatlas/tools/percentage-calculator` would 404. `public/404.html` solves this: it stores the requested path in `sessionStorage` and redirects to the app root, and `src/main.tsx` restores the original URL with `history.replaceState` — no extra round-trip, no flash.
 
 ---
 

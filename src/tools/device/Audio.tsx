@@ -9,7 +9,6 @@ import {
   meterLevel,
   morseToText,
   noteFromFreq,
-  speechSupport,
   textToMorse,
 } from '../../lib/device';
 
@@ -534,135 +533,6 @@ export function TextToSpeech() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Speech to Text                                                       */
-/* ------------------------------------------------------------------ */
-
-interface SpeechRecognitionResultLite { isFinal: boolean; 0: { transcript: string } }
-interface SpeechRecognitionEventLite { resultIndex: number; results: SpeechRecognitionResultLite[] & { length: number } }
-interface SpeechRecognitionLite {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  /** Web Speech API switch that forces recognition to run on this device. */
-  processLocally: boolean;
-  start: () => void;
-  stop: () => void;
-  onresult: ((event: SpeechRecognitionEventLite) => void) | null;
-  onerror: ((event: { error: string }) => void) | null;
-  onend: (() => void) | null;
-}
-
-const ON_DEVICE_NOTE = 'On-device dictation works in Chrome or Edge (version 139 or later) on desktop and in Firefox 160 or later.';
-
-export function SpeechToText() {
-  const Ctor = typeof window !== 'undefined'
-    ? ((window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLite; webkitSpeechRecognition?: new () => SpeechRecognitionLite }).SpeechRecognition
-      ?? (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionLite }).webkitSpeechRecognition)
-    : undefined;
-  // The site promises that inputs never leave the device, so dictation may
-  // only run where the browser can enforce on-device recognition.
-  const support = speechSupport(Ctor);
-  const [finalText, setFinalText] = useState('');
-  const [interim, setInterim] = useState('');
-  const [listening, setListening] = useState(false);
-  const [error, setError] = useState('');
-  const recRef = useRef<SpeechRecognitionLite | null>(null);
-
-  useEffect(() => () => recRef.current?.stop(), []);
-
-  const toggle = () => {
-    if (listening) {
-      recRef.current?.stop();
-      setListening(false);
-      return;
-    }
-    if (!Ctor || support !== 'on-device') return;
-    setError('');
-    const rec = new Ctor();
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.lang = navigator.language || 'en-IN';
-    rec.processLocally = true;
-    rec.onresult = (event) => {
-      let interimPart = '';
-      let finalPart = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const r = event.results[i];
-        if (r.isFinal) finalPart += r[0].transcript;
-        else interimPart += r[0].transcript;
-      }
-      if (finalPart) setFinalText((t) => (t ? t + ' ' : '') + finalPart.trim());
-      setInterim(interimPart);
-    };
-    rec.onerror = (e) => {
-      setError(
-        e.error === 'not-allowed' || e.error === 'service-not-allowed'
-          ? 'Microphone permission was denied. Allow mic access and try again. Your audio was not sent anywhere.'
-          : e.error === 'language-not-supported'
-            ? 'This language is not available for on-device recognition in your browser. Your audio was not sent anywhere.'
-            : `Recognition error: ${e.error}. Recognition stays on this device, so your audio was not sent anywhere.`);
-      setListening(false);
-    };
-    rec.onend = () => setListening(false);
-    recRef.current = rec;
-    try {
-      rec.start();
-      setListening(true);
-    } catch {
-      setError('Could not start on-device speech recognition. Your audio was not sent anywhere.');
-    }
-  };
-
-  if (support === 'no-api') {
-    return (
-      <Note tone="warning">
-        Live dictation needs the Web Speech API, which this browser does not expose, so nothing is recorded or
-        sent anywhere. {ON_DEVICE_NOTE}
-      </Note>
-    );
-  }
-
-  if (support === 'remote-only') {
-    return (
-      <Note tone="warning">
-        This browser can only recognize speech by sending your voice to the browser maker's online service.
-        ToolAtlas keeps dictation off here so your audio stays on this device. {ON_DEVICE_NOTE}
-      </Note>
-    );
-  }
-
-  const combined = (finalText + (interim ? (finalText ? ' ' : '') + interim : '')).trim();
-
-  return (
-    <div className="space-y-4">
-      <Panel title="Dictation" description={`Listening in ${navigator.language || 'en-IN'}. Recognition runs on this device; your voice is not sent anywhere.`}>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={toggle}>{listening ? 'Stop dictation' : 'Start dictation'}</Button>
-          {listening && <span className="flex items-center gap-2 text-sm text-danger"><span className="h-2 w-2 animate-pulse rounded-full bg-danger" />Listening...</span>}
-        </div>
-        {error && <p role="alert" className="mt-4 text-danger">{error}</p>}
-        {combined && (
-          <div className="mt-4">
-            <div className="flex items-center justify-between gap-2">
-              <p className="label text-muted">Transcript</p>
-              <div className="flex gap-2">
-                <CopyButton value={combined} />
-                <Button variant="secondary" onClick={() => downloadText('toolatlas-transcript.txt', combined)}>Download .txt</Button>
-                <Button variant="secondary" onClick={() => { setFinalText(''); setInterim(''); }}>Clear</Button>
-              </div>
-            </div>
-            <p className="mt-2 whitespace-pre-wrap border border-line bg-raised p-4 text-sm" data-testid="transcript">
-              {finalText}
-              {interim && <span className="text-muted"> {interim}</span>}
-            </p>
-          </div>
-        )}
-      </Panel>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /* Morse Code                                                           */
 /* ------------------------------------------------------------------ */
 
@@ -752,4 +622,4 @@ export function Morse() {
       <Note tone="info">Timing follows standard Morse rules: a dash is three dots, letter gaps are three dots and word gaps are seven.</Note>
     </div>
   );
-}
+              }
