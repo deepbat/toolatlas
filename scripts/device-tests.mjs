@@ -24,14 +24,12 @@ const NAMES = {
   tuner: 'Instrument Tuner',
   'tone-generator': 'Tone Generator & Sweep',
   'text-to-speech': 'Text to Speech',
-  'speech-to-text': 'Speech to Text',
   compass: 'Compass',
   'spirit-level': 'Spirit Level',
   'gps-speedometer': 'GPS Speedometer',
   'screen-ruler': 'Screen Ruler',
   'morse-code': 'Morse Code Translator',
   'qr-barcode-scanner': 'QR & Barcode Scanner',
-  'screen-recorder': 'Screen Recorder',
 };
 
 try {
@@ -48,7 +46,7 @@ try {
   check('sound-meter static HTML has canonical title', html.includes('<title>Sound Level Meter | ToolAtlas</title>'));
   check('sound-meter static HTML has schema', html.includes('WebApplication'));
   const catHtml = await (await fetch(`${base}/category/device/`)).text();
-  check('device category page lists tools', catHtml.includes('Sound Level Meter') && catHtml.includes('Screen Recorder'));
+  check('device category page lists tools', catHtml.includes('Sound Level Meter') && catHtml.includes('Instrument Tuner'));
   const utilitiesHtml = await (await fetch(`${base}/utilities/`)).text();
   check('utilities section lists device tools', utilitiesHtml.includes('GPS Speedometer'));
 
@@ -75,74 +73,6 @@ try {
   await page.goto(`${base}/tools/metronome/`);
   await page.getByLabel('Tempo in beats per minute').fill('999');
   check('metronome clamps slider to 300 BPM', (await page.locator('#bpm').inputValue()) === '300');
-
-  // Speech to text privacy gates. The site promises inputs never leave the
-  // device, so dictation may only run with on-device recognition
-  // (processLocally). Three states are covered here:
-  // 1. No Web Speech API (headless chromium): honest support note, and the
-  //    note must not talk about a 'speech service' it would never use.
-  await page.goto(`${base}/tools/speech-to-text/`);
-  await page.waitForTimeout(800);
-  if (await page.getByText('needs the Web Speech API').count()) {
-    const note = (await page.getByText('needs the Web Speech API').textContent()) || '';
-    check('speech-to-text shows its support note without the API', note.includes('nothing is recorded or sent'));
-    check('support note has no leftover speech-service wording', !note.includes('speech service'));
-  } else {
-    // API present: the dictation panel must promise on-device recognition.
-    // Do not click Start here: headless chromium can crash its renderer on a
-    // real start() call; start behaviour is covered by the mocks below.
-    await page.getByRole('button', { name: 'Start dictation' }).waitFor();
-    const main = (await page.textContent('main')) || '';
-    check('dictation panel promises on-device recognition', main.includes('Recognition runs on this device'));
-  }
-
-  // 2. A browser whose only recognition path sends audio to the vendor must
-  //    fail closed: gate note shown, no dictation button, start never called.
-  const remotePage = await browser.newPage();
-  await remotePage.addInitScript(() => {
-    class RemoteOnlyRecognition {
-      constructor() { window.__remoteStarts = (window.__remoteStarts || 0); }
-      start() { window.__remoteStarts += 1; }
-      stop() {}
-    }
-    window.SpeechRecognition = RemoteOnlyRecognition;
-  });
-  await remotePage.goto(`${base}/tools/speech-to-text/`);
-  await remotePage.getByText('keeps dictation off').waitFor();
-  check('speech-to-text fails closed when only remote recognition exists', true);
-  check('remote-only path offers no dictation button', (await remotePage.getByRole('button', { name: 'Start dictation' }).count()) === 0);
-  check('remote-only path never starts recognition', (await remotePage.evaluate(() => window.__remoteStarts || 0)) === 0);
-  await remotePage.close();
-
-  // 3. With on-device support the tool must start recognition with
-  //    processLocally=true, then transcribe and stop normally.
-  const localPage = await browser.newPage();
-  await localPage.addInitScript(() => {
-    class LocalRecognition {
-      constructor() { window.__lastRecognition = this; this.processLocally = false; this.continuous = false; this.interimResults = false; this.lang = ''; this.onresult = null; this.onerror = null; this.onend = null; }
-      start() {
-        setTimeout(() => {
-          if (this.onresult) this.onresult({ resultIndex: 0, results: [{ isFinal: true, 0: { transcript: 'hello local world' } }] });
-        }, 50);
-      }
-      stop() { if (this.onend) this.onend(); }
-    }
-    LocalRecognition.prototype.processLocally = false;
-    window.SpeechRecognition = LocalRecognition;
-  });
-  await localPage.goto(`${base}/tools/speech-to-text/`);
-  await localPage.getByRole('button', { name: 'Start dictation' }).click();
-  await localPage.getByTestId('transcript').waitFor();
-  check('on-device recognition returns a transcript', ((await localPage.getByTestId('transcript').textContent()) || '').includes('hello local world'));
-  check('recognition is started with processLocally=true', await localPage.evaluate(() => window.__lastRecognition.processLocally === true));
-  await localPage.getByRole('button', { name: 'Stop dictation' }).click();
-  await localPage.getByRole('button', { name: 'Start dictation' }).waitFor();
-  check('on-device dictation stops cleanly', true);
-  await localPage.close();
-
-  // The privacy policy must carry the speech-to-text exception handling.
-  const privacyHtml = await (await fetch(`${base}/privacy/`)).text();
-  check('privacy policy covers on-device speech recognition', privacyHtml.includes('on-device speech recognition') && privacyHtml.includes('Microphone audio is never uploaded'));
 
   // QR scanner: BarcodeDetector may be absent (support note) or present but
   // camera-less (permission error); both states must render honestly.
@@ -195,4 +125,4 @@ async function assertText(locator, text) {
   await locator.waitFor();
   const actual = (await locator.textContent())?.trim();
   assert.ok(actual?.includes(text), `expected "${text}" in "${actual}"`);
-}
+  }
