@@ -130,19 +130,6 @@ export const CATEGORY_MAP: Record<CategoryId, Category> = Object.fromEntries(
 
 export const TOOLS: ToolMeta[] = [
   {
-    id: 'calculator',
-    name: 'Standard Calculator',
-    description: 'A fast keypad calculator with memory, percentages and keyboard support.',
-    category: 'calculators',
-    icon: 'Calculator',
-    keywords: ['arithmetic', 'math', 'keypad', 'sum', 'divide', 'multiply', 'basic'],
-    version: '1.2.0',
-    status: 'stable',
-    added: '2026-10-05',
-    featured: true,
-    popular: true,
-  },
-  {
     id: 'percentage-calculator',
     name: 'Percentage Calculator',
     description: 'Work out percentages, increases, decreases and percentage change.',
@@ -176,30 +163,6 @@ export const TOOLS: ToolMeta[] = [
     version: '1.0.0',
     status: 'stable',
     added: '2026-10-10',
-  },
-  {
-    id: 'unit-converter',
-    name: 'Unit Converter',
-    description: 'Convert length, mass, area, volume, speed and data units instantly.',
-    category: 'converters',
-    icon: 'Ruler',
-    keywords: ['length', 'weight', 'mass', 'area', 'volume', 'speed', 'bytes', 'metric', 'imperial'],
-    version: '1.3.0',
-    status: 'stable',
-    added: '2026-10-07',
-    featured: true,
-    popular: true,
-  },
-  {
-    id: 'temperature-converter',
-    name: 'Temperature Converter',
-    description: 'Celsius, Fahrenheit and Kelvin with reference points at a glance.',
-    category: 'converters',
-    icon: 'Thermometer',
-    keywords: ['celsius', 'fahrenheit', 'kelvin', 'heat', 'weather'],
-    version: '1.0.0',
-    status: 'stable',
-    added: '2026-10-09',
   },
   {
     id: 'age-calculator',
@@ -385,29 +348,6 @@ export const TOOLS: ToolMeta[] = [
     added: '2026-10-26',
   },
   {
-    id: 'todo-list',
-    name: 'Task List',
-    description: 'A private task list with priorities, filters and saved progress.',
-    category: 'productivity',
-    icon: 'ListTodo',
-    keywords: ['todo', 'tasks', 'checklist', 'planner', 'productivity'],
-    version: '1.2.0',
-    status: 'stable',
-    added: '2026-10-27',
-    popular: true,
-  },
-  {
-    id: 'quick-notes',
-    name: 'Quick Notes',
-    description: 'Distraction-free notes that save themselves as you type.',
-    category: 'productivity',
-    icon: 'StickyNote',
-    keywords: ['notes', 'notepad', 'scratchpad', 'writing', 'memo'],
-    version: '1.0.0',
-    status: 'stable',
-    added: '2026-10-28',
-  },
-  {
     id: 'pomodoro',
     name: 'Pomodoro Timer',
     description: 'Focus sessions with short and long breaks, all tracked locally.',
@@ -563,7 +503,7 @@ export function toolsByCategory(category: CategoryId): ToolMeta[] {
 }
 
 export function relatedTools(tool: ToolMeta, limit = 3): ToolMeta[] {
-  const workflows:Record<string,string[]>={ 'pdf-merge':['pdf-compress','pdf-watermark','pdf-page-organiser'],'pdf-split':['pdf-merge','pdf-compress','pdf-editor'],'image-resizer':['image-compressor','image-bulk-convert','image-to-pdf'],'image-bulk-convert':['image-compressor','remove-exif','image-to-pdf'],'signature-maker':['pdf-editor','invoice-generator','image-to-pdf'],'invoice-generator':['gst-calculator','signature-maker','pdf-merge'],'fuel-cost':['split-bill','tip-calculator','unit-converter'],'list-cleaner':['sort-lines','csv-to-json','word-counter'],'tuner':['metronome','tone-generator','voice-recorder'],'metronome':['tuner','tone-generator','pomodoro'],'sound-meter':['voice-recorder','tone-generator','screen-recorder'],'speech-to-text':['text-to-speech','voice-recorder','quick-notes'],'text-to-speech':['speech-to-text','word-counter','reading-time'],'morse-code':['tone-generator','text-to-speech','base64'],'qr-barcode-scanner':['qr-code-generator','image-to-pdf','file-checksum'],'screen-recorder':['video-trim','video-compress','video-mute'],'compass':['gps-speedometer','spirit-level','screen-ruler'],'gps-speedometer':['compass','pace-calculator','countdown'],'spirit-level':['screen-ruler','compass','screen-test'],'screen-ruler':['spirit-level','screen-test','image-resizer'],'tone-generator':['metronome','tuner','sound-meter']};
+  const workflows:Record<string,string[]>={"pdf-merge": ["pdf-compress", "pdf-watermark", "pdf-page-organiser"], "pdf-split": ["pdf-merge", "pdf-compress", "pdf-editor"], "image-resizer": ["image-compressor", "image-bulk-convert", "image-to-pdf"], "image-bulk-convert": ["image-compressor", "remove-exif", "image-to-pdf"], "signature-maker": ["pdf-editor", "invoice-generator", "image-to-pdf"], "invoice-generator": ["gst-calculator", "signature-maker", "pdf-merge"], "fuel-cost": ["split-bill", "tip-calculator"], "list-cleaner": ["sort-lines", "csv-to-json", "word-counter"], "tuner": ["metronome", "tone-generator"], "metronome": ["tuner", "tone-generator", "pomodoro"], "sound-meter": ["tone-generator"], "text-to-speech": ["word-counter", "reading-time"], "morse-code": ["tone-generator", "text-to-speech", "base64"], "qr-barcode-scanner": ["qr-code-generator", "image-to-pdf", "file-checksum"], "compass": ["gps-speedometer", "spirit-level", "screen-ruler"], "gps-speedometer": ["compass", "pace-calculator", "countdown"], "spirit-level": ["screen-ruler", "compass", "screen-test"], "screen-ruler": ["spirit-level", "screen-test", "image-resizer"], "tone-generator": ["metronome", "tuner", "sound-meter"]};
   if(workflows[tool.id]) return workflows[tool.id].map(id=>TOOL_MAP[id]).filter(Boolean).slice(0,limit);
   const sameCategory = TOOLS.filter((t) => t.category === tool.category && t.id !== tool.id);
   if (sameCategory.length >= limit) return sameCategory.slice(0, limit);
