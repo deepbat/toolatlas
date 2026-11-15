@@ -155,23 +155,23 @@ test('Home page renders the hero and catalogue', async () => {
   const data = await evaluate(`
     ${SET_INPUT}
     return {
-      hero: document.body.innerText.includes('Small jobs.'),
-      featured: document.body.innerText.includes('Featured tools'),
-      popular: document.body.innerText.includes('Everyday essentials'),
-      categories: document.body.innerText.includes('Find your category'),
-      recentlyAdded: document.body.innerText.includes('Recently added'),
-      toolCards: document.querySelectorAll('a[href^="/toolatlas/tools/"]').length,
+      hero: document.body.innerText.includes('One toolbox for every small job.'),
+      wall: !!document.querySelector('[data-tool-wall]'),
+      chips: document.querySelectorAll('[data-directory-category]').length,
+      closing: document.body.innerText.includes('Made for the small stuff.'),
+      toolCards: document.querySelectorAll('[data-tool-wall] a[href^="/toolatlas/tools/"]').length,
       sectionLinks: ['pdf', 'image', 'video', 'audio', 'text', 'converter', 'web', 'utilities'].filter(
-        (slug) => document.querySelector('a[href="/toolatlas/' + slug + '/"]')
+        (slug) =>
+          document.querySelector('a[href="/toolatlas/' + slug + '/"]') ||
+          document.querySelector('a[href="/toolatlas/' + slug + '"]')
       ).length,
     };
   `);
   check('hero tagline visible', data.hero);
-  check('featured section visible', data.featured);
-  check('popular section visible', data.popular);
-  check('category navigation visible', data.categories);
-  check('recently added visible', data.recentlyAdded);
-  check('tool links rendered', data.toolCards > 10, `got ${data.toolCards}`);
+  check('bento tool wall rendered', data.wall);
+  check('category pills visible (All + 11)', data.chips === 12, `got ${data.chips}`);
+  check('closing statement visible', data.closing);
+  check('tool cards rendered', data.toolCards > 100, `got ${data.toolCards}`);
   check('all eight sections linked from home', data.sectionLinks === 8, `got ${data.sectionLinks}`);
 });
 
