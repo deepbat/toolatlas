@@ -18,4 +18,16 @@ for(const id of ['pdf','image','calculators','audio','video']){const a=page.loca
 await page.waitForTimeout(750);await page.screenshot({path:`test-artifacts/directory/home-${width}.png`});
 await page.locator('[data-directory-category=calculators]').click();await page.getByRole('heading',{name:'Calculators',exact:true}).waitFor();await page.goBack();await page.locator('[data-directory-category=video]').click();await page.getByRole('heading',{name:'Video Tools',exact:true}).waitFor();
 await page.close();console.log('PASS first screen + navigation '+width+'x'+height);n++;}
+// The unfiltered wall reshuffles itself, pauses under the pointer and stays still under reduced motion.
+{const page=await browser.newPage({viewport:{width:1280,height:800}});await page.goto(base+'/');await page.locator('[data-tool-wall] a[href*="/tools/"]').first().waitFor();
+const order=()=>page.locator('[data-tool-wall] a[href*="/tools/"]').evaluateAll(els=>els.map(a=>a.getAttribute('href')));
+const before=await order();await page.waitForTimeout(5600);const after=await order();
+assert.notDeepEqual(after,before,'wall reshuffles on its own');assert.equal(after.length,before.length);assert.equal(after[0],before[0],'pinned card keeps the front spot');
+const settled=await order();await page.hover('[data-tool-wall]');await page.waitForTimeout(4800);
+assert.deepEqual(await order(),settled,'wall pauses under the pointer');await page.close();
+const calm=await browser.newPage({viewport:{width:1280,height:800},reducedMotion:'reduce'});await calm.goto(base+'/');await calm.locator('[data-tool-wall] a[href*="/tools/"]').first().waitFor();
+const stillBefore=await calm.locator('[data-tool-wall] a[href*="/tools/"]').evaluateAll(els=>els.map(a=>a.getAttribute('href')));await calm.waitForTimeout(5600);
+const stillAfter=await calm.locator('[data-tool-wall] a[href*="/tools/"]').evaluateAll(els=>els.map(a=>a.getAttribute('href')));
+assert.deepEqual(stillAfter,stillBefore,'reduced motion keeps the wall still');await calm.close();
+console.log('PASS wall auto-rotation');n++;}
 }finally{await browser.close();server?.kill();}console.log(`${n} directory checks passed`);
