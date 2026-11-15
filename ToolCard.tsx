@@ -15,7 +15,7 @@ export default function ToolCard({ tool, className }: { tool: ToolMeta; classNam
     <Link
       to={`/tools/${tool.id}`}
       className={cn(
-        'group relative flex flex-col border border-line bg-surface/90 p-4 transition duration-300 ease-out hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lift',
+        'group relative flex flex-col rounded-[18px] border border-black/[0.05] bg-surface dark:border-white/[0.07] p-4 shadow-[0_1px_2px_rgb(15_23_42/0.05),0_12px_26px_-20px_rgb(15_23_42/0.22)] transition duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_2px_4px_rgb(15_23_42/0.06),0_20px_36px_-18px_rgb(15_23_42/0.28)]',
         className
       )}
     >
@@ -23,7 +23,7 @@ export default function ToolCard({ tool, className }: { tool: ToolMeta; classNam
         <ToolGlyph
           tool={tool}
           accent={category.accent}
-          className="h-11 w-11 rounded-xl transition group-hover:border-accent/50"
+          className="h-11 w-11 rounded-[14px] transition duration-300 group-hover:scale-105"
           emojiClassName="text-[22px]"
         />
         <button
