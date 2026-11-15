@@ -94,7 +94,7 @@ export const SECTIONS: Section[] = [
     name: 'Other Utilities',
     shortName: 'Utilities',
     description:
-      'Calculators, India finance tools, date and time helpers, generators, notes and everyday apps.',
+      'Calculators, India finance tools, date and time helpers, generators and everyday utilities.',
     icon: 'Shapes',
     accent: 'var(--cat-calculators)',
   },
