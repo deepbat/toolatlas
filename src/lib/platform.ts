@@ -35,7 +35,6 @@ export const INPUTS: Record<FileKind, string[]> = {
     "audio-size",
   ],
   video: [
-    "video-trim",
     "video-compress",
     "video-mute",
     "video-frame",
