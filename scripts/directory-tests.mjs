@@ -30,4 +30,18 @@ const stillBefore=await calm.locator('[data-tool-wall] a[href*="/tools/"]').eval
 const stillAfter=await calm.locator('[data-tool-wall] a[href*="/tools/"]').evaluateAll(els=>els.map(a=>a.getAttribute('href')));
 assert.deepEqual(stillAfter,stillBefore,'reduced motion keeps the wall still');await calm.close();
 console.log('PASS wall auto-rotation');n++;}
+// On a phone a tap leaves a sticky hover and transient focus on the wall; neither may pause the reshuffle.
+{const page=await browser.newPage({viewport:{width:393,height:740},hasTouch:true,isMobile:true});await page.goto(base+'/');await page.locator('[data-tool-wall] a[href*="/tools/"]').first().waitFor();
+const order=()=>page.locator('[data-tool-wall] a[href*="/tools/"]').evaluateAll(els=>els.map(a=>a.getAttribute('href')));
+assert.equal(await page.evaluate(()=>matchMedia('(pointer: coarse)').matches),true,'touch emulation reports a coarse pointer');
+await page.locator('[data-tool-wall]').dispatchEvent('pointerenter',{pointerType:'touch'});
+await page.locator('[data-tool-wall] a[href*="/tools/"]').first().dispatchEvent('focusin');
+const before=await order();await page.waitForTimeout(5000);const after=await order();
+assert.notDeepEqual(after,before,'touch hover and tap focus do not pause the wall');
+await page.locator('[data-tool-wall]').dispatchEvent('pointerleave',{pointerType:'touch'});
+// A precise pointer hover still pauses the same wall.
+await page.locator('[data-tool-wall]').dispatchEvent('pointerenter',{pointerType:'mouse'});
+const settled=await order();await page.waitForTimeout(5000);
+assert.deepEqual(await order(),settled,'mouse hover still pauses the wall');
+await page.close();console.log('PASS wall touch keeps rotating');n++;}
 }finally{await browser.close();server?.kill();}console.log(`${n} directory checks passed`);
