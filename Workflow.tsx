@@ -22,7 +22,7 @@ export function PersonalStrip() {
   return (
     <section
       aria-label="Pinned and recent tools"
-      className="mb-3 border border-line bg-raised/40 px-3 py-2"
+      className="mb-3 rounded-[16px] border border-black/[0.06] bg-[rgb(var(--wall-card))] px-3 py-2 shadow-[0_1px_2px_rgb(15_23_42/0.05)]"
     >
       <div className="flex items-center justify-between gap-2 text-[10px]">
         <h2 className="label text-accent">Pinned & recent</h2>
@@ -34,7 +34,7 @@ export function PersonalStrip() {
         {pins.slice(0, 6).map((id) => (
           <span
             key={id}
-            className="flex shrink-0 items-center border border-line text-[11px]"
+            className="flex shrink-0 items-center rounded-full border border-line/60 text-[11px]"
           >
             <Link className="px-2 py-1" to={"/tools/" + id}>
               ★ {glyphFor(TOOL_MAP[id])} {TOOL_MAP[id].name}
@@ -51,7 +51,7 @@ export function PersonalStrip() {
         {recent.map(({ id }) => (
           <Link
             key={id}
-            className="shrink-0 border border-line px-2 py-1 text-[11px] text-muted"
+            className="shrink-0 rounded-full border border-line/60 px-2 py-1 text-[11px] text-muted"
             to={"/tools/" + id}
           >
             {glyphFor(TOOL_MAP[id])} {TOOL_MAP[id].name}
@@ -77,7 +77,7 @@ export function FileDrop() {
   return (
     <section
       aria-label="Find tools for a file"
-      className="mt-3 border border-dashed border-line bg-surface/60 px-3 py-2 text-xs"
+      className="mt-3 rounded-[16px] border border-dashed border-black/[0.14] bg-[rgb(var(--wall-card)/0.7)] px-3 py-2 text-xs"
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault();
@@ -89,10 +89,13 @@ export function FileDrop() {
           <strong className="text-accent">Drop a file to find its tools</strong>
           <span className="ml-2 text-muted">No uploads.</span>
         </span>
+        <span className="rounded-full border border-black/[0.08] bg-[rgb(var(--wall-bg))] px-3 py-1.5 text-[10px] font-semibold text-muted">
+          Choose file
+        </span>
         <input
           aria-label="Choose a file to find tools"
           type="file"
-          className="max-w-full text-[10px]"
+          className="sr-only"
           onChange={(e) => choose(e.target.files?.[0])}
         />
       </label>
