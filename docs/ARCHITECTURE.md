@@ -84,7 +84,7 @@ Metadata stays in the main bundle; only the tool components are split out. That 
 
 ```ts
 const REGISTRY = {
-  calculator: lazy(() => import('./calculator/App')),
+  'percentage-calculator': lazy(() => import('./percentage-calculator/App')),
   // ...
 };
 
