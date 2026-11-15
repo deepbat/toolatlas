@@ -8,8 +8,8 @@ import { STUDIO_TOOLS } from './studio';
 import { DEVICE_TOOLS } from './device-catalog';
 
 export const CATEGORIES: Category[] = [
-  {id:'video',name:'Video Tools',shortName:'Video',description:'Trim, resize, mute and capture video locally.',icon:'Video',accent:'var(--cat-generators)'},
-  {id:'audio',name:'Audio Tools',shortName:'Audio',description:'Cut, join, convert and record sound locally.',icon:'Music',accent:'var(--cat-date)'},
+  {id:'video',name:'Video Tools',shortName:'Video',description:'Resize, mute and capture video locally on your device.',icon:'Video',accent:'var(--cat-generators)'},
+  {id:'audio',name:'Audio Tools',shortName:'Audio',description:'Cut, join and convert audio files locally on your device.',icon:'Music',accent:'var(--cat-date)'},
   {
     id: 'calculators',
     name: 'Calculators',
@@ -78,7 +78,7 @@ export const CATEGORIES: Category[] = [
     id: 'productivity',
     name: 'Productivity Applications',
     shortName: 'Productivity',
-    description: 'Small apps for focus, notes and task tracking.',
+    description: 'A focus timer for work and study sessions.',
     icon: 'Kanban',
     accent: 'var(--cat-productivity)',
   },
@@ -509,4 +509,4 @@ export function relatedTools(tool: ToolMeta, limit = 3): ToolMeta[] {
   if (sameCategory.length >= limit) return sameCategory.slice(0, limit);
   const others = TOOLS.filter((t) => t.category !== tool.category).slice(0, limit - sameCategory.length);
   return [...sameCategory, ...others];
-}
+      }
