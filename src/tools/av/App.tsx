@@ -8,10 +8,9 @@ type Result = {url:string;name:string;size:number;type:string};
 export default function AVApp() {
   const {toolId:id=''}=useParams();
   const videoMode=id.startsWith('video-') && id!=='video-audio';
-  const recorderMode=id==='voice-recorder';
   const [files,setFiles]=useState<File[]>([]), [source,setSource]=useState(''), [duration,setDuration]=useState(0);
   const [start,setStart]=useState('0'),[end,setEnd]=useState('0'),[gain,setGain]=useState('100'),[normalize,setNormalize]=useState(false),[fade,setFade]=useState(true),[rate,setRate]=useState('22050'),[height,setHeight]=useState('480');
-  const [busy,setBusy]=useState(false),[recording,setRecording]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState(''),[result,setResult]=useState<Result|null>(null);
+  const [busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState(''),[result,setResult]=useState<Result|null>(null);
   const media=useRef<HTMLVideoElement>(null),stop=useRef<(()=>void)|null>(null),alive=useRef(true), urls=useRef<string[]>([]),generation=useRef(0);
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;generation.current++;stop.current?.();urls.current.forEach(URL.revokeObjectURL);};},[]);
   const clearResult=()=>{setResult(null);setError('');setMessage('');};
@@ -46,7 +45,7 @@ export default function AVApp() {
     }finally{await ctx.close();}
   }
   async function videoExport(){
-    const v=media.current!; const s=id==='video-trim'||id==='video-frame'?Number(start):0, e=id==='video-trim'?Number(end):duration;
+    const v=media.current!; const s=id==='video-frame'?Number(start):0, e=duration;
     range(s,id==='video-frame'?Math.min(duration,s+.001):e,duration);
     if(s!==v.currentTime){await new Promise<void>((resolve,reject)=>{v.onseeked=()=>resolve();v.onerror=()=>reject(new Error('Cannot seek in this video.'));v.currentTime=s;});}
     const canvas=document.createElement('canvas');const scale=id==='video-compress'?Math.min(1,Number(height)/v.videoHeight):1;
@@ -77,26 +76,16 @@ export default function AVApp() {
     }
   }
   async function run(){clearResult();setBusy(true);try{if(videoMode)await videoExport();else await audioExport();}catch(e){if(alive.current)setError((e as Error).message);}finally{if(alive.current)setBusy(false);}}
-  async function record(){
-    clearResult();setBusy(true);let stream:MediaStream|undefined;let timeout:ReturnType<typeof setTimeout>|undefined;
-    try{
-      const mime=recordingMime(false);if(!mime || !navigator.mediaDevices?.getUserMedia)throw new Error('Microphone recording is unavailable in this browser.');
-      stream=await navigator.mediaDevices.getUserMedia({audio:true});if(!alive.current){stream.getTracks().forEach(t=>t.stop());return;}
-      const rec=new MediaRecorder(stream,{mimeType:mime});const chunks:Blob[]=[];
-      await new Promise<void>((resolve,reject)=>{rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};rec.onstop=()=>resolve();rec.onerror=()=>reject(new Error('Recording failed.'));stop.current=()=>{if(rec.state!=='inactive')rec.stop();};rec.start(250);setRecording(true);setMessage('Recording locally. Stops automatically after 5 minutes.');timeout=setTimeout(()=>stop.current?.(),300000);});
-      finish(new Blob(chunks,{type:mime}),'voice-recording.'+(mime.includes('mp4')?'m4a':mime.includes('ogg')?'ogg':'webm'));
-    }catch(e){if(alive.current)setError((e as Error).name==='NotAllowedError'?'Microphone permission was denied. Allow it in your browser to record.':(e as Error).message);}finally{clearTimeout(timeout);stream?.getTracks().forEach(t=>t.stop());stop.current=null;if(alive.current){setRecording(false);setBusy(false);}}
-  }
   return <div className="space-y-5">
-    <Note>{videoMode?'Browser-playable inputs only (usually MP4 / WebM). Max 100 MB and 2 minutes, up to 1080p. Video export re-encodes in real time to WebM (MP4 only where supported), not lossless. Keep this tab visible. Cuts may vary by a few frames.':recorderMode?'Microphone access is requested only when you press Record. Up to 5 minutes. Output uses the format your browser supports (WebM, OGG or M4A), not MP3.':'Inputs: browser-decodable MP3, WAV, M4A, OGG and others. Up to 50 MB total, 5 minutes, mono/stereo. Output is 16-bit PCM WAV, not MP3, and can be larger than the original.'} No uploads or codec downloads.</Note>
-    <Panel title={recorderMode?'Record your voice':'1 / Choose your file'}>
-      {recorderMode?<div className="flex flex-wrap gap-3"><Button disabled={busy} onClick={record}>Record microphone</Button><Button variant="secondary" disabled={!recording} onClick={()=>stop.current?.()}>Stop recording</Button></div>:<Field label={id==='audio-merge'?'Audio files (joined in the order below)':'Media file'}><Input type="file" accept={videoMode?'video/*':id==='video-audio'?'video/*':'audio/*'} multiple={id==='audio-merge'} disabled={busy} onChange={e=>choose(Array.from(e.target.files||[]))}/></Field>}
+    <Note>{videoMode?'Browser-playable inputs only (usually MP4 / WebM). Max 100 MB and 2 minutes, up to 1080p. Video export re-encodes in real time to WebM (MP4 only where supported), not lossless. Keep this tab visible. Cuts may vary by a few frames.':'Inputs: browser-decodable MP3, WAV, M4A, OGG and others. Up to 50 MB total, 5 minutes, mono/stereo. Output is 16-bit PCM WAV, not MP3, and can be larger than the original.'} No uploads or codec downloads.</Note>
+    <Panel title="1 / Choose your file">
+      {<Field label={id==='audio-merge'?'Audio files (joined in the order below)':'Media file'}><Input type="file" accept={videoMode?'video/*':id==='video-audio'?'video/*':'audio/*'} multiple={id==='audio-merge'} disabled={busy} onChange={e=>choose(Array.from(e.target.files||[]))}/></Field>}
       {files.length>1&&<ol className="mt-4 space-y-2">{files.map((f,i)=><li key={i} className="flex min-w-0 items-center gap-2 text-sm"><span className="min-w-0 flex-1 break-all">{i+1}. {f.name}</span><Button size="sm" variant="secondary" disabled={busy||i===0} onClick={()=>setFiles(fs=>{const next=[...fs];[next[i-1],next[i]]=[next[i],next[i-1]];clearResult();return next;})}>Up</Button></li>)}</ol>}
       {source&&(videoMode?<video key={source} ref={media} src={source} controls={!busy} playsInline muted className="mt-4 max-h-64 w-full bg-black" onError={()=>{setError('This browser cannot play this video. Try MP4 (H.264) or WebM.');setFiles([]);}} onLoadedMetadata={()=>{const v=media.current!;if(!Number.isFinite(v.duration)||v.duration>120||Math.max(v.videoWidth,v.videoHeight)>1920){setError('Use video up to 2 minutes and 1920 pixels on its longest side.');setFiles([]);return;}setDuration(v.duration);setEnd(prev=>Number(prev)>0?prev:String(v.duration));}}/>:<audio controls src={source} className="mt-4 w-full"/>)}
       {duration>0&&<p data-testid="av-duration" className="mt-3 text-sm text-muted">Duration: {duration.toFixed(2)} seconds</p>}
     </Panel>
-    {!recorderMode&&files.length>0&&duration>0&&<Panel title="2 / Settings & export"><fieldset disabled={busy} className="space-y-4">
-      {(id==='video-trim'||id==='video-frame'||id==='audio-trim')&&<Grid><Field label="Start (seconds)"><Input type="number" min="0" step="0.01" value={start} onChange={e=>{setStart(e.target.value);clearResult();}}/></Field>{id!=='video-frame'&&<Field label="End (seconds)"><Input type="number" step="0.01" value={end} onChange={e=>{setEnd(e.target.value);clearResult();}}/></Field>}</Grid>}
+    {files.length>0&&duration>0&&<Panel title="2 / Settings & export"><fieldset disabled={busy} className="space-y-4">
+      {(id==='video-frame'||id==='audio-trim')&&<Grid><Field label="Start (seconds)"><Input type="number" min="0" step="0.01" value={start} onChange={e=>{setStart(e.target.value);clearResult();}}/></Field>{id!=='video-frame'&&<Field label="End (seconds)"><Input type="number" step="0.01" value={end} onChange={e=>{setEnd(e.target.value);clearResult();}}/></Field>}</Grid>}
       {id==='audio-trim'&&<label className="block text-sm"><input type="checkbox" checked={fade} onChange={e=>{setFade(e.target.checked);clearResult();}}/> Fade edges (50 ms)</label>}
       {id==='audio-volume'&&<Grid><Field label="Volume (%)"><Input type="number" min="0" max="400" value={gain} onChange={e=>{setGain(e.target.value);clearResult();}}/></Field><label className="text-sm"><input type="checkbox" checked={normalize} onChange={e=>{setNormalize(e.target.checked);clearResult();}}/> Peak normalize to 98% (overrides volume, not broadcast loudness)</label></Grid>}
       {id==='audio-size'&&<Field label="Output sample rate (mono)"><Select value={rate} onChange={e=>{setRate(e.target.value);clearResult();}}><option value="22050">22,050 Hz - speech</option><option value="16000">16,000 Hz - smaller speech</option><option value="8000">8,000 Hz - telephone quality</option></Select></Field>}
@@ -107,4 +96,4 @@ export default function AVApp() {
     {message&&<p role="status" className="text-sm text-muted">{message}</p>}
     {result&&<Panel title="3 / Your result"><div data-testid="av-result" className="space-y-4"><p className="text-sm">{result.name} · {(result.size/1024).toFixed(1)} KB{files[0]&&` · input ${(files.reduce((n,f)=>n+f.size,0)/1024).toFixed(1)} KB`}</p>{result.type.startsWith('image')?<img src={result.url} alt="Captured video frame" className="max-h-64 max-w-full"/>:result.type.startsWith('video')?<video controls src={result.url} className="max-h-64 w-full"/>:<audio controls src={result.url} className="w-full"/>}<a className="inline-block bg-accent px-4 py-3 text-sm font-semibold text-on-accent" href={result.url} download={result.name}>Download result</a></div></Panel>}
   </div>;
-}
+      }
