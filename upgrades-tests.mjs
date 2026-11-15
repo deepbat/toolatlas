@@ -559,12 +559,12 @@ try {
           .click();
       await go("");
       await page.evaluate(() => document.fonts.ready);
-      const bottom = await page
-        .locator("[data-app-browser]")
-        .evaluate((e) => e.getBoundingClientRect().bottom);
+      const wallTop = await page
+        .locator("[data-tool-wall]")
+        .evaluate((e) => e.getBoundingClientRect().top);
       assert.ok(
-        bottom < (width === 1280 ? 900 : 852),
-        width + ": app browser bottom " + bottom,
+        wallTop < (width === 1280 ? 900 : 852),
+        width + ": tool wall top " + wallTop,
       );
       assert.ok(
         await page
