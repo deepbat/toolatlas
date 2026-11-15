@@ -19,7 +19,7 @@ const wallBox=await page.locator('[data-tool-wall]').evaluate(el=>el.getBounding
 assert.ok(chipsBox.bottom<852,'category pills fit the first phone screen');
 assert.ok(wallBox.top<852,'tool wall starts on the first phone screen');
 console.log('PASS bento wall hero layout on phone');n++;
-// 2. Every card in every category shows a pictorial glyph; glyphs are unique across all 155 tools.
+// 2. Every card in every category shows a pictorial glyph; glyphs are unique across all 142 tools.
 const seen=new Map();
 for(const id of entries){
   await page.goto(base+'/?browse='+id);
@@ -28,8 +28,8 @@ for(const id of entries){
   assert.ok(tiles.length>0,id+' has cards');
   for(const t of tiles){assert.ok(t.glyph&&t.glyph.trim().length>0,`${id} card ${t.href} has a glyph`);assert.ok(!seen.has(t.glyph),`duplicate glyph ${t.glyph} on ${t.href} and ${seen.get(t.glyph)}`);seen.set(t.glyph,t.href);}
 }
-assert.equal(seen.size,155,'155 unique pictorial glyphs across the atlas');
-console.log('PASS 155 unique pictorial tool glyphs across all categories');n++;
+assert.equal(seen.size,142,'142 unique pictorial glyphs across the atlas');
+console.log('PASS 142 unique pictorial tool glyphs across all categories');n++;
 // 3. Selection is deep-linkable and updates the wall heading.
 await page.goto(base+'/?browse=device');
 await page.getByRole('heading',{name:'Device & Sensor Tools',exact:true}).waitFor();
@@ -46,7 +46,7 @@ console.log('PASS tool page glyph');n++;
 await page.goto(base+'/category/device/');
 await page.locator('h1').waitFor();
 const cards=await page.locator('main a[href*="/tools/"] span.rounded-xl, main a[href*="/tools/"] span.rounded-2xl, main a[href*="/tools/"] span.rounded-\\[14px\\]').count();
-assert.ok(cards>=13,'category page shows pictorial chips');
+assert.equal(cards,11,'category page shows all 11 remaining device pictorial chips');
 await page.screenshot({path:'test-artifacts/icons/category-device-393.png'});
 console.log('PASS category page pictorial chips');n++;
 // 6. Desktop and phone hero screenshots.
