@@ -349,6 +349,69 @@ input[type=color] {min-height:46px;padding:4px}button {touch-action:manipulation
   }
 }
 
+/* The living wall: a clipped viewport of columns, each a seamless vertical
+   marquee. Even columns drift up, odd columns drift down, slowly and nonstop.
+   The track holds the column's cards twice so translateY(-50%) loops without
+   a seam. Motion is transform-only; hidden tabs pause it natively. */
+.wall-marquee {
+  overflow: hidden;
+  height: min(78vh, 860px);
+  min-height: 420px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, rgb(0 0 0) 40px, rgb(0 0 0) calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to bottom, transparent, rgb(0 0 0) 40px, rgb(0 0 0) calc(100% - 40px), transparent);
+}
+
+.wall-cols {
+  display: flex;
+  gap: 12px;
+  height: 100%;
+}
+
+@media (min-width: 640px) {
+  .wall-cols {
+    gap: 16px;
+  }
+}
+
+.wall-col {
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+.wall-copy {
+  display: block;
+}
+
+/* The animation itself is applied from JS once the track height is measured
+   (the loop duration makes every column drift at the same slow speed), so the
+   drift never restarts with a jump after load. */
+.wall-track {
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+
+@keyframes wall-drift-up {
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes wall-drift-down {
+  from {
+    transform: translateY(-50%);
+  }
+}
+
+/* Hover-pause only on devices with a real hover pointer: on touch screens a
+   tap leaves a sticky hover that would freeze the wall for good. */
+@media (hover: hover) and (pointer: fine) {
+  .wall-marquee:hover .wall-track {
+    /* !important: the track's inline animation shorthand resets play-state. */
+    animation-play-state: paused !important;
+  }
+}
+
 .wall-card {
   display: flex;
   flex-direction: column;
@@ -492,6 +555,9 @@ input[type=color] {min-height:46px;padding:4px}button {touch-action:manipulation
 
 @media (prefers-reduced-motion: reduce) {
   .wall-card {
+    animation: none;
+  }
+  .wall-track {
     animation: none;
   }
   .wall-dot,
