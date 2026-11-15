@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CATEGORY_MAP, TOOLS } from '../lib/catalog';
 import { sectionTools } from '../lib/sections';
@@ -12,6 +12,12 @@ import { tint } from '../lib/utils';
  * a one-line description and quiet metadata. Category pills across the top
  * filter the wall; the selection lives in the `?browse=` URL parameter so
  * back/forward and sharing work naturally.
+ *
+ * On the unfiltered "All" view the wall is alive: every few seconds a pair of
+ * same-height cards trade places with a FLIP animation, so the masonry slowly
+ * reshuffles itself like a living wall. The reshuffle pauses on hover, focus
+ * and hidden tabs, is disabled under prefers-reduced-motion and never runs
+ * while a category filter is active.
  */
 interface WallEntry {
   id: string;
@@ -65,6 +71,70 @@ function heightFor(id: string): number {
   return PREVIEW_HEIGHTS[hash % PREVIEW_HEIGHTS.length];
 }
 
+/** Reshuffle pacing: a slow first move, then a gentle steady rhythm. */
+const SHUFFLE_FIRST_MS = 4200;
+const SHUFFLE_INTERVAL_MS = 3800;
+const FLIP_DURATION_MS = 1100;
+const FLIP_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
+
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = () => setReduced(query.matches);
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+  return reduced;
+}
+
+/**
+ * Pick the next wall order by swapping a few pairs of same-height cards.
+ * Same-height swaps leave every other card's slot untouched in the balanced
+ * columns, so only the swapped pair travels - the reflow stays cheap and the
+ * motion stays calm. Falls back to a linear scan so a move is always found.
+ */
+function nextOrder(order: string[], rects: Map<string, DOMRect>, pinnedCount: number, pairs: number): string[] {
+  const eligible = order.length - pinnedCount;
+  if (eligible < 4) return order;
+  const next = [...order];
+  const used = new Set<number>();
+  // Keep swaps in a local neighbourhood so cards glide, not fly.
+  const maxDistance = Math.min(48, Math.max(8, Math.floor(eligible / 4)));
+  const sameHeight = (a: string, b: string) => {
+    const ra = rects.get(a);
+    const rb = rects.get(b);
+    return !!ra && !!rb && Math.abs(ra.height - rb.height) <= 6;
+  };
+  const swap = (i: number, j: number) => {
+    [next[i], next[j]] = [next[j], next[i]];
+    used.add(i);
+    used.add(j);
+  };
+  let made = 0;
+  for (let attempt = 0; attempt < 60 && made < pairs; attempt += 1) {
+    const i = pinnedCount + Math.floor(Math.random() * eligible);
+    const span = 2 + Math.floor(Math.random() * (maxDistance - 1));
+    const direction = Math.random() < 0.5 ? -1 : 1;
+    const j = i + span * direction;
+    if (j < pinnedCount || j >= order.length || used.has(i) || used.has(j)) continue;
+    if (!sameHeight(order[i], order[j])) continue;
+    swap(i, j);
+    made += 1;
+  }
+  for (let i = pinnedCount; made < pairs && i < order.length - 2; i += 1) {
+    for (let j = i + 2; j < Math.min(i + maxDistance, order.length); j += 1) {
+      if (used.has(i) || used.has(j) || !sameHeight(order[i], order[j])) continue;
+      swap(i, j);
+      made += 1;
+      break;
+    }
+  }
+  return made > 0 ? next : order;
+}
+
 function WallCard({ tool, index }: { tool: ToolMeta; index: number }) {
   const category = CATEGORY_MAP[tool.category];
   const glyph = glyphFor(tool);
@@ -72,6 +142,7 @@ function WallCard({ tool, index }: { tool: ToolMeta; index: number }) {
     <Link
       to={`/tools/${tool.id}`}
       className="wall-card group"
+      data-wall-id={tool.id}
       style={{ animationDelay: `${Math.min(index, 14) * 28}ms` }}
     >
       <span
@@ -106,6 +177,99 @@ export default function ToolWall() {
   const active = WALL_ENTRIES.find((entry) => entry.id === requested);
   const tools = useMemo(() => (active ? active.tools() : pin(TOOLS)), [active]);
   const heading = active ? active.heading : 'All tools';
+
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  const pausedRef = useRef(false);
+  const positionsRef = useRef<Map<string, DOMRect>>(new Map());
+  const reducedMotion = usePrefersReducedMotion();
+  const [order, setOrder] = useState<string[] | null>(null);
+
+  // A category filter freezes the wall and restores the natural order.
+  useEffect(() => {
+    setOrder(null);
+    positionsRef.current = new Map();
+  }, [active]);
+
+  const displayTools = useMemo(() => {
+    if (!order || active) return tools;
+    const byId = new Map(tools.map((tool) => [tool.id, tool]));
+    const rearranged = order.map((id) => byId.get(id)).filter((tool): tool is ToolMeta => !!tool);
+    return rearranged.length === tools.length ? rearranged : tools;
+  }, [order, active, tools]);
+
+  // Pause the reshuffle while the wall is hovered, focused or the tab hidden.
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return undefined;
+    const pause = () => {
+      pausedRef.current = true;
+    };
+    const resume = () => {
+      pausedRef.current = false;
+    };
+    grid.addEventListener('pointerenter', pause);
+    grid.addEventListener('pointerleave', resume);
+    grid.addEventListener('focusin', pause);
+    grid.addEventListener('focusout', resume);
+    return () => {
+      grid.removeEventListener('pointerenter', pause);
+      grid.removeEventListener('pointerleave', resume);
+      grid.removeEventListener('focusin', pause);
+      grid.removeEventListener('focusout', resume);
+    };
+  }, []);
+
+  const tick = useCallback(() => {
+    if (pausedRef.current || document.hidden) return;
+    const grid = gridRef.current;
+    if (!grid) return;
+    // First: record where every card is (the "First" of FLIP).
+    const rects = new Map<string, DOMRect>();
+    grid.querySelectorAll<HTMLElement>('[data-wall-id]').forEach((el) => {
+      if (el.dataset.wallId) rects.set(el.dataset.wallId, el.getBoundingClientRect());
+    });
+    positionsRef.current = rects;
+    const width = grid.getBoundingClientRect().width;
+    const pairs = width >= 1024 ? 2 : 1;
+    setOrder((previous) => {
+      const current = previous ?? tools.map((tool) => tool.id);
+      return nextOrder(current, rects, tools.filter((tool) => PINNED.includes(tool.id)).length, pairs);
+    });
+  }, [tools]);
+
+  useEffect(() => {
+    if (active || reducedMotion) return undefined;
+    let timer = 0;
+    const loop = () => {
+      tick();
+      timer = window.setTimeout(loop, SHUFFLE_INTERVAL_MS);
+    };
+    timer = window.setTimeout(loop, SHUFFLE_FIRST_MS);
+    return () => window.clearTimeout(timer);
+  }, [active, reducedMotion, tick]);
+
+  // Last + Invert + Play: after React commits the new order, measure where
+  // each card landed and glide it there from where it was.
+  useLayoutEffect(() => {
+    const grid = gridRef.current;
+    const before = positionsRef.current;
+    if (!grid || before.size === 0) return;
+    positionsRef.current = new Map();
+    if (reducedMotion) return;
+    grid.querySelectorAll<HTMLElement>('[data-wall-id]').forEach((el) => {
+      const id = el.dataset.wallId;
+      const from = id ? before.get(id) : undefined;
+      if (!from) return;
+      const to = el.getBoundingClientRect();
+      const dx = from.left - to.left;
+      const dy = from.top - to.top;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+      el.animate(
+        [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0px, 0px)' }],
+        { duration: FLIP_DURATION_MS, easing: FLIP_EASING }
+      );
+    });
+  }, [displayTools, reducedMotion]);
 
   return (
     <div className="mt-7 sm:mt-9">
@@ -149,8 +313,8 @@ export default function ToolWall() {
         )}
       </div>
 
-      <div data-tool-wall className="wall-grid mt-4">
-        {tools.map((tool, index) => (
+      <div data-tool-wall ref={gridRef} className="wall-grid mt-4">
+        {displayTools.map((tool, index) => (
           <WallCard key={tool.id} tool={tool} index={index} />
         ))}
       </div>
