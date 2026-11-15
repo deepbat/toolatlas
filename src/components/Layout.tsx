@@ -91,7 +91,7 @@ function Footer() {
             <h3 className="label text-accent">Popular</h3>
             <ul className="mt-4 space-y-2.5 text-sm text-muted">
               <li><Link className="transition hover:text-accent" to="/tools/json-formatter">JSON Formatter</Link></li>
-              <li><Link className="transition hover:text-accent" to="/tools/unit-converter">Unit Converter</Link></li>
+              <li><Link className="transition hover:text-accent" to="/tools/percentage-calculator">Percentage Calculator</Link></li>
               <li><Link className="transition hover:text-accent" to="/tools/word-counter">Word Counter</Link></li>
               <li><Link className="transition hover:text-accent" to="/tools/password-generator">Password Generator</Link></li>
             </ul>
@@ -298,4 +298,4 @@ export default function Layout() {
       <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
-}
+      }
