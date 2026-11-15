@@ -72,8 +72,8 @@ function heightFor(id: string): number {
 }
 
 /** Reshuffle pacing: a slow first move, then a gentle steady rhythm. */
-const SHUFFLE_FIRST_MS = 4200;
-const SHUFFLE_INTERVAL_MS = 3800;
+const SHUFFLE_FIRST_MS = 2000;
+const SHUFFLE_INTERVAL_MS = 2000;
 const FLIP_DURATION_MS = 1100;
 const FLIP_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
