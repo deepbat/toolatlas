@@ -559,12 +559,12 @@ try {
           .click();
       await go("");
       await page.evaluate(() => document.fonts.ready);
-      const bottom = await page
-        .locator("[data-app-browser]")
-        .evaluate((e) => e.getBoundingClientRect().bottom);
+      const wallTop = await page
+        .locator("[data-tool-wall]")
+        .evaluate((e) => e.getBoundingClientRect().top);
       assert.ok(
-        bottom < (width === 1280 ? 900 : 852),
-        width + ": app browser bottom " + bottom,
+        wallTop < (width === 1280 ? 900 : 852),
+        width + ": tool wall top " + wallTop,
       );
       assert.ok(
         await page
@@ -613,13 +613,19 @@ try {
           width + " " + id + " overflow",
         );
       }
-      await page.getByRole("button", { name: /Switch to light theme/ }).click();
+      const toLight = page.getByRole("button", {
+        name: /Switch to light theme/,
+      });
+      if (await toLight.count()) await toLight.click();
       await go("");
       await page.evaluate(() => scrollTo(0, 0));
       await page.screenshot({
         path: `test-artifacts/upgrades/home-light-${width}.png`,
       });
-      await page.getByRole("button", { name: /Switch to dark theme/ }).click();
+      const toDark = page.getByRole("button", {
+        name: /Switch to dark theme/,
+      });
+      if (await toDark.count()) await toDark.click();
     }
   });
   await test("blocked localStorage does not break tools or personal controls", async () => {
@@ -677,3 +683,4 @@ try {
   console.log(JSON.stringify({ count, failures, errors }, null, 2));
 }
 if (failures.length) process.exitCode = 1;
+

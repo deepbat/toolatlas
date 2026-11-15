@@ -226,3 +226,276 @@
 input[type=color] {min-height:46px;padding:4px}button {touch-action:manipulation}pre {overflow-wrap:anywhere} .ad-space {min-height:100px;display:grid;place-items:center;border:1px dashed rgb(var(--line)/.15);background:rgb(var(--raised)/.3);color:rgb(var(--muted));font:10px monospace;letter-spacing:.15em;text-align:center;margin:3rem 0}
 @media print {header,footer,nav,.no-print,main>div>header,main>div>nav,main>div>section,.ad-space {display:none!important}body,main,section,div {background:white!important;box-shadow:none!important;backdrop-filter:none!important}main>div {padding:0!important} .invoice-paper {border:0!important;break-inside:avoid;color:black!important} .invoice-paper * {color:inherit} .invoice-paper~* {display:none!important}}
 @media(max-width:480px){input,select,textarea {font-size:16px!important} .container-page {padding-left:18px;padding-right:18px} pre {max-width:100%}}
+
+/* ---------------------------------------------------- home: bento tool wall */
+/* Airy masonry of white rounded cards on a cool light backdrop, after the
+   reference style Deepak picked: quiet cards, soft shadows, one blue accent. */
+
+:root {
+  --wall-bg: 241 242 245;
+  --wall-card: 255 255 255;
+  --wall-ink: 22 29 39;
+  --wall-muted: 102 112 125;
+  --wall-blue: 37 99 235;
+}
+
+.dark {
+  --wall-bg: 8 17 21;
+  --wall-card: 15 28 33;
+  --wall-ink: 237 242 236;
+  --wall-muted: 133 152 155;
+  --wall-blue: 96 165 250;
+}
+
+.wall-page {
+  background-color: rgb(var(--wall-bg));
+  background-image: radial-gradient(rgb(15 23 42 / 0.05) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+
+.dark .wall-page {
+  background-image: radial-gradient(rgb(255 255 255 / 0.04) 1px, transparent 1px);
+}
+
+.wall-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(var(--wall-muted));
+}
+
+.wall-eyebrow-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: rgb(var(--wall-blue));
+  box-shadow: 0 0 0 4px rgb(var(--wall-blue) / 0.15);
+}
+
+.wall-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  scrollbar-width: none;
+}
+
+.wall-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.wall-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  border-radius: 9999px;
+  border: 1px solid rgb(15 23 42 / 0.06);
+  background: rgb(var(--wall-card));
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgb(var(--wall-muted));
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.05);
+  transition: transform 0.2s ease, color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dark .wall-chip {
+  border-color: rgb(255 255 255 / 0.07);
+}
+
+.wall-chip:hover {
+  color: rgb(var(--wall-ink));
+  transform: translateY(-1px);
+}
+
+.wall-chip[data-active='true'] {
+  background: rgb(var(--wall-blue));
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 8px 18px -8px rgb(var(--wall-blue) / 0.9);
+}
+
+.dark .wall-chip[data-active='true'] {
+  color: #071014;
+}
+
+.wall-grid {
+  column-count: 2;
+  column-gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .wall-grid {
+    column-count: 3;
+    column-gap: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .wall-grid {
+    column-count: 4;
+  }
+}
+
+@media (min-width: 1400px) {
+  .wall-grid {
+    column-count: 5;
+  }
+}
+
+.wall-card {
+  display: flex;
+  flex-direction: column;
+  break-inside: avoid;
+  margin-bottom: 12px;
+  border-radius: 18px;
+  border: 1px solid rgb(15 23 42 / 0.05);
+  background: rgb(var(--wall-card));
+  padding: 12px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.05), 0 12px 26px -20px rgb(15 23 42 / 0.22);
+  animation: wall-in 0.5s cubic-bezier(0.23, 1, 0.32, 1) both;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+@media (min-width: 640px) {
+  .wall-card {
+    margin-bottom: 16px;
+    padding: 14px;
+  }
+}
+
+.dark .wall-card {
+  border-color: rgb(255 255 255 / 0.06);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.35), 0 14px 28px -20px rgb(0 0 0 / 0.6);
+}
+
+.wall-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 2px 4px rgb(15 23 42 / 0.06), 0 20px 36px -18px rgb(15 23 42 / 0.28);
+}
+
+.dark .wall-card:hover {
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.4), 0 22px 38px -18px rgb(0 0 0 / 0.7);
+}
+
+.wall-preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px;
+  overflow: hidden;
+}
+
+.wall-glyph {
+  font-size: 38px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.22));
+  transition: transform 0.3s ease;
+}
+
+.wall-card:hover .wall-glyph {
+  transform: scale(1.1) rotate(-3deg);
+}
+
+.wall-dot {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  animation: wall-bob 6s ease-in-out infinite;
+}
+
+.wall-ring {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  border: 2px solid;
+  animation: wall-bob 7s ease-in-out 1.2s infinite;
+}
+
+.wall-name {
+  margin-top: 10px;
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: rgb(var(--wall-ink));
+}
+
+.wall-desc {
+  margin-top: 3px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: rgb(var(--wall-muted));
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.wall-meta {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgb(var(--wall-muted));
+}
+
+.wall-tag {
+  border-radius: 9999px;
+  padding: 3px 8px;
+  font-weight: 600;
+}
+
+.wall-beta {
+  color: rgb(var(--warn));
+}
+
+@keyframes wall-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes wall-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wall-card {
+    animation: none;
+  }
+  .wall-dot,
+  .wall-ring {
+    animation: none;
+  }
+}

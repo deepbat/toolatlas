@@ -120,6 +120,9 @@ Current release contains 155 tools in 8 sections and 16 internal collections (St
 - Small lazy-loaded native media implementation, zero runtime dependencies added.
 - Deliberately deferred universal MP3/M4A encoding, GIF animation, video merging and AI speech cleanup: native browser codecs do not provide a consistent cross-browser solution, and shipping a large FFmpeg engine would break the current bundle budget. No fake format-renaming tools.
 
+### Bento card-wall homepage
+- 2026-11-15: homepage restyled after the Animatika-style reference video Deepak sent - an airy masonry of white rounded cards (one per tool, tinted preview tile + pictorial glyph, name, one-liner, category tag) with category pills (All + 11) filtering the wall via ?browse=. Default theme for new visitors flipped to light to match the reference. AppBrowser replaced by ToolWall; directory/icon/e2e/pvc/upgrades test suites updated to the new selectors (data-tool-wall, data-directory-category pills).
+
 ### Directory-first homepage
 - Replaced the two-column promotional hero with a category directory as the first screen.
 - 2026-11-14: the directory is now an app-style browser - a pictorial category rail beside a tile grid where each of the 154 tools has its own unique emoji glyph, so tools are recognisable at a glance without reading labels. Selection is deep-linkable via ?browse=.

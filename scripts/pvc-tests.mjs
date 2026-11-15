@@ -29,7 +29,7 @@ try {
   await page.screenshot({ path: '/tmp/pvc-tool.png', fullPage: true });
   await page.goto(base + '/');
   await page.screenshot({ path: '/tmp/pvc-home.png' });
-  const first = await page.locator('[data-app-browser] section a[href*="/tools/"]').first().getAttribute('href');
+  const first = await page.locator('[data-tool-wall] a[href*="/tools/"]').first().getAttribute('href');
   assert.ok(first.includes('pvc-card-maker'), 'pinned first: ' + first);
   assert.deepEqual(errs, []);
   console.log('PASS pvc tool end-to-end');
