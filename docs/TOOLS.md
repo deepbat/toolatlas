@@ -1,6 +1,6 @@
 # ToolAtlas catalogue
 
-142 applications, 8 top-level sections and 16 internal collections. Processing runs in your browser, subject to browser, codec and device support.
+148 applications, 8 top-level sections and 16 internal collections. Processing runs in your browser, subject to browser, codec and device support.
 
 The 13 approved stock-app duplicates were removed on 15 November 2026.
 
@@ -271,9 +271,6 @@ Combine up to 12 pictures into a grid, row, column or hero layout.
 ### Image Annotator and Editor - `/tools/image-annotate/`
 Draw arrows, boxes and text, hide private areas, rotate, crop and adjust light.
 
-### Image Metadata Viewer and Remover - `/tools/image-metadata/`
-See EXIF, GPS and camera details inside a photo and save a clean copy without them.
-
 ### Income Tax Calculator (India, FY 2025-26 and 2026-27) - `/tools/income-tax-india/`
 Compare new and old regime tax by financial year, age and deductions, with slab breakdown, rebate, surcharge and cess.
 
@@ -382,9 +379,6 @@ Sort lines alphabetically, numerically or by length.
 ### Whitespace Cleaner - `/tools/text-cleaner/`
 Clean repeated spaces, trailing spaces or blank lines.
 
-### Reverse Text - `/tools/reverse-text/`
-Reverse visible characters, word order or line order.
-
 ### CSV to JSON - `/tools/csv-to-json/`
 Parse quoted CSV into a JSON array of records.
 
@@ -429,3 +423,27 @@ Estimate reading and speaking duration with adjustable speeds.
 
 ### Query String Editor - `/tools/url-query/`
 Inspect a URL query as readable JSON or replace it from JSON.
+
+### Land Area Converter (India) - `/tools/land-area-india/`
+Convert land area between acres, hectares and Indian units — bigha, marla, kanal, guntha, cent and more.
+
+### India Govt Exam Age Checker - `/tools/exam-age-eligibility/`
+Check if your age fits UPSC, SSC, banking, railway and NEET age limits, as of the exam cutoff date.
+
+### Sunrise, Sunset & Moon Phase - `/tools/sunrise-sunset/`
+Find sunrise, sunset and day length for any place and date, plus the moon phase — no location lookup, no server.
+
+### Aadhaar / PAN / ID Masker - `/tools/id-masker/`
+Mask an Aadhaar, PAN, mobile or bank account number before sharing it — only the last digits stay visible.
+
+### Photo to Colouring Page - `/tools/photo-colouring-page/`
+Turn a photo into a printable black-and-white colouring page: outlines only, no grey shading.
+
+### Colour Blindness Simulator - `/tools/colour-blind-simulator/`
+See a photo the way someone with protanopia, deuteranopia, tritanopia or total colour blindness sees it.
+
+### Privacy Pixelator - `/tools/photo-pixelator/`
+Pixelate a photo so faces, number plates and addresses cannot be read, then download the safe copy.
+
+### UPI QR Generator - `/tools/upi-qr/`
+Make a QR code that opens a UPI payment for your UPI ID, with an optional amount and note. Works with GPay, PhonePe and Paytm.

@@ -3,6 +3,7 @@ import { AV_TOOLS } from '../lib/av-catalog';
 import {EXTRA_TOOLS} from '../lib/extra';
 import {MEDIA_TOOLS} from '../lib/media';
 import {DEVICE_TOOLS} from '../lib/device-catalog';
+import {OUTBOX_TOOLS} from '../lib/outbox';
 import {STUDIO_TOOLS,STUDIO_PDF,STUDIO_FINANCE} from '../lib/studio';
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
 
@@ -82,7 +83,7 @@ const REGISTRY = {
  * `src/tools/registry.check.ts`.
  */
 const PdfStudio=lazy(()=>import('./studio/PdfStudio'));const ImageStudio=lazy(()=>import('./studio/ImageStudio'));const FinanceTools=lazy(()=>import('./studio/FinanceTools'));
-export const TOOL_COMPONENTS: Record<string, LazyExoticComponent<ComponentType>> = {...REGISTRY, ...Object.fromEntries(DEMAND_TOOLS.map(t=>[t.id,lazy(()=>import('./demand/App'))])), ...Object.fromEntries(AV_TOOLS.map(t=>[t.id,lazy(()=>import('./av/App'))])), ...Object.fromEntries(STUDIO_TOOLS.map(t=>[t.id,STUDIO_PDF.has(t.id)?PdfStudio:STUDIO_FINANCE.has(t.id)?FinanceTools:ImageStudio])), ...Object.fromEntries(EXTRA_TOOLS.map(t=>[t.id,lazy(()=>import('./expanded/UtilityApp'))])), ...Object.fromEntries(DEVICE_TOOLS.map(t=>[t.id,lazy(()=>import('./device/App'))])), ...Object.fromEntries(MEDIA_TOOLS.map(t=>[t.id,lazy(t.id==='image-contact-sheet'?()=>import('./expanded/ImageContactSheet'):t.category==='image'?()=>import('./expanded/ImageTools'):t.category==='pdf'?()=>import('./expanded/PDFTools'):t.id==='markdown-preview'?()=>import('./expanded/Markdown'):()=>import('./expanded/Invoice'))]))};
+export const TOOL_COMPONENTS: Record<string, LazyExoticComponent<ComponentType>> = {...REGISTRY, ...Object.fromEntries(DEMAND_TOOLS.map(t=>[t.id,lazy(()=>import('./demand/App'))])), ...Object.fromEntries(AV_TOOLS.map(t=>[t.id,lazy(()=>import('./av/App'))])), ...Object.fromEntries(STUDIO_TOOLS.map(t=>[t.id,STUDIO_PDF.has(t.id)?PdfStudio:STUDIO_FINANCE.has(t.id)?FinanceTools:ImageStudio])), ...Object.fromEntries(EXTRA_TOOLS.map(t=>[t.id,lazy(()=>import('./expanded/UtilityApp'))])), ...Object.fromEntries(DEVICE_TOOLS.map(t=>[t.id,lazy(()=>import('./device/App'))])), ...Object.fromEntries(OUTBOX_TOOLS.map(t=>[t.id,lazy(()=>import('./outbox/App'))])), ...Object.fromEntries(MEDIA_TOOLS.map(t=>[t.id,lazy(t.id==='image-contact-sheet'?()=>import('./expanded/ImageContactSheet'):t.category==='image'?()=>import('./expanded/ImageTools'):t.category==='pdf'?()=>import('./expanded/PDFTools'):t.id==='markdown-preview'?()=>import('./expanded/Markdown'):()=>import('./expanded/Invoice'))]))};
 
 Object.assign(TOOL_COMPONENTS,{'image-target-size':lazy(()=>import('./exact-kb/App')),'signature-maker':lazy(()=>import('./new/Signature')),'bulk-renamer':lazy(()=>import('./new/BulkRenamer')),'list-cleaner':lazy(()=>import('./new/ListCleaner')),'pvc-card-maker':lazy(()=>import('./new/PvcCard')),'id-photo-maker':lazy(()=>import('./new/IdPhoto')),'remove-exif':lazy(()=>import('./new/ExifStripper')),'split-bill':lazy(()=>import('./new/SplitBill')),'fuel-cost':lazy(()=>import('./new/Fuel'))});
 

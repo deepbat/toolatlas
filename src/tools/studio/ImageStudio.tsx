@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import { Button, Dropzone, Field, FileRow, Grid, Input, Note, Panel, Select, Toggle } from '../../components/ui';
 import { downloadBlob, formatBytes } from '../../lib/utils';
 import { canvasBlob, tick } from '../../lib/pdfio';
-import { parseExif, stripJpeg, stripPng, type MetaResult } from '../../lib/exif';
 import { zipBlob } from '../../lib/zip';
 import { Busy, Failure, SendTo, loadBitmap, useHandoff } from './kit';
 
@@ -641,74 +640,6 @@ function CropControls({ base, setCrop }: { base: HTMLCanvasElement | null; setCr
   );
 }
 
-/* Metadata */
-function Metadata() {
-  const s = useSingleImage('image-metadata');
-  const [meta, setMeta] = useState<MetaResult | null>(null);
-  const [out, setOut] = useState<{ blob: Blob; note: string } | null>(null);
-  const [after, setAfter] = useState<MetaResult | null>(null);
-  useEffect(() => {
-    setOut(null); setAfter(null); setMeta(null);
-    if (!s.file) return;
-    s.file.arrayBuffer().then((b) => setMeta(parseExif(b))).catch(() => s.setError('The file could not be read.'));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s.file]);
-  const clean = async () => {
-    if (!s.file || !s.img) return;
-    s.setError('');
-    try {
-      const buf = await s.file.arrayBuffer();
-      const orient = meta?.tags.find((t) => t.name === 'Orientation')?.value;
-      let blob: Blob | null = null; let note = '';
-      if (meta?.kind === 'jpeg' && (!orient || String(orient) === '1')) {
-        const r = stripJpeg(buf);
-        if (r) { blob = new Blob([r.bytes as BlobPart], { type: 'image/jpeg' }); note = 'Metadata blocks were removed without re-encoding, so the picture is pixel-for-pixel identical.'; }
-      } else if (meta?.kind === 'png') {
-        const r = stripPng(buf);
-        if (r) { blob = new Blob([r.bytes as BlobPart], { type: 'image/png' }); note = 'Text and EXIF chunks were removed without re-encoding.'; }
-      }
-      if (!blob) {
-        const c = document.createElement('canvas'); c.width = s.img.naturalWidth; c.height = s.img.naturalHeight;
-        c.getContext('2d')!.drawImage(s.img, 0, 0);
-        const type = meta?.kind === 'png' ? 'image/png' : meta?.kind === 'webp' ? 'image/webp' : 'image/jpeg';
-        blob = await canvasBlob(c, type, 0.95);
-        note = 'The picture was redrawn and saved again, which drops all metadata. Quality is set to 95%' + (orient && String(orient) !== '1' ? ', and the rotation is baked into the pixels.' : '.');
-      }
-      setOut({ blob, note });
-      setAfter(parseExif(await blob.arrayBuffer()));
-    } catch (e) { s.setError(e instanceof Error ? e.message : 'Could not clean the file.'); }
-  };
-  const sensitive = meta?.tags.filter((t) => t.sensitive) ?? [];
-  const ext = out ? EXT[out.blob.type] ?? 'jpg' : 'jpg';
-  return (
-    <div className="space-y-4">
-      <ImagePicker s={s} />
-      {meta && (
-        <Panel title="2. What this file reveals" description="Read on this device. Social apps often strip this, but email and cloud links usually keep it.">
-          {meta.tags.length === 0 ? <Note tone="success">No camera, location or text metadata was found in this file.</Note> : (
-            <>
-              {sensitive.length > 0 && <div className="mb-3"><Note tone="warning"><strong>Privacy risk:</strong> this file contains {sensitive.map((t) => t.name).join(', ')}. Anyone who receives the original can read it.</Note></div>}
-              <dl className="divide-y divide-line border border-line" data-testid="meta-list">
-                {meta.tags.map((t, i) => <div key={i} className="flex flex-wrap justify-between gap-3 px-3 py-2 text-sm"><dt className="text-muted">{t.group}: {t.name}</dt><dd className={t.sensitive ? 'font-semibold text-danger' : ''}>{t.value}</dd></div>)}
-              </dl>
-            </>
-          )}
-          <div className="mt-4"><Button onClick={clean}>Remove metadata and save a clean copy</Button></div>
-          <p className="mt-2 text-xs text-muted">Limits: this removes EXIF, GPS, XMP, IPTC and PNG text. It cannot remove what is visible in the picture, such as faces or street signs.</p>
-        </Panel>
-      )}
-      {out && (
-        <Panel title="Clean copy ready">
-          <p className="text-sm" data-testid="meta-after">{(() => { const left = after?.tags.filter((t) => t.group !== 'Embedded').length ?? 0; const kept = (after?.tags.length ?? 0) - left; return left === 0 ? `Checked again: no personal metadata remains.${kept ? ' The colour profile was kept so colours look the same.' : ''}` : `${left} items remain.`; })()} {formatBytes(s.file!.size)} to {formatBytes(out.blob.size)}.</p>
-          <div className="mt-3"><Note>{out.note}</Note></div>
-          <div className="mt-3"><Button onClick={() => downloadBlob(`${stem(s.file!.name)}-clean.${ext}`, out.blob)}>Download clean copy</Button></div>
-          <div className="mt-4"><SendTo from="image-metadata" kind="image" files={() => [toFile(out.blob, `${stem(s.file!.name)}-clean.${ext}`)]} /></div>
-        </Panel>
-      )}
-    </div>
-  );
-}
-
 const PARTS: Record<string, () => JSX.Element> = {
   'image-bg-remove': BgRemove,
   'image-upscale': Upscale,
@@ -716,7 +647,6 @@ const PARTS: Record<string, () => JSX.Element> = {
   'passport-photo': Passport,
   'image-collage': Collage,
   'image-annotate': Annotate,
-  'image-metadata': Metadata,
 };
 export default function ImageStudio() {
   const { toolId } = useParams();

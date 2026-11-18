@@ -6,6 +6,7 @@ import { EXTRA_TOOLS } from './extra';
 import { MEDIA_TOOLS } from './media';
 import { STUDIO_TOOLS } from './studio';
 import { DEVICE_TOOLS } from './device-catalog';
+import { OUTBOX_TOOLS } from './outbox';
 
 export const CATEGORIES: Category[] = [
   {id:'video',name:'Video Tools',shortName:'Video',description:'Resize, mute and capture video locally on your device.',icon:'Video',accent:'var(--cat-generators)'},
@@ -485,7 +486,7 @@ export const TOOLS: ToolMeta[] = [
   },
 ];
 
-TOOLS.push(...NEW_TOOL_DATA.map(t=>({...t,category:t.category as CategoryId,status:'stable' as const,version:'1.0.0',added:'2026-11-13',layout:'wide' as const})),...DEMAND_TOOLS, ...AV_TOOLS, ...EXTRA_TOOLS, ...MEDIA_TOOLS, ...STUDIO_TOOLS, ...DEVICE_TOOLS);
+TOOLS.push(...NEW_TOOL_DATA.map(t=>({...t,category:t.category as CategoryId,status:'stable' as const,version:'1.0.0',added:'2026-11-13',layout:'wide' as const})),...DEMAND_TOOLS, ...AV_TOOLS, ...EXTRA_TOOLS, ...MEDIA_TOOLS, ...STUDIO_TOOLS, ...DEVICE_TOOLS, ...OUTBOX_TOOLS);
 
 export const TOOL_MAP: Record<string, ToolMeta> = Object.fromEntries(
   TOOLS.map((tool) => [tool.id, tool])

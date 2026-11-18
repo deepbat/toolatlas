@@ -59,7 +59,6 @@ export const TOOL_GLYPHS: Record<string, string> = {
   'duplicate-lines': '👯',
   'sort-lines': '🔽',
   'text-cleaner': '🧼',
-  'reverse-text': '🙃',
   'reading-time': '📖',
   'image-to-pdf': '🖼️',
   'pdf-merge': '🤝',
@@ -96,7 +95,6 @@ export const TOOL_GLYPHS: Record<string, string> = {
   'passport-photo': '🛂',
   'image-collage': '🧩',
   'image-annotate': '🖍️',
-  'image-metadata': '🔬',
   'video-compress': '🪗',
   'video-mute': '🔇',
   'video-frame': '📷',
@@ -149,6 +147,14 @@ export const TOOL_GLYPHS: Record<string, string> = {
   'screen-ruler': '📐',
   'morse-code': '📡',
   'qr-barcode-scanner': '📲',
+  'land-area-india': '🗺️',
+  'exam-age-eligibility': '🎓',
+  'sunrise-sunset': '🌅',
+  'id-masker': '🎭',
+  'photo-colouring-page': '🦋',
+  'colour-blind-simulator': '👓',
+  'photo-pixelator': '🟦',
+  'upi-qr': '🇮🇳',
 };
 
 /** Fallback picture per catalogue category (also used by the rail and lists). */

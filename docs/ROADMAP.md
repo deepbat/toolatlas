@@ -92,7 +92,7 @@ This roadmap turns ToolAtlas from a directory of independent utilities into a de
 10. Build and relevant regression tests pass.
 
 ## Current scope
-Current release contains 142 tools in 8 sections and 16 internal collections (Studio batch 1 added 14 PDF and image tools, batch 3 added 7 office and finance tools (salary structure, PPF, CAGR, rent receipt, GST invoice, expense tracker, CSV and Excel utilities), batch 2 added 10 India finance and date tools). The later media batch added 12 tools; demand-driven additions added 3 more. This roadmap is a plan, not a claim that unchecked features are already available.
+Current release contains 148 tools in 8 sections and 16 internal collections. The November 2026 out-of-box batch added 8 tools and removed 2 duplicates (Studio batch 1 added 14 PDF and image tools, batch 3 added 7 office and finance tools (salary structure, PPF, CAGR, rent receipt, GST invoice, expense tracker, CSV and Excel utilities), batch 2 added 10 India finance and date tools). The later media batch added 12 tools; demand-driven additions added 3 more. This roadmap is a plan, not a claim that unchecked features are already available.
 
 ## PDF editor responsiveness
 
@@ -143,3 +143,4 @@ Current release contains 142 tools in 8 sections and 16 internal collections (St
 - Limits, readability caveats and regression coverage: [EXACT-KB.md](EXACT-KB.md).
 
 - 2026-11-15: removed 13 approved stock-app duplicates, leaving 142 tools. Registry, app code, navigation, cached preferences, generated pages and tests follow the smaller catalogue.
+- 2026-11-18: added 8 out-of-box tools (Land Area Converter India, Exam Age Checker, Sunrise/Sunset & Moon Phase, ID Masker, Photo to Colouring Page, Colour Blindness Simulator, Privacy Pixelator, UPI QR) and removed 2 duplicates (Image Metadata Viewer, Reverse Text), leaving 148 tools.

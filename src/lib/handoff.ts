@@ -48,7 +48,7 @@ export const CHAIN: Record<string, ChainTarget[]> = {
     { id: 'image-annotate', label: 'Annotate', accept: 'image' },
     { id: 'image-upscale', label: 'Upscale', accept: 'image' },
     { id: 'image-bulk-convert', label: 'Resize or convert', accept: 'image' },
-    { id: 'image-metadata', label: 'Check metadata', accept: 'image' },
+    { id: 'remove-exif', label: 'Strip metadata', accept: 'image' },
     { id: 'image-to-pdf', label: 'Make a PDF', accept: 'image' },
   ],
 };
