@@ -1,6 +1,6 @@
 # ToolAtlas 2: Small jobs. Sorted.
 
-87 working tools across 13 categories. The original 35 modules are preserved, with 51 additions.
+Shipped with 87 working tools across 13 categories; now 148 tools in 8 sections. The original 35 modules are preserved.
 
 ## Product decisions
 
@@ -10,7 +10,7 @@ Every dependency and font is bundled locally. Tool code is split by capability. 
 
 ## Publishing and ads
 
-This release does not earn ad revenue yet. It includes inert, labelled ad spaces away from controls, a privacy policy, contact/support via public GitHub issues, terms, about, six practical guides, per-tool static HTML, canonical URLs, schema and a sitemap. No ad-network code, publisher IDs, analytics or tracking cookies are installed.
+This release does not earn ad revenue yet. It includes a few labelled placeholder spaces for future ads, kept away from controls, a privacy policy, contact/support via public GitHub issues, terms, about, six practical guides, per-tool static HTML, canonical URLs, schema and a sitemap. No ad-network code, publisher IDs, analytics or tracking cookies are installed.
 
 Before monetization:
 
@@ -36,7 +36,7 @@ No physical Android or iPhone test has been performed. Automated Chromium tests 
 ## Verification
 
 - `npm run build`: typecheck, production bundle, static-page generation.
-- `npm run test:expanded`: functional, file-output, 87-route mobile layout, offline and SEO assertions. Installs a local preview server and cleans it up.
+- `npm run test:expanded`: functional, file-output, 148-route mobile layout, offline and SEO assertions. Installs a local preview server and cleans it up.
 - `npm run test:e2e`: original CDP suite. Requires a running preview and CHROME_PATH if Chrome is not installed in a default path.
 - `npm audit`: zero known dependency vulnerabilities at release preparation.
 
