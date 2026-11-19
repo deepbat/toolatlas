@@ -1,4 +1,6 @@
-// Browser checks for the Device & Sensor tools. Run: npm run build && npm run test:device
+// Browser checks for the Device & Sensor category. The Nov 2026 curated
+// redesign keeps exactly one device tool (Screen Ruler); these checks cover
+// it and lock in the retirement of the other sensors. Run: npm run build && npm run test:device
 import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
@@ -18,50 +20,24 @@ await mkdir('test-artifacts/device', { recursive: true });
 let n = 0;
 const check = (name, ok) => { assert.ok(ok, name); n++; console.log('ok  ' + name); };
 
-const NAMES = {
-  'sound-meter': 'Sound Level Meter',
-  metronome: 'Metronome',
-  tuner: 'Instrument Tuner',
-  'tone-generator': 'Tone Generator & Sweep',
-  'text-to-speech': 'Text to Speech',
-  compass: 'Compass',
-  'spirit-level': 'Spirit Level',
-  'gps-speedometer': 'GPS Speedometer',
-  'screen-ruler': 'Screen Ruler',
-  'morse-code': 'Morse Code Translator',
-  'qr-barcode-scanner': 'QR & Barcode Scanner',
-};
+const RETIRED = ['sound-meter','metronome','tuner','tone-generator','text-to-speech','compass','spirit-level','gps-speedometer','morse-code','qr-barcode-scanner'];
 
 try {
   const page = await browser.newPage();
 
-  for (const [id, name] of Object.entries(NAMES)) {
-    await page.goto(`${base}/tools/${id}/`);
-    await page.getByRole('heading', { name, exact: true, level: 1 }).waitFor();
-    check(`${id} renders its page and title`, true);
-  }
+  await page.goto(`${base}/tools/screen-ruler/`);
+  await page.getByRole('heading', { name: 'Screen Ruler', exact: true, level: 1 }).waitFor();
+  check('screen-ruler renders its page and title', true);
 
-  // Static prerender must carry each route's SEO shell.
-  const html = await (await fetch(`${base}/tools/sound-meter/`)).text();
-  check('sound-meter static HTML has canonical title', html.includes("<title>Sound Level Meter | Deepak's Tool</title>"));
-  check('sound-meter static HTML has schema', html.includes('WebApplication'));
+  // Static prerender must carry the route's SEO shell.
+  const html = await (await fetch(`${base}/tools/screen-ruler/`)).text();
+  check('screen-ruler static HTML has canonical title', html.includes("<title>Screen Ruler | Deepak's Tool</title>"));
+  check('screen-ruler static HTML has schema', html.includes('WebApplication'));
   const catHtml = await (await fetch(`${base}/category/device/`)).text();
-  check('device category page lists tools', catHtml.includes('Sound Level Meter') && catHtml.includes('Instrument Tuner'));
-  const utilitiesHtml = await (await fetch(`${base}/utilities/`)).text();
-  check('utilities section lists device tools', utilitiesHtml.includes('GPS Speedometer'));
-
-  // Morse: real conversion in the browser.
-  await page.goto(`${base}/tools/morse-code/`);
-  const morseOut = page.getByTestId('morse-output');
-  await assertText(morseOut, '... --- ...');
-  check('morse encodes the SOS example', true);
-  await page.getByRole('button', { name: 'Morse to Text' }).click();
-  await page.getByLabel('Morse code').fill('.... . .-.. .-.. ---');
-  await assertText(morseOut, 'HELLO');
-  check('morse decodes back to text', true);
+  check('device category page lists Screen Ruler', catHtml.includes('Screen Ruler'));
+  check('device category page lists no retired sensors', !catHtml.includes('Sound Level Meter') && !catHtml.includes('Metronome'));
 
   // Screen ruler: calibration changes the reported scale.
-  await page.goto(`${base}/tools/screen-ruler/`);
   const scale = page.getByTestId('ruler-scale');
   const before = await scale.textContent();
   await page.getByLabel('Calibration width').fill('428');
@@ -69,60 +45,24 @@ try {
   const after = await scale.textContent();
   check(`ruler calibration updates scale (${before} -> ${after})`, before !== after && after.includes('= 50 px'));
 
-  // Metronome: tap tempo changes the BPM, slider clamps to the documented range.
-  await page.goto(`${base}/tools/metronome/`);
-  await page.getByLabel('Tempo in beats per minute').fill('999');
-  check('metronome clamps slider to 300 BPM', (await page.locator('#bpm').inputValue()) === '300');
-
-  // QR scanner: BarcodeDetector may be absent (support note) or present but
-  // camera-less (permission error); both states must render honestly.
-  await page.goto(`${base}/tools/qr-barcode-scanner/`);
-  await page.waitForTimeout(800);
-  if (await page.getByText('Barcode Detection API').count()) {
-    check('qr scanner shows its support note without the API', true);
-  } else {
-    await page.getByRole('button', { name: 'Start camera' }).click();
-    await page.waitForTimeout(2500);
-    const main = (await page.textContent('main')) || '';
-    check('qr scanner degrades honestly (error or viewfinder)', /Camera permission was denied|Could not start the camera|Stop camera/.test(main));
+  // Retired device tools render the not-found page.
+  for (const id of RETIRED) {
+    await page.goto(`${base}/tools/${id}/`);
+    await page.locator('h1').first().waitFor();
+    const text = await page.locator('main').innerText();
+    check(`${id} is retired and 404s`, /not found|does not exist|404/i.test(text));
   }
 
-  // Tone generator: play and stop without crashing (headless has audio stubs).
-  await page.goto(`${base}/tools/tone-generator/`);
-  await page.getByRole('button', { name: 'Play tone' }).click();
-  await page.getByRole('button', { name: 'Stop' }).waitFor();
-  await page.getByRole('button', { name: 'Stop' }).click();
-  await page.getByRole('button', { name: 'Play tone' }).waitFor();
-  check('tone generator starts and stops cleanly', true);
-
-  // Compass and level: sensors absent in headless, must degrade gracefully.
-  await page.goto(`${base}/tools/compass/`);
-  await page.getByRole('button', { name: 'Enable compass' }).click();
-  await page.waitForTimeout(600);
-  check('compass survives a headless sensor request', await page.getByRole('heading', { name: 'Compass', exact: true, level: 1 }).isVisible());
-
-  await page.goto(`${base}/tools/gps-speedometer/`);
-  await page.getByRole('button', { name: 'Start GPS' }).click();
-  await page.getByText(/permission was denied|Could not get a GPS fix/).first().waitFor({ timeout: 20000 });
-  check('gps speedometer reports denial instead of hanging', true);
-
-  await page.screenshot({ path: 'test-artifacts/device/gps-denied.png' });
-  await page.goto(`${base}/tools/metronome/`);
-  await page.screenshot({ path: 'test-artifacts/device/metronome.png' });
-  await page.goto(`${base}/tools/screen-ruler/`);
-  await page.screenshot({ path: 'test-artifacts/device/ruler.png' });
-  await page.goto(`${base}/category/device/`);
-  await page.screenshot({ path: 'test-artifacts/device/category.png', fullPage: true });
-
-  await page.close();
+  // No horizontal overflow on phone and desktop.
+  for (const width of [360, 393, 1280]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto(`${base}/tools/screen-ruler/`);
+    await page.getByRole('heading', { name: 'Screen Ruler', exact: true, level: 1 }).waitFor();
+    check(`screen-ruler fits ${width}px`, await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  }
+  await page.screenshot({ path: 'test-artifacts/device/screen-ruler.png' });
 } finally {
   await browser.close();
   server?.kill();
 }
-console.log(`\n${n} device browser checks passed`);
-
-async function assertText(locator, text) {
-  await locator.waitFor();
-  const actual = (await locator.textContent())?.trim();
-  assert.ok(actual?.includes(text), `expected "${text}" in "${actual}"`);
-  }
+console.log(`${n} device checks passed`);
