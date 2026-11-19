@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <rect width="100" height="100" fill="#071014"/>
   <rect x="16" y="16" width="68" height="68" rx="4" fill="none" stroke="#D7FF3F" stroke-width="6"/>
-  <text x="50" y="66" text-anchor="middle" font-family="ui-monospace, monospace" font-size="30" font-weight="600" fill="#D7FF3F">TA</text>
+  <text x="50" y="66" text-anchor="middle" font-family="ui-monospace, monospace" font-size="30" font-weight="600" fill="#D7FF3F">DT</text>
 </svg>
