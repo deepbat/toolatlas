@@ -1,4 +1,4 @@
-/* ToolAtlas service worker â offline shell for the app and tool chunks. */
+/* ToolAtlas service worker — offline shell for the app and tool chunks. */
 const CACHE = 'toolatlas-v1';
 
 self.addEventListener('install', () => {
