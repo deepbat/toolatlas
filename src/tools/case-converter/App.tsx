@@ -84,7 +84,7 @@ const TRANSFORMS: Array<{ id: string; label: string; hint: string; run: (value: 
 ];
 
 export default function CaseConverter() {
-  const [input, setInput] = useState('ToolAtlas makes small tools feel effortless.');
+  const [input, setInput] = useState("Deepak's Tool makes small tools feel effortless.");
   const [output, setOutput] = useState(input);
   const [active, setActive] = useState('sentence');
 
