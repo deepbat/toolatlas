@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { cleanList, renamedFiles, settle, fuel } from "../src/lib/new-tools";
 import { rowAmounts, invoiceTotals } from "../src/tools/new/invoice-pdf";
 import { INPUTS, matchingTools, fileKind } from "../src/lib/platform";
-import { TOOL_MAP, relatedTools } from "../src/lib/catalog";
+import { TOOLS, TOOL_MAP, relatedTools } from "../src/lib/catalog";
 let n = 0;
 const test = (name: string, fn: () => void) => {
   fn();
@@ -171,21 +171,20 @@ test("every handoff target exists in catalog", () => {
 test("file routing recognizes MIME and extension", () => {
   assert.equal(fileKind({ name: "x.PDF", type: "" }), "pdf");
   assert.equal(fileKind({ name: "x.json", type: "application/json" }), "json");
-  assert.ok(
-    matchingTools({ name: "sound.mp3", type: "" }).some(
-      (t) => t.id === "audio-convert",
-    ),
+  assert.equal(
+    matchingTools({ name: "sound.mp3", type: "" }).length,
+    0,
+    "audio tools are retired in the curated catalogue",
   );
   assert.equal(fileKind({ name: "x.exe", type: "" }), null);
 });
 test("related suggestions follow workflows", () => {
   assert.ok(
-    relatedTools(TOOL_MAP["pdf-merge"]).some((t) => t.id === "pdf-compress"),
-  );
-  assert.ok(
     relatedTools(TOOL_MAP["signature-maker"]).some(
       (t) => t.id === "pdf-editor",
     ),
   );
+  for (const tool of TOOLS)
+    for (const rel of relatedTools(tool)) assert.ok(TOOL_MAP[rel.id], rel.id);
 });
 console.log(`${n} upgrade unit checks passed`);
