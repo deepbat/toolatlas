@@ -54,7 +54,8 @@ await check('third-party notices list every runtime dependency', async () => {
 await check('prerendered pages carry complete and unique SEO tags', async () => {
   const pages = (await walk('dist')).filter((f) => f.endsWith('/index.html') || f === 'dist/index.html');
   const catalog = JSON.parse(await readFile('dist/catalog.json', 'utf8'));
-  assert.equal(pages.length, catalog.length + new Set(catalog.map(t => t.category)).size + 8 + 12, 'every tool, collection, section and support page is prerendered');
+  const usedCategories=new Set(catalog.map(t=>t.category)).size;
+  assert.equal(pages.length, catalog.length + usedCategories + 8 + 12, 'every tool, every used collection, 8 sections and 12 support pages are prerendered');
   const titles = new Map();
   const root = 'https://deepbat.github.io/toolatlas';
   for (const f of pages) {
@@ -87,7 +88,9 @@ await check('prerendered pages carry complete and unique SEO tags', async () => 
   assert.ok(robots.includes('Sitemap: ' + root + '/sitemap.xml'), 'robots.txt must reference the sitemap');
 });
 await check('retired tools have no generated pages, sitemap entries or offline files', async () => {
-  const retired = ['calculator','unit-converter','temperature-converter','todo-list','quick-notes','speech-to-text','screen-recorder','video-trim','voice-recorder','image-rotate','image-filters','stopwatch','find-replace'];
+  const retired = ['calculator','unit-converter','temperature-converter','todo-list','quick-notes','speech-to-text','screen-recorder','video-trim','voice-recorder','image-rotate','image-filters','stopwatch','find-replace','image-metadata','reverse-text',
+  // Nov 2026 curated redesign: 124 tools retired from the public catalogue.
+  'percentage-calculator','bmi-calculator','tip-calculator','age-calculator','date-difference','timezone-converter','countdown','loan-emi-calculator','compound-interest','savings-goal','word-counter','case-converter','text-diff','lorem-ipsum','image-to-pdf','pdf-merge','image-compressor','file-checksum','pomodoro','json-formatter','base64','hash-generator','jwt-decoder','regex-tester','password-generator','qr-code-generator','uuid-generator','color-palette','color-converter','url-parser','id-photo-maker','zip-create','image-base64','screen-test','video-compress','video-mute','video-frame','video-audio','audio-trim','audio-convert','audio-merge','audio-volume','audio-reverse','audio-size','gst-calculator','discount-calculator','sip-calculator','simple-interest','salary-converter','fuel-cost','pace-calculator','ratio-calculator','fraction-calculator','date-add','unix-timestamp','number-base','data-size','url-encoder','html-entities','slug-generator','duplicate-lines','sort-lines','text-cleaner','csv-to-json','json-to-csv','json-sort','text-to-binary','unicode-inspector','utm-builder','whatsapp-link','random-number','random-picker','color-contrast','css-gradient','box-shadow','aspect-ratio','reading-time','url-query','sunrise-sunset','image-resizer','image-converter','image-crop','image-watermark','image-contact-sheet','pdf-extract','pdf-page-organiser','pdf-rotate','pdf-watermark','pdf-page-numbers','pdf-metadata','markdown-preview','invoice-generator','pdf-compress','pdf-to-images','pdf-split','pdf-extract-text','image-bg-remove','image-upscale','image-bulk-convert','image-collage','image-annotate','tds-calculator','epf-calculator','gratuity-calculator','hra-calculator','fd-rd-calculator','loan-schedule','working-days','salary-structure','ppf-calculator','cagr-calculator','rent-receipt','gst-invoice','expense-tracker','sound-meter','metronome','tuner','tone-generator','text-to-speech','compass','spirit-level','gps-speedometer','morse-code','qr-barcode-scanner'];
   const files = await walk('dist');
   const sitemap = await readFile('dist/sitemap.xml', 'utf8');
   const offline = await readFile('dist/offline-files.json', 'utf8');
