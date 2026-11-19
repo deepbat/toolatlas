@@ -130,7 +130,7 @@ export function QrScanner() {
           </ul>
         </Panel>
       )}
-      <Note tone="info">Only open scanned links you recognise - a QR code can point anywhere. ToolAtlas shows the raw text so you can check it first.</Note>
+      <Note tone="info">Only open scanned links you recognise - a QR code can point anywhere. Deepak's Tool shows the raw text so you can check it first.</Note>
     </div>
   );
 }
