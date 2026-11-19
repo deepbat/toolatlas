@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Button, CopyButton, Panel, Result, Select, TextArea } from '../../components/ui';
 import { downloadText, formatBytes } from '../../lib/utils';
 
-const SAMPLE = '{"name":"ToolAtlas","tools":35,"private":false,"tags":["calculators","text","pdf"]}';
+const SAMPLE = `{"name":"Deepak's Tool","tools":35,"private":false,"tags":["calculators","text","pdf"]}`;
 
 function countKeys(value: unknown): number {
   if (Array.isArray(value)) return value.reduce<number>((total, item) => total + countKeys(item), 0);
