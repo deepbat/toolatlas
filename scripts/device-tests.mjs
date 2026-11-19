@@ -43,7 +43,7 @@ try {
 
   // Static prerender must carry each route's SEO shell.
   const html = await (await fetch(`${base}/tools/sound-meter/`)).text();
-  check('sound-meter static HTML has canonical title', html.includes('<title>Sound Level Meter | ToolAtlas</title>'));
+  check('sound-meter static HTML has canonical title', html.includes("<title>Sound Level Meter | Deepak's Tool</title>"));
   check('sound-meter static HTML has schema', html.includes('WebApplication'));
   const catHtml = await (await fetch(`${base}/category/device/`)).text();
   check('device category page lists tools', catHtml.includes('Sound Level Meter') && catHtml.includes('Instrument Tuner'));
