@@ -59,7 +59,7 @@ export default function WorkspacesPage() {
         <Button type="button" onClick={create}>Create</Button>
         <DownloadButton label="Export all" onClick={() => downloadText('toolatlas-workspaces.json', JSON.stringify({ app: 'toolatlas', version: 1, workspaces: spaces }, null, 2), 'application/json')} />
       </div>
-      <div className="mt-4 max-w-xl"><Dropzone accept=".json,application/json" multiple={false} onFiles={importFile} title="Import a workspace file" hint="a .json file exported from ToolAtlas" /></div>
+      <div className="mt-4 max-w-xl"><Dropzone accept=".json,application/json" multiple={false} onFiles={importFile} title="Import a workspace file" hint="a .json file exported from Deepak's Tool" /></div>
       {msg && <div className="mt-4" role={msg.tone === 'warning' ? 'alert' : 'status'} data-testid="ws-message"><Note tone={msg.tone}>{msg.text}</Note></div>}
 
       <div className="mt-8 grid gap-4 lg:grid-cols-2">
