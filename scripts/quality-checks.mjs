@@ -62,7 +62,7 @@ await check('prerendered pages carry complete and unique SEO tags', async () => 
     const rel = f === 'dist/index.html' ? '' : f.slice('dist/'.length, -'/index.html'.length) + '/';
     const url = root + '/' + rel;
     const title = html.match(/<title>([^<]+)<\/title>/)?.[1];
-    assert.ok(title && title.endsWith('| ToolAtlas'), f + ' missing ToolAtlas title');
+    assert.ok(title && title.endsWith("| Deepak's Tool"), f + " missing Deepak's Tool title");
     assert.ok(!titles.has(title), 'duplicate page title: ' + title);
     titles.set(title, f);
     assert.ok(/<meta name="description" content="[^"]{40,}"/.test(html), f + ' weak or missing description');
