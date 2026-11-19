@@ -22,7 +22,7 @@ export default function OfflineBanner() {
   return (
     <div role="status" data-testid="offline-banner" className="border-b border-line bg-raised px-5 py-2 text-center text-sm text-fg">
       {!online ? 'You are offline. Tools that were saved for offline use still work. Anything that needs the internet will wait until you are back.' : (
-        <>A new version of ToolAtlas is ready. <button type="button" className="text-accent underline" onClick={() => location.reload()}>Reload to use it</button></>
+        <>A new version of Deepak's Tool is ready. <button type="button" className="text-accent underline" onClick={() => location.reload()}>Reload to use it</button></>
       )}
     </div>
   );
