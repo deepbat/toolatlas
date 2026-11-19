@@ -7,8 +7,8 @@ export const RESOURCES: ResourceGroup[] = [
     { name: 'Stirling-PDF', url: 'https://github.com/Stirling-Tools/Stirling-PDF', what: 'A self-hosted web app with dozens of PDF operations, including OCR and signing.', licence: 'Open source' },
     { name: 'LibreOffice', url: 'https://www.libreoffice.org', what: 'A full office suite for documents, sheets and slides. Opens most Microsoft formats.', licence: 'Open source' },
     { name: 'Paperless-ngx', url: 'https://github.com/paperless-ngx/paperless-ngx', what: 'Scan, index and search your paper documents on your own computer.', licence: 'Open source' },
-    { name: 'PDF.js', url: 'https://github.com/mozilla/pdf.js', what: 'The PDF reader library used inside Firefox and inside ToolAtlas.', licence: 'Open source' },
-    { name: 'pdf-lib', url: 'https://github.com/Hopding/pdf-lib', what: 'The JavaScript library ToolAtlas uses to create and change PDFs in the browser.', licence: 'Open source' },
+    { name: 'PDF.js', url: 'https://github.com/mozilla/pdf.js', what: "The PDF reader library used inside Firefox and inside Deepak's Tool.", licence: 'Open source' },
+    { name: 'pdf-lib', url: 'https://github.com/Hopding/pdf-lib', what: "The JavaScript library Deepak's Tool uses to create and change PDFs in the browser.", licence: 'Open source' },
   ] },
   { id: 'image', title: 'Images, design and video', intro: 'Desktop editors that do more than a browser can.', items: [
     { name: 'GIMP', url: 'https://www.gimp.org', what: 'A photo editor with layers, masks and filters.', licence: 'Open source' },
