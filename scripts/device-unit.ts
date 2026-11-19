@@ -24,14 +24,12 @@ const test = (name: string, fn: () => void) => {
   console.log("ok " + name);
 };
 
-test("all 11 device tools are registered with unique ids", () => {
-  assert.equal(DEVICE_TOOLS.length, 11);
-  assert.equal(new Set(DEVICE_TOOLS.map((t) => t.id)).size, 11);
-  for (const t of DEVICE_TOOLS) {
-    assert.equal(TOOL_MAP[t.id], t, t.id + " missing from TOOL_MAP");
-    assert.equal(t.category, "device");
-    assert.ok(t.keywords.length >= 4, t.id + " needs search keywords");
-  }
+test("curated catalogue keeps only screen-ruler from the device section", () => {
+  assert.equal(new Set(DEVICE_TOOLS.map((t) => t.id)).size, DEVICE_TOOLS.length);
+  const curated = DEVICE_TOOLS.filter((t) => TOOL_MAP[t.id]);
+  assert.deepEqual(curated.map((t) => t.id), ["screen-ruler"]);
+  assert.equal(TOOL_MAP["screen-ruler"].category, "device");
+  assert.ok(TOOL_MAP["screen-ruler"].keywords.length >= 4);
 });
 
 test("morse encodes SOS and round-trips mixed text", () => {
