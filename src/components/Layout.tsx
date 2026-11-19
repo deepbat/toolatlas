@@ -19,21 +19,16 @@ function navClass({ isActive }: { isActive: boolean }): string {
   );
 }
 
-function Brand({ byline = false }: { byline?: boolean }) {
+function Brand() {
   return (
-    <Link to="/" className="flex shrink-0 items-center gap-3" aria-label="ToolAtlas home">
+    <Link to="/" className="flex shrink-0 items-center gap-3" aria-label="Deepak's Tool home">
       <span className="relative flex h-8 w-8 items-center justify-center border border-accent bg-accent/10">
-        <span className="font-mono text-[11px] font-semibold tracking-tight text-accent">TA</span>
+        <span className="font-mono text-[11px] font-semibold tracking-tight text-accent">DT</span>
       </span>
       <span className="hidden flex-col gap-1 leading-none min-[340px]:flex">
         <span className="font-mono text-[12px] font-semibold uppercase tracking-wide2 text-fg">
-          Tool<span className="text-accent">Atlas</span>
+          Deepak's <span className="text-accent">Tool</span>
         </span>
-        {byline && (
-          <span className="font-mono text-[8px] font-medium uppercase tracking-label text-muted">
-            by Deepak Batra
-          </span>
-        )}
       </span>
     </Link>
   );
@@ -180,7 +175,7 @@ export default function Layout() {
       <OfflineBanner />
       <header className="sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur-xl">
         <div className="container-page flex h-16 min-w-0 items-center gap-2 sm:gap-5">
-          <Brand byline />
+          <Brand />
 
           <nav className="ml-2 hidden items-center gap-6 md:flex" aria-label="Primary">
             <NavLink to="/tools" className={navClass} end>
