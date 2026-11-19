@@ -112,7 +112,7 @@ export default function HomePage() {
         <ToolWall />
       </section>
 
-      <section className="container-page pb-16 pt-12 sm:pb-20" aria-label="About ToolAtlas">
+      <section className="container-page pb-16 pt-12 sm:pb-20" aria-label="About Deepak's Tool">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
             <p className="wall-eyebrow">
