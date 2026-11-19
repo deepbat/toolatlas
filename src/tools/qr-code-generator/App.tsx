@@ -12,7 +12,7 @@ export default function QrCodeGenerator() {
   const [wifiPassword, setWifiPassword] = useState('');
   const [encryption, setEncryption] = useState('WPA');
   const [email, setEmail] = useState('hello@example.com');
-  const [subject, setSubject] = useState('Hello from ToolAtlas');
+  const [subject, setSubject] = useState("Hello from Deepak's Tool");
   const [body, setBody] = useState('');
   const [size, setSize] = useState('480');
   const [level, setLevel] = useState('M');
