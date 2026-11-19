@@ -7,6 +7,7 @@ import { MEDIA_TOOLS } from './media';
 import { STUDIO_TOOLS } from './studio';
 import { DEVICE_TOOLS } from './device-catalog';
 import { OUTBOX_TOOLS } from './outbox';
+import { CURATED_KEEP_IDS, UNCOMMON_TOOLS } from './uncommon';
 
 export const CATEGORIES: Category[] = [
   {id:'video',name:'Video Tools',shortName:'Video',description:'Resize, mute and capture video locally on your device.',icon:'Video',accent:'var(--cat-generators)'},
@@ -488,11 +489,14 @@ export const TOOLS: ToolMeta[] = [
 
 TOOLS.push(...NEW_TOOL_DATA.map(t=>({...t,category:t.category as CategoryId,status:'stable' as const,version:'1.0.0',added:'2026-11-13',layout:'wide' as const})),...DEMAND_TOOLS, ...AV_TOOLS, ...EXTRA_TOOLS, ...MEDIA_TOOLS, ...STUDIO_TOOLS, ...DEVICE_TOOLS, ...OUTBOX_TOOLS);
 
+// ToolAtlas 4.0 curated redesign: keep the 24 signature tools, append the 6 uncommon tools (30 total).
+TOOLS.splice(0, TOOLS.length, ...TOOLS.filter((t) => CURATED_KEEP_IDS.has(t.id)), ...UNCOMMON_TOOLS);
+
 export const TOOL_MAP: Record<string, ToolMeta> = Object.fromEntries(
   TOOLS.map((tool) => [tool.id, tool])
 );
 
-export const FEATURED_TOOLS = ['image-target-size','pdf-extract','gst-calculator','invoice-generator','json-formatter','qr-code-generator'].map(id=>TOOL_MAP[id]);
+export const FEATURED_TOOLS = TOOLS.filter((tool) => tool.featured);
 export const POPULAR_TOOLS = TOOLS.filter((tool) => tool.popular);
 
 export const RECENTLY_ADDED = [...TOOLS]
