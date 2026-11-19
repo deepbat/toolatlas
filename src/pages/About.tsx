@@ -35,7 +35,7 @@ export default function AboutPage() {
           A growing atlas of useful things.
         </h1>
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted">
-          Published by deepbat, ToolAtlas began with a simple frustration: useful utilities are scattered across the web,
+          Published by deepbat, Deepak's Tool began with a simple frustration: useful utilities are scattered across the web,
           each with its own account prompt, upload step and cookie banner. This project puts them in
           one place, keeps the data on your device, and makes each tool easy to find again.
         </p>
@@ -139,7 +139,7 @@ export default function AboutPage() {
       <section className="mt-12 border border-line bg-surface/80 p-6">
         <h2 className="font-display text-lg font-medium tracking-tight text-fg">Licence & credits</h2>
         <p className="mt-2.5 text-sm leading-relaxed text-muted">
-          ToolAtlas is released under the MIT licence. It is built with open-source software: React,
+          Deepak's Tool is released under the MIT licence. It is built with open-source software: React,
           Vite, Tailwind CSS, Lucide icons, pdf-lib and qrcode. Created and maintained by{' '}
           <a
             className="font-medium text-accent hover:underline"
