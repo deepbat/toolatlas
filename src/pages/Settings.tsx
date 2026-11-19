@@ -87,14 +87,14 @@ export default function SettingsPage() {
   const clearData = async () => {
     setError('');
     setStatus('');
-    if (!window.confirm('Clear all ToolAtlas data saved in this browser? This removes favourites, recent history, theme preferences, notes and tasks. Export a backup first if you may need them.')) return;
+    if (!window.confirm("Clear all Deepak's Tool data saved in this browser? This removes favourites, recent history, theme preferences, notes and tasks. Export a backup first if you may need them.")) return;
     try {
       entries().forEach((item) => localStorage.removeItem(item.key));
       await clearAllTransfers();
-      setStatus('All ToolAtlas browser data has been cleared. Reload the page to refresh open tools.');
+      setStatus("All Deepak's Tool browser data has been cleared. Reload the page to refresh open tools.");
       refresh();
     } catch {
-      setError('Could not clear all ToolAtlas data. Check browser storage permissions and try again.');
+      setError("Could not clear all Deepak's Tool data. Check browser storage permissions and try again.");
       refresh();
     }
   };
@@ -120,13 +120,13 @@ export default function SettingsPage() {
       total += sizeOf(item.key) + sizeOf(item.value);
       if (total > MAX_BYTES) { setError('Backup data exceeds 5 MB. Nothing was changed.'); return; }
     }
-    if (!window.confirm(`Restore ${backup.entries.length} records? Existing ToolAtlas data in this browser will be replaced. Export a backup first if you want to keep it.`)) return;
+    if (!window.confirm(`Restore ${backup.entries.length} records? Existing Deepak's Tool data in this browser will be replaced. Export a backup first if you want to keep it.`)) return;
     let previous: Entry[] = [];
     try {
       previous = entries();
       previous.forEach(item => localStorage.removeItem(item.key));
       backup.entries.forEach(item => localStorage.setItem(item.key, item.value));
-      setStatus(`Restored ${backup.entries.length} records. Reload ToolAtlas to refresh open tools.`);
+      setStatus(`Restored ${backup.entries.length} records. Reload Deepak"s Tool to refresh open tools.`);
       refresh();
     } catch {
       try {
@@ -136,17 +136,17 @@ export default function SettingsPage() {
         setError('Restore failed and browser storage could not be fully rolled back. Check available storage space.');
         refresh(); return;
       }
-      setError('Restore failed. Previous ToolAtlas data has been restored.');
+      setError("Restore failed. Previous Deepak's Tool data has been restored.");
       refresh();
     }
   };
 
   return <div className="container-page max-w-4xl space-y-6 pt-12">
     <div><p className="label text-accent">Your browser · Your data</p><h1 className="mt-3 font-display text-3xl font-medium tracking-tight text-fg">Data & Settings</h1>
-      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">ToolAtlas saves favourites, recent tools, theme preferences, notes and tasks in this browser. Export a backup before clearing browser data or moving to another device.</p></div>
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">Deepak's Tool saves favourites, recent tools, theme preferences, notes and tasks in this browser. Export a backup before clearing browser data or moving to another device.</p></div>
     <Panel title="Local data overview">
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="border border-line bg-raised/40 p-4"><p className="font-display text-2xl text-fg">{count}</p><p className="mt-1 text-xs text-muted">ToolAtlas storage records</p></div>
+        <div className="border border-line bg-raised/40 p-4"><p className="font-display text-2xl text-fg">{count}</p><p className="mt-1 text-xs text-muted">Deepak's Tool storage records</p></div>
         <div className="border border-line bg-raised/40 p-4"><p className="font-display text-2xl text-fg">{size < 1024 ? `${size} B` : `${(size / 1024).toFixed(1)} KB`}</p><p className="mt-1 text-xs text-muted">Approximate storage used</p></div>
       </div>
       <p className="mt-4 text-xs leading-relaxed text-muted">Storage is local to this browser profile. It is not synced, and other people using this browser profile may be able to access saved notes and tasks.</p>
@@ -154,15 +154,15 @@ export default function SettingsPage() {
     <Panel title="Export backup"><p className="text-sm text-muted">Download favourites, recent history, theme settings, notes and tasks as a JSON file. Keep this file somewhere safe.</p>
       <button type="button" onClick={exportBackup} className="mt-4 inline-flex min-h-10 items-center border border-accent bg-accent px-4 py-2 font-mono text-xs font-semibold uppercase tracking-label text-on-accent transition hover:brightness-110">Export backup</button>
     </Panel>
-    <Panel title="Restore backup"><p className="text-sm text-muted">Import a ToolAtlas JSON backup created by this page. Existing ToolAtlas browser data will be replaced after confirmation. Other websites' storage is not affected.</p>
-      <input ref={fileRef} type="file" accept=".json,application/json" className="sr-only" aria-label="Choose ToolAtlas backup file" onChange={event => { const file = event.target.files?.[0]; if (file) void importBackup(file); event.target.value = ''; }} />
+    <Panel title="Restore backup"><p className="text-sm text-muted">Import a Deepak's Tool JSON backup created by this page. Existing Deepak's Tool browser data will be replaced after confirmation. Other websites' storage is not affected.</p>
+      <input ref={fileRef} type="file" accept=".json,application/json" className="sr-only" aria-label="Choose Deepak's Tool backup file" onChange={event => { const file = event.target.files?.[0]; if (file) void importBackup(file); event.target.value = ''; }} />
       <button type="button" onClick={() => fileRef.current?.click()} className="mt-4 inline-flex min-h-10 items-center border border-line px-4 py-2 font-mono text-xs font-semibold uppercase tracking-label text-fg transition hover:border-accent hover:text-accent">Choose backup file</button>
     </Panel>
     <Panel title="Diagnostic report"><p className="text-sm text-muted">Export a local technical report to help troubleshoot browser, storage and offline issues. It does not include note contents, task contents or other saved values.</p>
       <button type="button" onClick={() => void exportDiagnostics()} className="mt-4 inline-flex min-h-10 items-center border border-line px-4 py-2 font-mono text-xs font-semibold uppercase tracking-label text-fg transition hover:border-accent hover:text-accent">Export diagnostics</button>
     </Panel>
-    <Panel title="Clear local data"><p className="text-sm text-muted">Remove all ToolAtlas records from this browser only. This includes favourites, recent history, theme preferences, notes and tasks. Export a backup first if you may need them.</p>
-      <button type="button" onClick={clearData} className="mt-4 inline-flex min-h-10 items-center border border-rose-500/50 px-4 py-2 font-mono text-xs font-semibold uppercase tracking-label text-rose-700 transition hover:bg-rose-500/10 dark:text-rose-300">Clear all ToolAtlas data</button>
+    <Panel title="Clear local data"><p className="text-sm text-muted">Remove all Deepak's Tool records from this browser only. This includes favourites, recent history, theme preferences, notes and tasks. Export a backup first if you may need them.</p>
+      <button type="button" onClick={clearData} className="mt-4 inline-flex min-h-10 items-center border border-rose-500/50 px-4 py-2 font-mono text-xs font-semibold uppercase tracking-label text-rose-700 transition hover:bg-rose-500/10 dark:text-rose-300">Clear all Deepak's Tool data</button>
     </Panel>
     {status && <p role="status" className="border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm text-emerald-700 dark:text-emerald-300">{status}</p>}
     {error && <p role="alert" className="border border-rose-500/30 bg-rose-500/5 p-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
