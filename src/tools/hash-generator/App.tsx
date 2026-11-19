@@ -10,7 +10,7 @@ const ALGORITHMS = [
 ];
 
 export default function HashGenerator() {
-  const [text, setText] = useState('ToolAtlas');
+  const [text, setText] = useState("Deepak's Tool");
   const [hashes, setHashes] = useState<Record<string, string>>({});
 
   useEffect(() => {
