@@ -16,7 +16,7 @@ export function parseWorkspaces(text: string): Workspace[] {
   let data: unknown;
   try { data = JSON.parse(text); } catch { throw Error('This file is not valid JSON.'); }
   const list = Array.isArray(data) ? data : (data as { workspaces?: unknown })?.workspaces;
-  if (!Array.isArray(list)) throw Error('This file does not look like a ToolAtlas workspace export.');
+  if (!Array.isArray(list)) throw Error("This file does not look like a Deepak's Tool workspace export.");
   const out: Workspace[] = [];
   for (const w of list.slice(0, MAX_WORKSPACES)) {
     if (!w || typeof w !== 'object' || typeof (w as Workspace).name !== 'string' || !Array.isArray((w as Workspace).tools)) continue;
