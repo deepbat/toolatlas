@@ -22,7 +22,7 @@ function decodeBase64(value: string): string {
 
 export default function Base64Tool() {
   const [mode, setMode] = useState<'encode' | 'decode'>('encode');
-  const [input, setInput] = useState('ToolAtlas — One Place. Countless Useful Tools.');
+  const [input, setInput] = useState("Deepak's Tool — One Place. Countless Useful Tools.");
   const [urlSafe, setUrlSafe] = useState(false);
   const [fileName, setFileName] = useState('');
 
