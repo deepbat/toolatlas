@@ -16,7 +16,7 @@ export async function checkPdfFile(file: File): Promise<ArrayBuffer> {
 export function friendlyPdfError(e: unknown, name = 'This PDF'): Error {
   const msg = e instanceof Error ? e.message : String(e);
   const named = e && typeof e === 'object' && 'name' in e ? String((e as { name: unknown }).name) : '';
-  if (/encrypt|password/i.test(msg) || named === 'PasswordException') return Error(`${name} is password protected. Remove the password in the app that created it, then try again. ToolAtlas never asks for or stores passwords.`);
+  if (/encrypt|password/i.test(msg) || named === 'PasswordException') return Error(`${name} is password protected. Remove the password in the app that created it, then try again. Deepak's Tool never asks for or stores passwords.`);
   if (/Invalid PDF|Failed to parse|No PDF header|Missing PDF|InvalidPDF|bad XRef|xref/i.test(msg) || named === 'InvalidPDFException') return Error(`${name} is damaged or not a standard PDF, so it could not be read.`);
   if (/memory|allocation|Array buffer/i.test(msg)) return Error('The browser ran out of memory. Close other tabs, or try fewer pages or a lower resolution.');
   return e instanceof Error ? e : Error(msg);
