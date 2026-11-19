@@ -40,7 +40,7 @@ export default function OfflinePage() {
       const failed = await downloadMissing(state.missing, (done, total) => setProgress({ done, total }));
       await refresh();
       if (failed.length) setError(`${failed.length} file${failed.length === 1 ? '' : 's'} could not be downloaded. Check your connection and press the button again. Files that already arrived are kept.`);
-      else setNote('All files are saved. ToolAtlas will open without internet.');
+      else setNote("All files are saved. Deepak's Tool will open without internet.");
     } catch (e) { setError(e instanceof Error ? e.message : 'Download failed.'); } finally { setProgress(null); }
   };
   const checkUpdate = async () => {
@@ -64,7 +64,7 @@ export default function OfflinePage() {
         </div>
       </header>
       <p className="max-w-2xl text-sm leading-relaxed text-muted">
-        After the first visit, ToolAtlas saves a copy of every tool in your browser, so it opens with no signal. Your files and inputs are never uploaded either way.
+        After the first visit, Deepak's Tool saves a copy of every tool in your browser, so it opens with no signal. Your files and inputs are never uploaded either way.
       </p>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -97,7 +97,7 @@ export default function OfflinePage() {
             <li><span className="text-fg">Windows, Mac, Linux, Chrome or Edge:</span> use the install icon at the right end of the address bar, or the browser menu.</li>
             <li><span className="text-fg">Firefox on desktop:</span> does not install web apps. Offline use still works from a normal tab.</li>
           </ul>
-          <p className="mt-3 text-xs text-muted">If you clear site data, the saved copy is removed. Open ToolAtlas online once to save it again.</p>
+          <p className="mt-3 text-xs text-muted">If you clear site data, the saved copy is removed. Open Deepak's Tool online once to save it again.</p>
         </Panel>
       </div>
     </div>
