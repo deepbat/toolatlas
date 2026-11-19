@@ -556,7 +556,7 @@ function ExtractText() {
         parts.push(`--- Page ${p} ---\n${await pageText(doc, p)}`);
       }
       const all = parts.join('\n\n');
-      if (!all.replace(/--- Page \d+ ---/g, '').trim()) throw Error('No text found. This looks like a scanned PDF made of images. ToolAtlas does not include OCR yet.');
+      if (!all.replace(/--- Page \d+ ---/g, '').trim()) throw Error("No text found. This looks like a scanned PDF made of images. Deepak's Tool does not include OCR yet.");
       setText(all);
     } catch (e) {
       setError(friendlyPdfError(e).message);
