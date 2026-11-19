@@ -12,7 +12,7 @@ export default function ResourcesPage() {
         <p className="font-mono text-[10px] uppercase tracking-label text-muted"><span className="text-accent">{total}</span> links</p>
       </header>
       <p className="max-w-2xl text-sm leading-relaxed text-muted">
-        ToolAtlas covers small jobs in the browser. Some jobs need a bigger program. These are free to use, and most are open source. They are not made by ToolAtlas, and each opens on its own site. Check the licence and terms there before you rely on one for work.
+        Deepak's Tool covers small jobs in the browser. Some jobs need a bigger program. These are free to use, and most are open source. They are not made by Deepak's Tool, and each opens on its own site. Check the licence and terms there before you rely on one for work.
       </p>
       <nav aria-label="Sections" className="mt-4 flex flex-wrap gap-3 text-sm">
         {RESOURCES.map((g) => <a key={g.id} className="text-accent underline" href={`#${g.id}`}>{g.title}</a>)}
