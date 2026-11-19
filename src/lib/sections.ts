@@ -56,6 +56,7 @@ export const SECTIONS: Section[] = [
     description: 'Trim, convert and prepare video clips in the browser. Files stay on your device.',
     icon: 'Video',
     accent: 'var(--cat-generators)',
+    comingSoon: true,
   },
   {
     id: 'audio',
@@ -64,6 +65,7 @@ export const SECTIONS: Section[] = [
     description: 'Convert, trim and clean up audio files in the browser. Files stay on your device.',
     icon: 'Music',
     accent: 'var(--cat-date)',
+    comingSoon: true,
   },
   {
     id: 'text',
@@ -88,6 +90,7 @@ export const SECTIONS: Section[] = [
     description: 'JSON, encodings, hashes, tokens, URLs, colours and design helpers for web work.',
     icon: 'Globe',
     accent: 'var(--cat-internet)',
+    comingSoon: true,
   },
   {
     id: 'utilities',
