@@ -95,7 +95,7 @@ function Footer() {
           <div>
             <h3 className="label text-accent">Project</h3>
             <ul className="mt-4 space-y-2.5 text-sm text-muted">
-              <li><Link className="transition hover:text-accent" to="/about">About ToolAtlas</Link></li>
+              <li><Link className="transition hover:text-accent" to="/about">About Deepak's Tool</Link></li>
               <li><Link className="transition hover:text-accent" to="/settings">Data & Settings</Link></li>
               <li><Link className="transition hover:text-accent" to="/guides">Practical guides</Link></li>
               <li><Link className="transition hover:text-accent" to="/privacy">Privacy policy</Link></li>
@@ -121,7 +121,7 @@ function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-line pt-6 font-mono text-[10px] uppercase tracking-label text-muted sm:flex-row sm:items-center">
-          <p>© {year} ToolAtlas · Built by deepbat · MIT licensed</p>
+          <p>© {year} Deepak's Tool · Built by deepbat · MIT licensed</p>
           <p className="flex items-center gap-2 text-accent">
             <span className="h-1.5 w-1.5 animate-pulse-dot bg-accent" aria-hidden="true" />
             Everything runs in your browser
@@ -231,7 +231,7 @@ export default function Layout() {
               target="_blank"
               rel="noreferrer"
               className="hidden h-8 w-8 items-center justify-center border border-line text-muted transition hover:border-accent hover:text-accent sm:flex"
-              aria-label="ToolAtlas on GitHub"
+              aria-label="Deepak's Tool on GitHub"
             >
               <Github className="h-3.5 w-3.5" />
             </a>
