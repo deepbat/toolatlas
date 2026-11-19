@@ -1,7 +1,7 @@
 import type { ToolMeta } from './types';
 
 /**
- * Out-of-box tools added November 2026 (ToolAtlas 3.0 batch).
+ * Out-of-box tools added November 2026 (Deepak's Tool 3.0 batch).
  *
  * These are jobs the generic tool sites do not do well, or at all:
  * photo-to-colouring-page and colour-blind simulation are canvas jobs,
