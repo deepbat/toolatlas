@@ -1156,3 +1156,82 @@ input,select,textarea { color-scheme:dark; }
 @media (prefers-reduced-motion: reduce) {
   .stage .depth-canvas { display:none; }
 }
+
+
+/* Final theme override: keep all legacy redesign layers theme-aware. */
+:root {
+  --bg: 250 248 218;
+  --surface: 255 253 231;
+  --raised: 242 239 196;
+  --line: 42 91 55;
+  --line-a: .18;
+  --fg: 35 91 48;
+  --soft: 49 105 59;
+  --muted: 75 119 78;
+  --accent: 42 132 65;
+  --accent-2: 112 160 79;
+  --accent-soft: 230 241 207;
+  --on-accent: 255 255 235;
+  --wall-bg: 250 248 218;
+  --wall-card: 255 253 231;
+  --wall-ink: 35 91 48;
+  --wall-muted: 75 119 78;
+  --wall-blue: 42 132 65;
+}
+.dark {
+  --bg: 13 39 25;
+  --surface: 20 53 33;
+  --raised: 29 68 42;
+  --line: 222 224 117;
+  --line-a: .18;
+  --fg: 248 239 119;
+  --soft: 235 226 127;
+  --muted: 207 202 116;
+  --accent: 167 220 112;
+  --accent-2: 220 218 104;
+  --accent-soft: 45 76 43;
+  --on-accent: 16 43 25;
+  --wall-bg: 13 39 25;
+  --wall-card: 20 53 33;
+  --wall-ink: 248 239 119;
+  --wall-muted: 207 202 116;
+  --wall-blue: 167 220 112;
+}
+html { background: rgb(var(--bg)) !important; }
+body {
+  background: rgb(var(--bg)) !important;
+  color: rgb(var(--fg)) !important;
+}
+body::before {
+  background-image: linear-gradient(rgb(var(--accent-2) / .07) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--accent-2) / .07) 1px, transparent 1px) !important;
+}
+body :is(h1,h2,h3,h4,h5,h6,p,a,span,li,label,small,strong,em,button,input,textarea,select,summary,dt,dd,th,td) {
+  color: rgb(var(--fg)) !important;
+}
+body :is(input,textarea,select) {
+  background-color: rgb(var(--surface)) !important;
+  border-color: rgb(var(--line) / .3) !important;
+}
+body :is(input,textarea)::placeholder { color: rgb(var(--muted)) !important; }
+header.sticky {
+  background: rgb(var(--surface) / .96) !important;
+  border-color: rgb(var(--line) / .24) !important;
+}
+header.sticky a[aria-label="ToolAtlas home"] > span:first-child {
+  background: rgb(var(--accent) / .12) !important;
+  border-color: rgb(var(--accent) / .55) !important;
+  box-shadow: none !important;
+}
+.stage {
+  background: linear-gradient(145deg, rgb(var(--surface)), rgb(var(--raised))) !important;
+  border-color: rgb(var(--line) / .28) !important;
+}
+.wall-page { background-color: rgb(var(--wall-bg)) !important; }
+.wall-card,.wall-chip {
+  background: rgb(var(--wall-card)) !important;
+  border-color: rgb(var(--line) / .22) !important;
+}
+.wall-chip[data-active='true'] {
+  background: rgb(var(--accent)) !important;
+}
+.dark .wall-chip[data-active='true'] { color: rgb(var(--on-accent)) !important; }
