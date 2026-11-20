@@ -8,71 +8,63 @@
 
 @layer base {
   :root {
-    /* light - warm drafting paper */
-    --bg: 245 242 235; /* #F5F2EB warm drafting paper */
-    --surface: 252 250 245; /* #FCFAF5 crisp card surface */
-    --raised: 237 232 222; /* #EDE8DE recessed control well */
-    --line: 20 22 25;
-    --line-a: 0.14;
-    --fg: 20 22 25; /* #141619 deep drafting ink */
-    --soft: 54 58 64;
-    --muted: 102 106 112;
-    --accent: 232 93 42; /* #E85D2A signal orange */
-    --accent-2: 20 122 104; /* #147A68 technical teal */
-    --accent-soft: 252 232 224;
-    --on-accent: 255 255 255;
-    --danger: 196 43 43;
-    --warn: 186 117 18;
-
-    /* per-category hues */
-    --cat-calculators: 96 123 0;
-    --cat-converters: 0 125 146;
-    --cat-date: 166 106 20;
-    --cat-finance: 12 120 92;
-    --cat-text: 60 84 78;
-    --cat-pdf: 168 77 65;
-    --cat-image: 108 76 190;
-    --cat-file: 80 96 100;
-    --cat-productivity: 92 135 20;
-    --cat-developer: 60 92 190;
-    --cat-internet: 30 110 155;
-    --cat-generators: 150 115 25;
-    --cat-misc: 80 95 98;
+    --bg: 250 248 218;
+    --surface: 255 253 231;
+    --raised: 242 239 196;
+    --line: 42 91 55;
+    --line-a: 0.18;
+    --fg: 35 91 48;
+    --soft: 49 105 59;
+    --muted: 75 119 78;
+    --accent: 42 132 65;
+    --accent-2: 112 160 79;
+    --accent-soft: 230 241 207;
+    --on-accent: 255 255 235;
+    --danger: 176 48 48;
+    --warn: 153 111 20;
+    --cat-calculators: 63 116 35;
+    --cat-converters: 42 119 101;
+    --cat-date: 140 111 29;
+    --cat-finance: 28 119 72;
+    --cat-text: 62 105 70;
+    --cat-pdf: 150 75 55;
+    --cat-image: 93 92 150;
+    --cat-file: 75 105 83;
+    --cat-productivity: 70 130 35;
+    --cat-developer: 57 105 117;
+    --cat-internet: 42 110 112;
+    --cat-generators: 130 111 35;
+    --cat-misc: 78 108 83;
   }
-
   .dark {
-    /* dark - matte obsidian */
-    --bg: 11 13 16; /* #0B0D10 matte obsidian */
-    --surface: 18 21 26; /* #12151A instrument panel */
-    --raised: 26 30 37; /* #1A1E25 elevated well */
-    --line: 235 232 224;
-    --line-a: 0.12;
-    --fg: 242 239 232; /* #F2EFE8 warm off-white */
-    --soft: 200 198 190;
-    --muted: 142 146 154;
-    --accent: 242 112 62; /* #F2703E warm signal orange */
-    --accent-2: 45 186 160;
-    --accent-soft: 52 28 20;
-    --on-accent: 11 13 16;
-    --danger: 240 86 86;
-    --warn: 235 170 60;
-
-    /* per-category hues */
-    --cat-calculators: 215 255 63;
-    --cat-converters: 111 231 255;
-    --cat-date: 255 180 84;
-    --cat-finance: 124 240 192;
-    --cat-text: 190 214 205;
-    --cat-pdf: 255 158 147;
-    --cat-image: 199 175 255;
-    --cat-file: 150 170 175;
-    --cat-productivity: 168 255 110;
-    --cat-developer: 130 160 255;
-    --cat-internet: 108 200 235;
-    --cat-generators: 255 205 110;
-    --cat-misc: 170 190 195;
+    --bg: 13 39 25;
+    --surface: 20 53 33;
+    --raised: 29 68 42;
+    --line: 222 224 117;
+    --line-a: 0.18;
+    --fg: 248 239 119;
+    --soft: 235 226 127;
+    --muted: 207 202 116;
+    --accent: 167 220 112;
+    --accent-2: 220 218 104;
+    --accent-soft: 45 76 43;
+    --on-accent: 16 43 25;
+    --danger: 255 132 118;
+    --warn: 246 205 91;
+    --cat-calculators: 214 232 112;
+    --cat-converters: 148 222 172;
+    --cat-date: 247 211 117;
+    --cat-finance: 150 226 164;
+    --cat-text: 211 225 166;
+    --cat-pdf: 255 170 144;
+    --cat-image: 211 185 245;
+    --cat-file: 185 213 170;
+    --cat-productivity: 195 237 116;
+    --cat-developer: 160 205 223;
+    --cat-internet: 151 217 205;
+    --cat-generators: 240 218 126;
+    --cat-misc: 184 213 173;
   }
-
   * {
     border-color: rgb(var(--line) / var(--line-a));
   }
@@ -232,24 +224,24 @@ input[type=color] {min-height:46px;padding:4px}button {touch-action:manipulation
    reference style Deepak picked: quiet cards, soft shadows, one blue accent. */
 
 :root {
-  --wall-bg: 241 242 245;
-  --wall-card: 255 255 255;
-  --wall-ink: 22 29 39;
-  --wall-muted: 102 112 125;
-  --wall-blue: 37 99 235;
+  --wall-bg: 250 248 218;
+  --wall-card: 255 253 231;
+  --wall-ink: 35 91 48;
+  --wall-muted: 75 119 78;
+  --wall-blue: 42 132 65;
 }
 
 .dark {
-  --wall-bg: 8 17 21;
-  --wall-card: 15 28 33;
-  --wall-ink: 237 242 236;
-  --wall-muted: 133 152 155;
-  --wall-blue: 96 165 250;
+  --wall-bg: 13 39 25;
+  --wall-card: 20 53 33;
+  --wall-ink: 248 239 119;
+  --wall-muted: 207 202 116;
+  --wall-blue: 167 220 112;
 }
 
 .wall-page {
   background-color: rgb(var(--wall-bg));
-  background-image: radial-gradient(rgb(15 23 42 / 0.05) 1px, transparent 1px);
+  background-image: radial-gradient(rgb(42 91 55 / 0.09) 1px, transparent 1px);
   background-size: 26px 26px;
 }
 
@@ -295,18 +287,18 @@ input[type=color] {min-height:46px;padding:4px}button {touch-action:manipulation
   gap: 7px;
   white-space: nowrap;
   border-radius: 9999px;
-  border: 1px solid rgb(15 23 42 / 0.06);
+  border: 1px solid rgb(42 91 55 / 0.14);
   background: rgb(var(--wall-card));
   padding: 7px 14px;
   font-size: 12px;
   font-weight: 600;
   color: rgb(var(--wall-muted));
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.05);
+  box-shadow: 0 1px 2px rgb(42 91 55 / 0.09);
   transition: transform 0.2s ease, color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .dark .wall-chip {
-  border-color: rgb(255 255 255 / 0.07);
+  border-color: rgb(248 239 119 / 0.15);
 }
 
 .wall-chip:hover {
@@ -418,10 +410,10 @@ input[type=color] {min-height:46px;padding:4px}button {touch-action:manipulation
   break-inside: avoid;
   margin-bottom: 12px;
   border-radius: 18px;
-  border: 1px solid rgb(15 23 42 / 0.05);
+  border: 1px solid rgb(42 91 55 / 0.09);
   background: rgb(var(--wall-card));
   padding: 12px;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.05), 0 12px 26px -20px rgb(15 23 42 / 0.22);
+  box-shadow: 0 1px 2px rgb(42 91 55 / 0.09), 0 12px 26px -20px rgb(15 23 42 / 0.22);
   animation: wall-in 0.5s cubic-bezier(0.23, 1, 0.32, 1) both;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
@@ -440,7 +432,7 @@ input[type=color] {min-height:46px;padding:4px}button {touch-action:manipulation
 
 .wall-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 2px 4px rgb(15 23 42 / 0.06), 0 20px 36px -18px rgb(15 23 42 / 0.28);
+  box-shadow: 0 2px 4px rgb(42 91 55 / 0.14), 0 20px 36px -18px rgb(15 23 42 / 0.28);
 }
 
 .dark .wall-card:hover {
@@ -1164,3 +1156,82 @@ input,select,textarea { color-scheme:dark; }
 @media (prefers-reduced-motion: reduce) {
   .stage .depth-canvas { display:none; }
 }
+
+
+/* Final theme override: keep all legacy redesign layers theme-aware. */
+:root {
+  --bg: 250 248 218;
+  --surface: 255 253 231;
+  --raised: 242 239 196;
+  --line: 42 91 55;
+  --line-a: .18;
+  --fg: 35 91 48;
+  --soft: 49 105 59;
+  --muted: 75 119 78;
+  --accent: 42 132 65;
+  --accent-2: 112 160 79;
+  --accent-soft: 230 241 207;
+  --on-accent: 255 255 235;
+  --wall-bg: 250 248 218;
+  --wall-card: 255 253 231;
+  --wall-ink: 35 91 48;
+  --wall-muted: 75 119 78;
+  --wall-blue: 42 132 65;
+}
+.dark {
+  --bg: 13 39 25;
+  --surface: 20 53 33;
+  --raised: 29 68 42;
+  --line: 222 224 117;
+  --line-a: .18;
+  --fg: 248 239 119;
+  --soft: 235 226 127;
+  --muted: 207 202 116;
+  --accent: 167 220 112;
+  --accent-2: 220 218 104;
+  --accent-soft: 45 76 43;
+  --on-accent: 16 43 25;
+  --wall-bg: 13 39 25;
+  --wall-card: 20 53 33;
+  --wall-ink: 248 239 119;
+  --wall-muted: 207 202 116;
+  --wall-blue: 167 220 112;
+}
+html { background: rgb(var(--bg)) !important; }
+body {
+  background: rgb(var(--bg)) !important;
+  color: rgb(var(--fg)) !important;
+}
+body::before {
+  background-image: linear-gradient(rgb(var(--accent-2) / .07) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--accent-2) / .07) 1px, transparent 1px) !important;
+}
+body :is(h1,h2,h3,h4,h5,h6,p,a,span,li,label,small,strong,em,button,input,textarea,select,summary,dt,dd,th,td) {
+  color: rgb(var(--fg)) !important;
+}
+body :is(input,textarea,select) {
+  background-color: rgb(var(--surface)) !important;
+  border-color: rgb(var(--line) / .3) !important;
+}
+body :is(input,textarea)::placeholder { color: rgb(var(--muted)) !important; }
+header.sticky {
+  background: rgb(var(--surface) / .96) !important;
+  border-color: rgb(var(--line) / .24) !important;
+}
+header.sticky a[aria-label="ToolAtlas home"] > span:first-child {
+  background: rgb(var(--accent) / .12) !important;
+  border-color: rgb(var(--accent) / .55) !important;
+  box-shadow: none !important;
+}
+.stage {
+  background: linear-gradient(145deg, rgb(var(--surface)), rgb(var(--raised))) !important;
+  border-color: rgb(var(--line) / .28) !important;
+}
+.wall-page { background-color: rgb(var(--wall-bg)) !important; }
+.wall-card,.wall-chip {
+  background: rgb(var(--wall-card)) !important;
+  border-color: rgb(var(--line) / .22) !important;
+}
+.wall-chip[data-active='true'] {
+  background: rgb(var(--accent)) !important;
+}
+.dark .wall-chip[data-active='true'] { color: rgb(var(--on-accent)) !important; }
