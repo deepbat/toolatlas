@@ -21,13 +21,13 @@ function navClass({ isActive }: { isActive: boolean }): string {
 
 function Brand() {
   return (
-    <Link to="/" className="flex shrink-0 items-center gap-3" aria-label="Deepak's Tool home">
+    <Link to="/" className="flex shrink-0 items-center gap-3" aria-label="ToolAtlas home">
       <span className="relative flex h-8 w-8 items-center justify-center border border-accent bg-accent/10">
         <span className="font-mono text-[11px] font-semibold tracking-tight text-accent">DT</span>
       </span>
       <span className="hidden flex-col gap-1 leading-none min-[340px]:flex">
         <span className="font-mono text-[12px] font-semibold uppercase tracking-wide2 text-fg">
-          Deepak's <span className="text-accent">Tool</span>
+          Tool<span className="text-accent">Atlas</span>
         </span>
       </span>
     </Link>
@@ -61,7 +61,7 @@ function Footer() {
           <div>
             <Brand />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">
-              One Place. Countless Useful Tools. A growing atlas of free, privacy-first browser
+              Useful tools. Zero friction. A growing atlas of free, privacy-first browser
               utilities — no accounts, no uploads, no waiting.
             </p>
             <p className="mt-4 font-mono text-[10px] uppercase tracking-label text-muted">
@@ -95,7 +95,7 @@ function Footer() {
           <div>
             <h3 className="label text-accent">Project</h3>
             <ul className="mt-4 space-y-2.5 text-sm text-muted">
-              <li><Link className="transition hover:text-accent" to="/about">About Deepak's Tool</Link></li>
+              <li><Link className="transition hover:text-accent" to="/about">About ToolAtlas</Link></li>
               <li><Link className="transition hover:text-accent" to="/settings">Data & Settings</Link></li>
               <li><Link className="transition hover:text-accent" to="/guides">Practical guides</Link></li>
               <li><Link className="transition hover:text-accent" to="/privacy">Privacy policy</Link></li>
@@ -121,7 +121,7 @@ function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-line pt-6 font-mono text-[10px] uppercase tracking-label text-muted sm:flex-row sm:items-center">
-          <p>© {year} Deepak's Tool · Built by deepbat · MIT licensed</p>
+          <p>© {year} ToolAtlas · Built by deepbat · MIT licensed</p>
           <p className="flex items-center gap-2 text-accent">
             <span className="h-1.5 w-1.5 animate-pulse-dot bg-accent" aria-hidden="true" />
             Everything runs in your browser
@@ -231,7 +231,7 @@ export default function Layout() {
               target="_blank"
               rel="noreferrer"
               className="hidden h-8 w-8 items-center justify-center border border-line text-muted transition hover:border-accent hover:text-accent sm:flex"
-              aria-label="Deepak's Tool on GitHub"
+              aria-label="ToolAtlas on GitHub"
             >
               <Github className="h-3.5 w-3.5" />
             </a>
