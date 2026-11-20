@@ -244,7 +244,7 @@ export function startScene(canvas: HTMLCanvasElement, options: SceneOptions = {}
     targetY = pointerY;
     pointer.set(pointerX, pointerY);
     raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObjects(cards, true).find((item) => item.object.parent?.userData.drawer !== undefined || item.object.userData.drawer !== undefined);
+    const hit = raycaster.intersectObjects(cards, true).find((item: THREE.Intersection<THREE.Object3D>) => item.object.parent?.userData.drawer !== undefined || item.object.userData.drawer !== undefined);
     const next = hit ? Number(hit.object.parent?.userData.drawer ?? hit.object.userData.drawer) : -1;
     hovered = next;
     canvas.style.cursor = hovered >= 0 ? 'pointer' : '';
@@ -303,13 +303,13 @@ export function startScene(canvas: HTMLCanvasElement, options: SceneOptions = {}
     window.removeEventListener('resize', resize);
     window.removeEventListener('scroll', onScroll);
     document.removeEventListener('visibilitychange', onVisibility);
-    scene.traverse((object) => {
+    scene.traverse((object: THREE.Object3D) => {
       const mesh = object as THREE.Mesh;
       if (mesh.geometry) mesh.geometry.dispose();
       if (mesh.material) {
         const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
         materials.forEach((material) => {
-          Object.values(material).forEach((value) => {
+          Object.values(material).forEach((value: unknown) => {
             if (value instanceof THREE.Texture) value.dispose();
           });
           material.dispose();
