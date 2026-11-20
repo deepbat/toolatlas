@@ -11,7 +11,7 @@ import { Minus, Plus, Undo2, Redo2, Download } from './Toolbar';
 import { Ann, AnnMap, FormFieldInfo, TextItemRect, type ShapeKind } from './model';
 import { exportEditedPdf } from './exportPdf';
 import { PDFDocument } from 'pdf-lib';
-import { planTextRemoval, sourceFontInfo, type SourceEdit } from './streamEdit';
+import { planTextRemoval, sourceFontChars, sourceFontInfo, type SourceEdit } from './streamEdit';
 
 const MAX_BYTES = 40 * 1024 * 1024;
 const MAX_PAGES = 200;
@@ -358,6 +358,7 @@ export default function PdfEditor() {
         fontFamily: fontInfo ? (fontInfo.fixed ? 'Courier' : fontInfo.serif ? 'Times' : main.family === 'Courier' || main.family === 'Times' ? main.family : 'Helvetica') : main.family,
         bold: heavy, italic: main.italic || !!fontInfo?.italic,
         color: g[0].color, edit, fontObj, fontInfo, css: main.css,
+        fontChars: fontObj != null && sourcePage ? sourceFontChars(sourcePage.doc, fontObj) : undefined,
       });
     }
     textCacheRef.current[pageIdx] = items;
@@ -965,4 +966,4 @@ export default function PdfEditor() {
       <Note tone="info">Everything runs on your device. The PDF never leaves your phone or computer.</Note>
     </div>
   );
-                    }
+                                  }
