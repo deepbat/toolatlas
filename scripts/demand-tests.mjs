@@ -1,4 +1,4 @@
-// Smoke checks for the six uncommon tools added in the Nov 2026 curated
+// Smoke checks for the eight uncommon tools added in the Nov 2026 curated
 // redesign, plus a full-catalogue load check. Run: npm run build && npm run test:demand
 import {chromium} from '@playwright/test';
 import {spawn} from 'node:child_process';
@@ -12,9 +12,11 @@ const UNCOMMON={
  'doc-flatten-print':'Phone-Scan A4 Prepper',
  'pdf-redaction-verify':'True PDF Redactor',
  'cheque-overlay':'Bank Cheque Print Alignment',
- 'screenshot-mockup':'Clean Screenshot Framer',
+ 'screenshot-mockup':'Screenshot Frame & Redact',
  'subscription-burn':'Silent Drain Calculator',
  'wifi-poster':'Guest Wi-Fi Printable Card',
+ 'image-ocr':'Copy Text from Picture (OCR)',
+ 'file-converter':'Local File Converter',
 };
 try{
 for(const [id,name] of Object.entries(UNCOMMON)){
@@ -27,21 +29,21 @@ for(const [id,name] of Object.entries(UNCOMMON)){
 // Static prerender carries each new tool's SEO shell.
 for(const [id,name] of Object.entries(UNCOMMON)){
   const html=await(await fetch(base+'/tools/'+id+'/')).text();
-  assert.ok(html.includes('<title>'+name+" | Deepak's Tool</title>"),id+' static title');
+  assert.ok(html.includes('<title>'+name.replace(/&/g,'&amp;')+" | Deepak's Tool</title>"),id+' static title');
   assert.ok(html.includes('WebApplication'),id+' schema');
 }
 console.log('PASS uncommon tools have static SEO shells');n++;
 // Every catalogued tool page loads with a non-empty heading and no overflow.
 const catalog=JSON.parse(await readFile('dist/catalog.json','utf8'));
 const all=(catalog.tools||catalog).map(t=>t.id);
-assert.equal(all.length,30,'catalogue holds exactly the 30 curated tools');
+assert.equal(all.length ,26,'catalogue holds exactly the 26 curated tools');
 for(const id of all){
   await go(id);
   const h1=await page.locator('h1').first().innerText();
   assert.ok(h1.trim().length>0,id+' has an empty heading');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),id+' overflows at 393px');
 }
-console.log('PASS all 30 curated tools load on a phone viewport');n++;
+console.log('PASS all 26 curated tools load on a phone viewport');n++;
 // The homepage workbench routes a dropped PDF to the new redactor.
 await page.goto(base+'/');
 await page.locator('input[type=file]').first().setInputFiles({name:'doc.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4 minimal')});
