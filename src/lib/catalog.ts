@@ -489,7 +489,7 @@ export const TOOLS: ToolMeta[] = [
 
 TOOLS.push(...NEW_TOOL_DATA.map(t=>({...t,category:t.category as CategoryId,status:'stable' as const,version:'1.0.0',added:'2026-11-13',layout:'wide' as const})),...DEMAND_TOOLS, ...AV_TOOLS, ...EXTRA_TOOLS, ...MEDIA_TOOLS, ...STUDIO_TOOLS, ...DEVICE_TOOLS, ...OUTBOX_TOOLS);
 
-// ToolAtlas 4.0 curated redesign: keep the 24 signature tools, append the 6 uncommon tools (30 total).
+// ToolAtlas 4.0 curated redesign: keep the 18 signature tools, append the 8 uncommon tools (26 total).
 TOOLS.splice(0, TOOLS.length, ...TOOLS.filter((t) => CURATED_KEEP_IDS.has(t.id)), ...UNCOMMON_TOOLS);
 
 export const TOOL_MAP: Record<string, ToolMeta> = Object.fromEntries(
