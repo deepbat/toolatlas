@@ -23,6 +23,7 @@ export interface SourceEdit {
   start: number; // offset of the show operator's first operand
   end: number; // offset just past the operator token
   replacement: string; // advance-preserving no-op
+  font?: number; // object number of the font dictionary that drew the text
 }
 export interface PdfRect { x: number; y: number; w: number; h: number }
 
@@ -125,6 +126,7 @@ interface FontMetric {
   bytesPerCode: 1 | 2;
   ascent: number; // 1/1000 em
   descent: number; // negative, 1/1000 em
+  ref?: number; // font dictionary object number when it is an indirect object
 }
 const FONT_CACHE = new WeakMap<object, FontMetric | undefined>();
 
@@ -197,6 +199,10 @@ function loadFont(resources: PDFDict | undefined, name: string): FontMetric | un
   } catch {
     metric = undefined;
   }
+  if (metric) {
+    const raw = resources?.lookupMaybe(PDFName.of('Font'), PDFDict)?.get(PDFName.of(name));
+    if (raw instanceof PDFRef) metric.ref = raw.objectNumber;
+  }
   FONT_CACHE.set(fontDict, metric);
   return metric;
 }
@@ -208,6 +214,7 @@ interface ShowOpGeo {
   start: number;
   end: number;
   replacement: string;
+  font?: number;
   x0: number; y0: number; x1: number; y1: number;
 }
 interface PageOps { ops: ShowOpGeo[]; usages: number[] }
@@ -333,6 +340,7 @@ function walkStream(
           start: operands[0].start,
           end: t.end,
           replacement: `${prefix}[${(-advance1000).toFixed(2)}] TJ`,
+          font: font.ref,
           x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys),
         });
         break;
@@ -402,7 +410,7 @@ export function planTextRemoval(page: any, rect: PdfRect): SourceEdit[] | undefi
     covered += ix * iy;
   }
   if (covered < 0.5 * rect.w * rect.h) return undefined;
-  return matched.map((o) => ({ obj: o.obj, start: o.start, end: o.end, replacement: o.replacement }));
+  return matched.map((o) => ({ obj: o.obj, start: o.start, end: o.end, replacement: o.replacement, font: o.font }));
 }
 
 // Apply planned removals. Returns the set of stream object numbers that were
@@ -439,3 +447,147 @@ export function removeSourceTexts(page: any, edits: SourceEdit[]): Set<number> {
   }
   return done;
 }
+
+/* ------------------------------------------- reusing the original font */
+
+export interface SourceFontInfo {
+  obj: number;
+  psName: string;
+  weight: number; // 100..900, 400 when unknown
+  stemV: number;
+  flags: number;
+  serif: boolean;
+  fixed: boolean;
+  italic: boolean;
+}
+
+function fontDictOf(doc: any, obj: number): PDFDict | undefined {
+  try {
+    const d = doc.context.lookup(PDFRef.of(obj));
+    return d instanceof PDFDict ? d : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Name, weight and style flags of an embedded font, for substitution decisions. */
+export function sourceFontInfo(doc: any, obj: number): SourceFontInfo | undefined {
+  const dict = fontDictOf(doc, obj);
+  if (!dict) return undefined;
+  try {
+    let fd = dict.lookupMaybe(PDFName.of('FontDescriptor'), PDFDict);
+    const desc = dict.lookupMaybe(PDFName.of('DescendantFonts'), PDFArray)?.lookupMaybe(0, PDFDict);
+    fd = fd ?? desc?.lookupMaybe(PDFName.of('FontDescriptor'), PDFDict);
+    const base = String(dict.lookupMaybe(PDFName.of('BaseFont'), PDFName)?.asString() ?? '').replace(/^\//, '').replace(/^[A-Z]{6}\+/, '');
+    const flags = num(fd, 'Flags') ?? 0;
+    let weight = num(fd, 'FontWeight') ?? 0;
+    if (!weight) weight = /black|heavy|ultra/i.test(base) ? 900 : /bold/i.test(base) ? 700 : /semi|demi/i.test(base) ? 600 : /medium/i.test(base) ? 500 : /light|thin/i.test(base) ? 300 : 400;
+    if (/bold|black|heavy/i.test(base) && weight < 700) weight = 700;
+    if (flags & 0x40000) weight = Math.max(weight, 700); // ForceBold
+    return {
+      obj,
+      psName: base,
+      weight,
+      stemV: num(fd, 'StemV') ?? 0,
+      flags,
+      serif: !!(flags & 2),
+      fixed: !!(flags & 1),
+      italic: !!(flags & 64) || (num(fd, 'ItalicAngle') ?? 0) !== 0 || /italic|oblique/i.test(base),
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+const CP1252_HIGH = [0x20ac, 0, 0x201a, 0x0192, 0x201e, 0x2026, 0x2020, 0x2021, 0x02c6, 0x2030, 0x0160, 0x2039, 0x0152, 0, 0x017d, 0, 0, 0x2018, 0x2019, 0x201c, 0x201d, 0x2022, 0x2013, 0x2014, 0x02dc, 0x2122, 0x0161, 0x203a, 0x0153, 0, 0x017e, 0x0178];
+function winAnsiToUnicode(code: number): number {
+  if (code >= 32 && code < 127) return code;
+  if (code >= 128 && code < 160) return CP1252_HIGH[code - 128] || 0;
+  if (code >= 160) return code;
+  return 0;
+}
+
+function parseToUnicode(stream: PDFRawStream): Map<number, string> {
+  const map = new Map<number, string>();
+  const text = streamText(stream);
+  const hexStr = (h: string) => {
+    let out = '';
+    for (let i = 0; i + 3 < h.length + 1; i += 4) out += String.fromCharCode(parseInt(h.slice(i, i + 4), 16));
+    return out;
+  };
+  for (const block of text.matchAll(/beginbfchar([\s\S]*?)endbfchar/g)) {
+    for (const m of block[1].matchAll(/<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]+)>/g)) map.set(parseInt(m[1], 16), hexStr(m[2]));
+  }
+  for (const block of text.matchAll(/beginbfrange([\s\S]*?)endbfrange/g)) {
+    for (const m of block[1].matchAll(/<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]+)>\s*(<[0-9a-fA-F]+>|\[[^\]]*\])/g)) {
+      const lo = parseInt(m[1], 16), hi = parseInt(m[2], 16);
+      if (hi - lo > 65535) continue;
+      if (m[3].startsWith('[')) {
+        const parts = [...m[3].matchAll(/<([0-9a-fA-F]+)>/g)].map((x) => hexStr(x[1]));
+        parts.forEach((p, k) => map.set(lo + k, p));
+      } else {
+        const start = hexStr(m[3].slice(1, -1));
+        for (let c = lo; c <= hi; c++) map.set(c, start.slice(0, -1) + String.fromCharCode(start.charCodeAt(start.length - 1) + (c - lo)));
+      }
+    }
+  }
+  return map;
+}
+
+interface Encoder { bytes: 1 | 2; toCode: Map<string, number>; width: (c: number) => number }
+const ENCODER_CACHE = new Map<object, Map<number, Encoder | null>>();
+
+function encoderFor(doc: any, obj: number): Encoder | null {
+  let perDoc = ENCODER_CACHE.get(doc);
+  if (!perDoc) { perDoc = new Map(); ENCODER_CACHE.set(doc, perDoc); }
+  if (perDoc.has(obj)) return perDoc.get(obj)!;
+  let enc: Encoder | null = null;
+  try {
+    const dict = fontDictOf(doc, obj);
+    if (dict) {
+      const res = doc.context.obj({ Font: { F: PDFRef.of(obj) } }) as PDFDict;
+      const metric = loadFont(res, 'F');
+      const subtype = String(dict.lookupMaybe(PDFName.of('Subtype'), PDFName)?.asString() ?? '');
+      const tu = dict.lookup(PDFName.of('ToUnicode'));
+      const uni = tu instanceof PDFRawStream ? parseToUnicode(tu) : undefined;
+      if (metric) {
+        const toCode = new Map<string, number>();
+        if (subtype.includes('Type0')) {
+          const encName = String(dict.lookupMaybe(PDFName.of('Encoding'), PDFName)?.asString() ?? '');
+          if (uni && encName === '/Identity-H') for (const [code, str] of uni) if (str.length === 1 && !toCode.has(str)) toCode.set(str, code);
+        } else if (subtype.includes('TrueType') || subtype.includes('Type1')) {
+          const e = dict.lookup(PDFName.of('Encoding'));
+          const isWin = e instanceof PDFName ? e.asString() === '/WinAnsiEncoding' : e instanceof PDFDict && String(e.lookupMaybe(PDFName.of('BaseEncoding'), PDFName)?.asString() ?? '') === '/WinAnsiEncoding' && !e.has(PDFName.of('Differences'));
+          for (let code = 32; code < 256; code++) {
+            if (code !== 32 && !(metric.width(code) > 0)) continue;
+            let ch = '';
+            if (uni && uni.has(code) && uni.get(code)!.length === 1) ch = uni.get(code)!;
+            else if (isWin) { const u = winAnsiToUnicode(code); if (u) ch = String.fromCharCode(u); }
+            if (ch && !toCode.has(ch)) toCode.set(ch, code);
+          }
+        }
+        if (toCode.size) enc = { bytes: metric.bytesPerCode, toCode, width: metric.width };
+      }
+    }
+  } catch {
+    enc = null;
+  }
+  perDoc.set(obj, enc);
+  return enc;
+}
+
+/** Encode text with a font already embedded in the file. Returns undefined when
+ *  any character has no glyph in that font (subsets only keep used glyphs). */
+export function encodeWithSourceFont(doc: any, obj: number, text: string): { hex: string; width1000: number } | undefined {
+  const enc = encoderFor(doc, obj);
+  if (!enc) return undefined;
+  let hex = '';
+  let width = 0;
+  for (const ch of text.normalize('NFC')) {
+    const code = enc.toCode.get(ch);
+    if (code === undefined) return undefined;
+    hex += code.toString(16).padStart(enc.bytes * 2, '0');
+    width += enc.width(code);
+  }
+  return { hex, width1000: width };
+          }
