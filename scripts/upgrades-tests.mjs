@@ -222,31 +222,17 @@ try {
         .isEnabled(),
     );
   });
-  await test("TXT file routing into cleaner, cleanup counts and CSV safe export", async () => {
+  await test("TXT file drop reports no matching local tool after catalogue trim", async () => {
     await go("");
     await page.locator("input[type=file]").first().setInputFiles({
       name: "list.txt",
       mimeType: "text/plain",
-      buffer: Buffer.from(" apple \nAPPLE\n\nbanana\n=1+1"),
+      buffer: Buffer.from(" apple \nAPPLE\n\nbanana\n"),
     });
     await page.getByText("Ready for list.txt").waitFor();
-    await page.getByRole("button", { name: /List Cleaner/ }).click();
-    await page.getByLabel("List input").waitFor();
-    await page.waitForFunction(() =>
-      document.querySelector("textarea")?.value.includes("=1+1"),
-    );
-    assert.ok(
-      (await page.getByTestId("cleaned-list").innerText()).includes("banana"),
-    );
-    assert.ok(
-      (await page.getByRole("status").last().innerText()).includes(
-        "Duplicates removed: 1",
-      ),
-    );
-    const bytes = await download(
-      page.getByRole("button", { name: "Download CSV" }),
-    );
-    assert.ok(bytes.toString().includes("'="));
+    await page
+      .getByText("No local tool matches this file type yet.", { exact: false })
+      .waitFor();
   });
   await test("bulk rename ZIP has renamed files and unchanged bytes", async () => {
     await go("bulk-renamer");
