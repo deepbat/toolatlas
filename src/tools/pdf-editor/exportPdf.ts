@@ -74,8 +74,8 @@ export async function exportEditedPdf(opts: ExportOptions): Promise<Uint8Array> 
       };
     };
 
-    const edits = list.flatMap(a => a.kind === 'text' && a.source?.edit ? [a.source.edit] : []);
-    if (edits.length) removeSourceTexts(page, edits);
+    const edits = list.flatMap(a => a.kind === 'text' && a.source?.edit ? a.source.edit : []);
+    const editedStreams = edits.length ? removeSourceTexts(page, edits) : new Set<number>();
     for (const a of list) {
       if (a.kind === 'rect') {
         const r = rectToPdf(a.x, a.y, a.w, a.h);
@@ -149,7 +149,9 @@ export async function exportEditedPdf(opts: ExportOptions): Promise<Uint8Array> 
           }
         }
       } else if (a.kind === 'text') {
-        if (a.source && !a.source.edit) {
+        // Visual cover only when no source removal was planned, or when a
+        // planned stream could not be rewritten after all.
+        if (a.source && (!a.source.edit || a.source.edit.some(e => !editedStreams.has(e.obj)))) {
           const r = rectToPdf(a.source.x, a.source.y, a.source.w, a.source.h);
           const [r1, g1, b1] = hexToRgb01(a.source.background);
           page.drawRectangle({ x: r.x, y: r.y, width: r.w, height: r.h, color: rgb(r1, g1, b1) });
