@@ -23,7 +23,7 @@ export interface TextAnn {
     key: string;
     x: number; y: number; w: number; h: number;
     background: string;
-    edit?: SourceEdit;
+    edit?: SourceEdit[];
   };
 }
 
@@ -96,7 +96,7 @@ export interface TextItemRect {
   bold: boolean;
   italic: boolean;
   color: string;
-  edit?: SourceEdit;
+  edit?: SourceEdit[];
 }
 
 export interface FormFieldInfo {
