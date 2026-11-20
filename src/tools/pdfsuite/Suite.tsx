@@ -1,0 +1,183 @@
+import { useState, type ReactNode } from 'react';
+import { useParams } from 'react-router-dom';
+import { Button, Dropzone, Field, FileRow, Grid, Input, Note, Panel, Select, Toggle } from '../../components/ui';
+import { downloadBlob, formatBytes } from '../../lib/utils';
+import { checkPdfFile, friendlyPdfError, openPdfLib } from '../../lib/pdfio';
+import { Failure } from '../studio/kit';
+import { booklet, cropPages, deletePages, flattenForms, nUp, stampText, type StampPlace } from './ops';
+
+/** Shared shell: pick one PDF, run an operation, download the result. */
+function Shell({ verb, help, outSuffix, run, children, ready = true }: {
+  verb: string;
+  help: ReactNode;
+  outSuffix: string;
+  run: (bytes: Uint8Array, pages: number) => Promise<Uint8Array>;
+  children?: ReactNode;
+  ready?: boolean;
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [pages, setPages] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState('');
+
+  const load = async (files: File[]) => {
+    setError(''); setDone('');
+    const f = files[0];
+    if (!f) return;
+    try {
+      const doc = await openPdfLib(f);
+      setFile(f);
+      setPages(doc.getPageCount());
+    } catch (e) {
+      setFile(null);
+      setError(e instanceof Error ? e.message : 'Could not open the PDF.');
+    }
+  };
+
+  const go = async () => {
+    if (!file) return;
+    setBusy(true); setError(''); setDone('');
+    try {
+      const bytes = new Uint8Array(await checkPdfFile(file));
+      const out = await run(bytes, pages);
+      const blob = new Blob([out as unknown as BlobPart], { type: 'application/pdf' });
+      downloadBlob(`${file.name.replace(/\.pdf$/i, '')}-${outSuffix}.pdf`, blob);
+      setDone(`Saved ${formatBytes(blob.size)}. The download should have started.`);
+    } catch (e) {
+      setError(friendlyPdfError(e, file.name).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Panel title="1. Choose a PDF" description="The file is opened on this device and is never uploaded.">
+        {!file ? (
+          <Dropzone accept="application/pdf,.pdf" multiple={false} onFiles={load} title="Drop a PDF or browse" hint="PDF files up to 150 MB" />
+        ) : (
+          <FileRow name={file.name} meta={`${pages} ${pages === 1 ? 'page' : 'pages'} · ${formatBytes(file.size)}`} onRemove={() => { setFile(null); setDone(''); }} />
+        )}
+      </Panel>
+      <Panel title="2. Options" description={help}>{children}</Panel>
+      <Panel title={`3. ${verb}`}>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="button" onClick={go} disabled={!file || busy || !ready}>{busy ? 'Working…' : verb}</Button>
+        </div>
+        <div className="mt-3"><Failure error={error} /></div>
+        {done && <p className="mt-3 text-sm text-muted">{done}</p>}
+        <p className="mt-4 text-[11px] text-muted/80">100% local processing. Nothing leaves your device.</p>
+      </Panel>
+    </div>
+  );
+}
+
+function DeletePages() {
+  const [spec, setSpec] = useState('');
+  return (
+    <Shell verb="Delete pages" outSuffix="trimmed" ready={!!spec.trim()} help="Pages count from 1. Use commas and ranges, for example 2,4-6."
+      run={(b) => deletePages(b, spec)}>
+      <Field label="Pages to delete"><Input value={spec} onChange={(e) => setSpec(e.target.value)} placeholder="2,4-6" inputMode="text" /></Field>
+    </Shell>
+  );
+}
+
+function Crop() {
+  const [m, setM] = useState({ top: '0', right: '0', bottom: '0', left: '0' });
+  const [mm, setMm] = useState(true);
+  const [pages, setPages] = useState('');
+  const k = mm ? 72 / 25.4 : 1;
+  const n = (v: string) => Math.max(0, Number(v) || 0) * k;
+  const set = (key: keyof typeof m) => (e: React.ChangeEvent<HTMLInputElement>) => setM({ ...m, [key]: e.target.value });
+  return (
+    <Shell verb="Crop PDF" outSuffix="cropped" help="Trims the edges of every page, or only the pages you list. Content outside the new edge is hidden, not erased."
+      run={(b) => cropPages(b, { top: n(m.top), right: n(m.right), bottom: n(m.bottom), left: n(m.left) }, pages)}>
+      <Grid cols={2}>
+        <Field label="Top"><Input type="number" min={0} value={m.top} onChange={set('top')} /></Field>
+        <Field label="Bottom"><Input type="number" min={0} value={m.bottom} onChange={set('bottom')} /></Field>
+        <Field label="Left"><Input type="number" min={0} value={m.left} onChange={set('left')} /></Field>
+        <Field label="Right"><Input type="number" min={0} value={m.right} onChange={set('right')} /></Field>
+      </Grid>
+      <div className="mt-3 space-y-3">
+        <Toggle checked={mm} onChange={setMm} label={mm ? 'Millimetres' : 'Points'} />
+        <Field label="Pages" hint="Blank means every page."><Input value={pages} onChange={(e) => setPages(e.target.value)} placeholder="1-3,5" /></Field>
+      </div>
+    </Shell>
+  );
+}
+
+const PLACES: [StampPlace, string][] = [['footer-center', 'Footer, centre'], ['footer-right', 'Footer, right'], ['footer-left', 'Footer, left'], ['header-center', 'Header, centre'], ['header-right', 'Header, right'], ['header-left', 'Header, left']];
+
+function Stamp({ mode }: { mode: 'header-footer' | 'bates' }) {
+  const bates = mode === 'bates';
+  const [text, setText] = useState(bates ? '{bates}' : 'Page {n} of {total}');
+  const [place, setPlace] = useState<StampPlace>(bates ? 'footer-right' : 'footer-center');
+  const [size, setSize] = useState('10');
+  const [pages, setPages] = useState('');
+  const [prefix, setPrefix] = useState('DOC-');
+  const [start, setStart] = useState('1');
+  const [digits, setDigits] = useState('6');
+  return (
+    <Shell verb={bates ? 'Add Bates numbers' : 'Add header or footer'} outSuffix={bates ? 'bates' : 'stamped'}
+      help={bates ? 'Sequential identifiers for legal and records work, for example DOC-000001.' : 'Use {n} for the page number and {total} for the page count.'}
+      run={(b) => stampText(b, { text, place, size: Number(size) || 10, pages, batesPrefix: prefix, batesStart: Number(start) || 1, batesDigits: Number(digits) || 6 })}>
+      <Field label="Text"><Input value={text} onChange={(e) => setText(e.target.value)} /></Field>
+      <div className="mt-3"><Grid cols={2}>
+        <Field label="Position"><Select value={place} onChange={(e) => setPlace(e.target.value as StampPlace)}>{PLACES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</Select></Field>
+        <Field label="Size (pt)"><Input type="number" min={6} max={48} value={size} onChange={(e) => setSize(e.target.value)} /></Field>
+        {bates && <Field label="Prefix"><Input value={prefix} onChange={(e) => setPrefix(e.target.value)} /></Field>}
+        {bates && <Field label="Start at"><Input type="number" min={0} value={start} onChange={(e) => setStart(e.target.value)} /></Field>}
+        {bates && <Field label="Digits"><Input type="number" min={1} max={12} value={digits} onChange={(e) => setDigits(e.target.value)} /></Field>}
+        <Field label="Pages" hint="Blank means every page."><Input value={pages} onChange={(e) => setPages(e.target.value)} placeholder="1-3,5" /></Field>
+      </Grid></div>
+      {bates && <div className="mt-3"><Note>Put {'{bates}'} in the text where the number should appear. Numbers are drawn on top of existing page content and may overlap it.</Note></div>}
+    </Shell>
+  );
+}
+
+function NUp() {
+  const [per, setPer] = useState('2');
+  const [border, setBorder] = useState(true);
+  return (
+    <Shell verb="Combine pages" outSuffix={`${per}-up`} help="Places several pages on each A4 sheet, scaled to fit, to save paper."
+      run={(b) => nUp(b, Number(per) as 2 | 4 | 6 | 9, { border })}>
+      <Field label="Pages per sheet"><Select value={per} onChange={(e) => setPer(e.target.value)}>{['2', '4', '6', '9'].map((v) => <option key={v} value={v}>{v}</option>)}</Select></Field>
+      <div className="mt-3"><Toggle checked={border} onChange={setBorder} label="Thin border around each page" /></div>
+    </Shell>
+  );
+}
+
+function Booklet() {
+  return (
+    <Shell verb="Make booklet" outSuffix="booklet" help="Reorders pages two per landscape sheet for folding. Print double-sided and flip on the short edge, then fold the stack in half."
+      run={(b) => booklet(b)}>
+      <Note>The page count is padded to a multiple of 4 with blank pages.</Note>
+    </Shell>
+  );
+}
+
+function Flatten() {
+  return (
+    <Shell verb="Flatten forms" outSuffix="flattened" help="Turns fillable fields into plain page content so they can no longer be edited."
+      run={(b) => flattenForms(b)}>
+      <Note>Annotations other than form fields are kept as they are.</Note>
+    </Shell>
+  );
+}
+
+const PARTS: Record<string, () => JSX.Element> = {
+  'pdf-delete-pages': DeletePages,
+  'pdf-crop': Crop,
+  'pdf-header-footer': () => <Stamp mode="header-footer" />,
+  'pdf-bates': () => <Stamp mode="bates" />,
+  'pdf-nup': NUp,
+  'pdf-booklet': Booklet,
+  'pdf-flatten': Flatten,
+};
+
+export default function PdfSuite() {
+  const { toolId } = useParams();
+  const Part = PARTS[toolId ?? ''];
+  return Part ? <Part /> : null;
+}
