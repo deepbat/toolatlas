@@ -602,11 +602,12 @@ input[type=color] {min-height:46px;padding:4px}button {touch-action:manipulation
 }
 
 .depth-canvas.is-live {
-  opacity: 0.8;
+  opacity: 0.96;
+  pointer-events: auto;
 }
 
 .dark .depth-canvas.is-live {
-  opacity: 0.95;
+  opacity: 1;
 }
 
 /* Static isometric paper backdrop: three stacked planes + a blueprint grid. */
@@ -683,8 +684,8 @@ input[type=color] {min-height:46px;padding:4px}button {touch-action:manipulation
 
 @media (pointer: fine) {
   .plate-scene:hover .plate {
-    transform: rotateX(6deg) rotateY(-2deg) translateY(-2px);
-    box-shadow: 0 2px 0 rgb(var(--line) / 0.08), 0 26px 40px -24px rgb(var(--line) / 0.4);
+    transform: rotateX(9deg) rotateY(-3deg) translateY(-3px);
+    box-shadow: 0 2px 0 rgb(var(--line) / 0.08), 0 30px 44px -24px rgb(var(--line) / 0.42);
   }
 }
 
@@ -692,7 +693,7 @@ input[type=color] {min-height:46px;padding:4px}button {touch-action:manipulation
   margin-left: auto;
   display: inline-flex;
   gap: 4px;
-  transform: translateZ(14px);
+  transform: translateZ(22px);
 }
 
 .plate-handle i {
@@ -719,6 +720,17 @@ input[type=color] {min-height:46px;padding:4px}button {touch-action:manipulation
   border-color: rgb(var(--accent) / 0.65);
 }
 
+/* Hint under the drawer index: only makes sense where a pointer can hover. */
+.scene-tip {
+  display: none;
+}
+
+@media (pointer: fine) {
+  .scene-tip {
+    display: inline;
+  }
+}
+
 /* ---------------------------------------------------------- scroll reveal */
 .reveal-ready [data-reveal] {
   opacity: 0;
@@ -742,15 +754,58 @@ input[type=color] {min-height:46px;padding:4px}button {touch-action:manipulation
   }
 }
 
-/* Legibility scrim between the depth canvas and the hero content. */
+/* Legibility scrim between the depth canvas and the hero content. Kept light
+   so the 3D cabinet stays clearly visible behind the copy. */
 .depth-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(100deg, rgb(var(--bg) / 0.94) 34%, rgb(var(--bg) / 0.42) 62%, rgb(var(--bg) / 0.04));
+  background: linear-gradient(100deg, rgb(var(--bg) / 0.78) 30%, rgb(var(--bg) / 0.3) 58%, rgb(var(--bg) / 0.02));
 }
 
 @media (max-width: 640px) {
   .depth-scrim {
-    background: linear-gradient(180deg, rgb(var(--bg) / 0.4) 0%, rgb(var(--bg) / 0.72) 48%, rgb(var(--bg) / 0.92) 78%);
+    background: linear-gradient(180deg, rgb(var(--bg) / 0.3) 0%, rgb(var(--bg) / 0.55) 48%, rgb(var(--bg) / 0.85) 80%);
+  }
+}
+
+/* ------------------------------------------- workbench drop "tray" in 3D */
+/* The drop-first workbench is a physical tray on the stage: it tilts open
+   toward the visitor on hover and fully opens while a file is dragged over. */
+.tray {
+  transform-style: preserve-3d;
+  transition: transform 380ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 380ms ease, border-color 200ms ease, background-color 200ms ease;
+  box-shadow: 0 1px 0 rgb(var(--line) / 0.08), 0 16px 26px -22px rgb(var(--line) / 0.4);
+}
+
+@media (pointer: fine) {
+  .tray:hover {
+    transform: perspective(900px) rotateX(7deg) translateY(-2px);
+    box-shadow: 0 2px 0 rgb(var(--line) / 0.07), 0 26px 38px -22px rgb(var(--line) / 0.45);
+  }
+}
+
+.tray-open {
+  transform: perspective(900px) rotateX(10deg) translateY(-4px);
+  box-shadow: 0 2px 0 rgb(var(--line) / 0.07), 0 30px 42px -20px rgb(var(--accent) / 0.4);
+}
+
+/* Tool glyph on tool pages pops out of the page on hover. */
+.glyph-pop {
+  transform-style: preserve-3d;
+  transition: transform 380ms cubic-bezier(0.2, 0.7, 0.2, 1), filter 380ms ease;
+}
+
+@media (pointer: fine) {
+  .glyph-pop:hover {
+    transform: perspective(700px) rotateX(12deg) rotateY(-10deg) translateY(-4px);
+    filter: drop-shadow(0 18px 16px rgb(var(--line) / 0.3));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tray:hover,
+  .tray-open,
+  .glyph-pop:hover {
+    transform: none;
   }
 }
