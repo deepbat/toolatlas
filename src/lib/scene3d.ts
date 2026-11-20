@@ -232,6 +232,8 @@ export function startScene(canvas: HTMLCanvasElement, options: SceneOptions = {}
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.position.z = width < 640 ? 14.5 : width < 900 ? 13.2 : 11.8;
+    world.scale.setScalar(width < 640 ? 0.58 : width < 900 ? 0.82 : 1);
+    world.position.x = width < 640 ? 0.15 : width < 900 ? 1.35 : 2.05;
     camera.updateProjectionMatrix();
   };
   const onPointerMove = (event: PointerEvent) => {
