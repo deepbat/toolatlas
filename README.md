@@ -6,7 +6,7 @@
 
 ## Release 2
 
-**148 tools. 8 sections. Small jobs. Sorted.**
+**26 curated tools. 4 drawers. Rare jobs, done privately.**
 
 The original foundation is preserved and expanded with browser-only tools, static deep-link pages, full-release offline caching, six practical guides, local fonts, policy/support pages and a few marked spaces reserved for future ads. No ad network is active and no revenue is promised. See [release notes and monetization checklist](docs/RELEASE-2.md), [research](docs/RESEARCH.md), and `npm run test:expanded`.
 
@@ -39,7 +39,7 @@ ToolAtlas is a growing collection of free, privacy-first browser utilities — c
 
 ## Highlights
 
-- **148 local browser tools** across **8 sections and 16 collections** — no placeholders, no dead buttons.
+- **26 curated local browser tools** across **4 focused drawers** — Portal & Print, Privacy Shield & Local Files, India Desk and Clever Studio. No placeholders, no dead buttons.
 - **Every tool has its own URL** (`/tools/<id>`) so it can be linked, bookmarked and shared.
 - **Global search** — typo-tolerant matching and practical synonyms; press `⌘K` / `Ctrl+K` (or `/`) from anywhere.
 - **Favourites and recently used** tools, stored in your browser only.
@@ -60,7 +60,7 @@ ToolAtlas is a growing collection of free, privacy-first browser utilities — c
 
 ## The tools
 
-The current catalogue contains **148 tools organised into 8 top-level sections** — [PDF](https://deepbat.github.io/toolatlas/pdf/), [Image](https://deepbat.github.io/toolatlas/image/), [Video](https://deepbat.github.io/toolatlas/video/), [Audio](https://deepbat.github.io/toolatlas/audio/), [Text](https://deepbat.github.io/toolatlas/text/), [File Conversion](https://deepbat.github.io/toolatlas/converter/), [Web](https://deepbat.github.io/toolatlas/web/) and [Other Utilities](https://deepbat.github.io/toolatlas/utilities/) — each with its own page and URL. The 13 original collections plus Audio, Video and Device & Sensor are available as 16 sub-collections inside the sections. The generated catalogue at [docs/TOOLS.md](docs/TOOLS.md) is the complete reference for Release 2.
+The current catalogue contains **26 curated tools** chosen for real-world jobs, grouped into 4 drawers on the homepage. The generated catalogue at [docs/TOOLS.md](docs/TOOLS.md) is the complete reference.
 
 Browse the [live tool library](https://deepbat.github.io/toolatlas/tools/) or open a category from the website. New tools are added only after implementation and verification.
 
