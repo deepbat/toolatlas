@@ -16,6 +16,13 @@ export const INPUTS: Record<FileKind, string[]> = {
     'pdf-form-filler',
     'pdf-background',
     'pvc-card-maker',
+    'pdf-delete-pages',
+    'pdf-crop',
+    'pdf-header-footer',
+    'pdf-bates',
+    'pdf-nup',
+    'pdf-booklet',
+    'pdf-flatten',
   ],
   image: [
     'doc-flatten-print',
