@@ -1,4 +1,4 @@
-import type { SourceEdit } from './streamEdit';
+import type { SourceEdit, SourceFontInfo } from './streamEdit';
 // Annotation model for the PDF editor.
 // All annotation coordinates live in "view space": the pdf.js viewport at
 // scale 1 (page rotation applied, y grows downward, 1 unit = 1 PDF point).
@@ -24,6 +24,11 @@ export interface TextAnn {
     x: number; y: number; w: number; h: number;
     background: string;
     edit?: SourceEdit[];
+    str?: string; // original text, to match the replacement's width
+    fontObj?: number; // embedded font that drew the original
+    fontInfo?: SourceFontInfo;
+    css?: string; // pdf.js font face, used for an exact on-screen preview
+    bold0?: boolean; italic0?: boolean; family0?: string; size0?: number;
   };
 }
 
@@ -97,6 +102,9 @@ export interface TextItemRect {
   italic: boolean;
   color: string;
   edit?: SourceEdit[];
+  fontObj?: number;
+  fontInfo?: SourceFontInfo;
+  css?: string;
 }
 
 export interface FormFieldInfo {
