@@ -56,8 +56,8 @@ await page.close();console.log('PASS all 26 drawer cards resolve');n++;}
 {const page=await browser.newPage({viewport:{width:1280,height:800}});
 await page.goto(base+'/');
 await page.locator('a[href="#drawer-india"]').click();
-await page.waitForTimeout(400);
-const top=await page.getByRole('heading',{name:'India Desk',exact:true}).evaluate(el=>el.getBoundingClientRect().top);
+let top=Infinity;
+for(let i=0;i<25;i++){await page.waitForTimeout(120);top=await page.getByRole('heading',{name:'India Desk',exact:true}).evaluate(el=>el.getBoundingClientRect().top);if(top<200)break;}
 assert.ok(top<200,'anchor scrolls India Desk into view: '+top);
 await page.close();console.log('PASS drawer anchor navigation');n++;}
 }finally{await browser.close();server?.kill();}
