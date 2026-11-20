@@ -46,7 +46,7 @@ function ThemeToggle() {
       title={dark ? 'Light theme' : 'Dark theme'}
     >
       {dark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-      <span className="hidden sm:inline">{dark ? 'Light' : 'Dark'}</span>
+      <span className="">{dark ? 'Light' : 'Dark'}</span>
     </button>
   );
 }
