@@ -37,15 +37,15 @@ const DRAWERS: Drawer[] = [
     id: 'privacy',
     num: '02',
     title: 'Privacy Shield & Local Files',
-    subtitle: 'True PDF redaction, ID masking, face pixelation, EXIF scrubbing and batch file prep.',
+    subtitle: 'True PDF redaction, ID masking, face pixelation, EXIF scrubbing, on-device OCR and batch file prep.',
     ids: [
       'pdf-redaction-verify',
       'id-masker',
       'photo-pixelator',
       'remove-exif',
+      'image-ocr',
+      'file-converter',
       'bulk-renamer',
-      'list-cleaner',
-      'csv-excel-tools',
     ],
   },
   {
@@ -72,10 +72,6 @@ const DRAWERS: Drawer[] = [
       'wifi-poster',
       'screenshot-mockup',
       'subscription-burn',
-      'photo-colouring-page',
-      'colour-blind-simulator',
-      'split-bill',
-      'screen-ruler',
     ],
   },
 ];
@@ -116,7 +112,7 @@ export default function HomePage() {
         <div className="inline-flex items-center gap-2.5 border border-line bg-surface px-3 py-1.5 font-mono text-[10px] uppercase tracking-label text-muted">
           <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse-dot" />
           <ShieldCheck className="h-3.5 w-3.5 text-accent" />
-          <span>On-device workbench · 30 curated tools · 0 bytes uploaded</span>
+          <span>On-device workbench · 26 curated tools · 0 bytes uploaded</span>
         </div>
 
 
