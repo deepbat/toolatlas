@@ -591,3 +591,9 @@ export function encodeWithSourceFont(doc: any, obj: number, text: string): { hex
   }
   return { hex, width1000: width };
           }
+
+/** Characters the embedded font can draw (subsets only keep used glyphs). */
+export function sourceFontChars(doc: any, obj: number): string {
+  const enc = encoderFor(doc, obj);
+  return enc ? [...enc.toCode.keys()].join('') : '';
+}
