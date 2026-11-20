@@ -156,17 +156,17 @@ export default function HomePage() {
         <div className="inline-flex items-center gap-2.5 border border-line bg-surface px-3 py-1.5 font-mono text-[10px] uppercase tracking-label text-muted">
           <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse-dot" />
           <ShieldCheck className="h-3.5 w-3.5 text-accent" />
-          <span>On-device workbench · 39 curated tools · 0 bytes uploaded</span>
+          <span>YOUR DIGITAL TOOLKIT · PRIVATE BY DESIGN</span>
         </div>
 
 
         <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr] lg:items-end">
           <div className="space-y-4">
             <h1 className="font-display text-4xl font-semibold tracking-tight text-fg sm:text-5xl">
-              Rare, private tools for real-world jobs.
+              Useful tools. Zero friction.
             </h1>
             <p className="max-w-xl text-base leading-relaxed text-muted">
-              No clutter, no sign-ups, no cloud uploads. Drop a file on the workbench to surface only the tools that fit it, or open one of five focused drawers below.
+              A focused library for documents, images, calculations and everyday work. Find what you need, get it done, and keep your files on your device.
             </p>
           </div>
 
