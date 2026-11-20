@@ -11,7 +11,7 @@ import { Minus, Plus, Undo2, Redo2, Download } from './Toolbar';
 import { Ann, AnnMap, FormFieldInfo, TextItemRect, type ShapeKind } from './model';
 import { exportEditedPdf } from './exportPdf';
 import { PDFDocument } from 'pdf-lib';
-import { planTextRemoval, type SourceEdit } from './streamEdit';
+import { planTextRemoval, sourceFontInfo, type SourceEdit } from './streamEdit';
 
 const MAX_BYTES = 40 * 1024 * 1024;
 const MAX_PAGES = 200;
@@ -251,7 +251,13 @@ export default function PdfEditor() {
     }
     let sourcePage: any;
     try { sourcePage = (await sourceDocRef.current)?.getPages()[pageIdx]; } catch { /* visual fallback */ }
-    const items: TextItemRect[] = [];
+    // Pass 1: one raw box per pdf.js text item (view space, y down).
+    interface Raw {
+      index: number; str: string; x: number; y: number; w: number; h: number; size: number; baseline: number;
+      horizontal: boolean; family: 'Helvetica' | 'Times' | 'Courier'; bold: boolean; italic: boolean; color: string; css: string;
+      corners: number[][]; chars: number;
+    }
+    const raws: Raw[] = [];
     for (let index = 0; index < tc.items.length; index++) {
       const item = tc.items[index];
       if (!item.str || !item.str.trim() || !item.width) continue;
@@ -282,24 +288,76 @@ export default function PdfEditor() {
         [tx[4] + dx * width + nx * descent, tx[5] + dy * width + ny * descent],
         [tx[4] + nx * descent, tx[5] + ny * descent],
       ];
+      const xs = corners.map(c => c[0]), ys = corners.map(c => c[1]);
+      raws.push({
+        index, str: item.str, x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys),
+        size: fontH, baseline: tx[5], horizontal, family, bold: /bold|black|heavy|semibold|demibold/i.test(fontName), italic: /italic|oblique/i.test(fontName),
+        color: run?.color ?? '#000000', css: String(item.fontName ?? ''), corners, chars: item.str.length,
+      });
+    }
+
+    // Pass 2: join neighbouring pieces of one line into a single editable run.
+    // Producers split lines at ligatures, kerning groups and font switches
+    // ("Bene" + "fic" + "iary Name"); a tap must select the whole run, as in
+    // Sejda. Pieces join when they share a baseline and the gap is at most
+    // about one em.
+    const order = raws.filter(r => r.horizontal).sort((a, b) => (Math.abs(a.baseline - b.baseline) < Math.min(a.size, b.size) * 0.25 ? a.x - b.x : a.baseline - b.baseline));
+    const groups: Raw[][] = [];
+    for (const r of raws.filter(r => !r.horizontal)) groups.push([r]);
+    const lineKey = (r: Raw) => r.baseline;
+    const byLine: Raw[][] = [];
+    for (const r of order) {
+      const line = byLine.find(l => Math.abs(lineKey(l[0]) - r.baseline) < Math.min(l[0].size, r.size) * 0.25);
+      if (line) line.push(r); else byLine.push([r]);
+    }
+    for (const line of byLine) {
+      line.sort((a, b) => a.x - b.x);
+      let cur: Raw[] = [];
+      for (const r of line) {
+        const last = cur[cur.length - 1];
+        const gap = last ? r.x - (last.x + last.w) : 0;
+        const ratio = last ? Math.max(last.size, r.size) / Math.min(last.size, r.size) : 1;
+        if (last && gap <= last.size * 1.0 && gap >= -last.size * 0.3 && ratio <= 1.4) cur.push(r);
+        else { if (cur.length) groups.push(cur); cur = [r]; }
+      }
+      if (cur.length) groups.push(cur);
+    }
+    groups.sort((a, b) => a[0].index - b[0].index);
+
+    const items: TextItemRect[] = [];
+    for (const g of groups) {
+      const main = g.reduce((m, r) => (r.chars > m.chars ? r : m), g[0]);
+      const x0 = Math.min(...g.map(r => r.x)), y0 = Math.min(...g.map(r => r.y));
+      const x1 = Math.max(...g.map(r => r.x + r.w)), y1 = Math.max(...g.map(r => r.y + r.h));
+      let str = '';
+      g.forEach((r, k) => {
+        if (k) {
+          const prev = g[k - 1];
+          const gap = r.x - (prev.x + prev.w);
+          if (gap > prev.size * 0.12 && !/\s$/.test(str) && !/^\s/.test(r.str)) str += ' ';
+        }
+        str += r.str;
+      });
       // Plan the real removal now: every source text operator whose glyphs
-      // fall inside this item's rectangle gets blanked on export.
+      // fall inside the run's rectangle gets blanked on export.
       let edit: SourceEdit[] | undefined;
-      if (horizontal && sourcePage) {
-        const pcs = corners.map(c => vp.convertToPdfPoint(c[0], c[1]) as number[]);
+      if (main.horizontal && sourcePage) {
+        const pcs = g.flatMap(r => r.corners).map(c => vp.convertToPdfPoint(c[0], c[1]) as number[]);
         const pxs = pcs.map(p => p[0]), pys = pcs.map(p => p[1]);
         edit = planTextRemoval(sourcePage, {
           x: Math.min(...pxs), y: Math.min(...pys),
           w: Math.max(...pxs) - Math.min(...pxs), h: Math.max(...pys) - Math.min(...pys),
         });
       }
-      const xs = corners.map(c => c[0]), ys = corners.map(c => c[1]);
+      const fontObj = edit?.find(e => e.font != null)?.font;
+      const fontInfo = fontObj != null && sourcePage ? sourceFontInfo(sourcePage.doc, fontObj) : undefined;
+      const heavy = main.bold || (fontInfo ? fontInfo.weight >= 600 : false);
       items.push({
-        x: Math.min(...xs), y: Math.min(...ys),
-        w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys),
-        size: fontH, str: item.str, key: String(index), baseline: tx[5], editable: horizontal,
-        fontFamily: family, bold: /bold|black|heavy/i.test(fontName), italic: /italic|oblique/i.test(fontName),
-        color: run?.color ?? '#000000', edit,
+        x: x0, y: y0, w: x1 - x0, h: y1 - y0,
+        size: main.size, str, key: g.map(r => r.index).join('+'), baseline: main.baseline, editable: main.horizontal,
+        fontFamily: fontInfo ? (fontInfo.fixed ? 'Courier' : fontInfo.serif ? 'Times' : main.family === 'Courier' || main.family === 'Times' ? main.family : 'Helvetica') : main.family,
+        bold: heavy, italic: main.italic || !!fontInfo?.italic,
+        color: g[0].color, edit, fontObj, fontInfo, css: main.css,
       });
     }
     textCacheRef.current[pageIdx] = items;
@@ -907,4 +965,4 @@ export default function PdfEditor() {
       <Note tone="info">Everything runs on your device. The PDF never leaves your phone or computer.</Note>
     </div>
   );
-                                                             }
+                    }
