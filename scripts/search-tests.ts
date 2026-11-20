@@ -8,7 +8,7 @@ assert.ok(ids('imge').some((id) => TOOL_MAP[id]?.category === 'image'), 'one-cha
 assert.ok(ids('photo').includes('passport-photo'), 'photo finds the passport photo maker');
 assert.ok(ids('pdf redact').includes('pdf-redaction-verify'), 'multi-term search finds the PDF redactor');
 assert.ok(ids('tax').includes('income-tax-india'), 'tax finds the India income tax calculator');
-assert.ok(ids('spreadsheet').some((id) => id.includes('csv')), 'spreadsheet synonym finds CSV tools');
+assert.ok(ids('spreadsheet').includes('file-converter'), 'spreadsheet synonym finds the file converter');
 assert.equal(ids('zzqvxx').length, 0, 'unrelated query has no false positives');
 assert.ok(ids('vetan').length > 0, 'Hindi word for salary finds finance tools');
 assert.equal(suggestQuery('pasprt'), 'passport', 'two-letter typo gets a did-you-mean');
