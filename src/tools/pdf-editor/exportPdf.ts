@@ -2,7 +2,11 @@
 import {
   PDFArray,
   PDFDocument,
+  PDFHexString,
   PDFName,
+  PDFNumber,
+  PDFOperator,
+  PDFRef,
   PDFString,
   StandardFonts,
   rgb,
@@ -14,7 +18,7 @@ import {
   hexToRgb01,
   winAnsiOffenders,
 } from './model';
-import { removeSourceTexts } from './streamEdit';
+import { encodeWithSourceFont, removeSourceTexts } from './streamEdit';
 
 interface ExportOptions {
   bytes: ArrayBuffer;
@@ -158,11 +162,52 @@ export async function exportEditedPdf(opts: ExportOptions): Promise<Uint8Array> 
         }
         const font = fonts[a.fontFamily ?? 'Helvetica'][(a.bold ? 1 : 0) + (a.italic ? 2 : 0)];
         const [cr, cg, cb] = hexToRgb01(a.color);
+        const src = a.source;
         const lines = a.text.split('\n');
+        const unchanged = !!src && a.bold === src.bold0 && !!a.italic === src.italic0 && a.fontFamily === src.family0;
+        const op = (name: string, ...args: any[]) => PDFOperator.of(name as any, args);
+        const num = (n: number) => PDFNumber.of(Math.round(n * 1000) / 1000);
         lines.forEach((line, li) => {
           if (!line) return;
           const [px, py] = toPdf(a.x, a.y + a.size * 0.78 + li * a.size * 1.2);
-          page.drawText(line, { x: px, y: py, size: a.size, font, color: rgb(cr, cg, cb) });
+          // 1. Reuse the original embedded font when every glyph exists in it.
+          const enc = unchanged && src?.fontObj != null ? encodeWithSourceFont(doc, src.fontObj, line) : undefined;
+          if (enc && src?.fontObj != null) {
+            const tag = page.node.newFontDictionary('TAEdit' + src.fontObj, PDFRef.of(src.fontObj));
+            page.pushOperators(
+              op('q'), op('BT'),
+              op('rg', num(cr), num(cg), num(cb)),
+              op('Tf', tag, num(a.size)),
+              op('Td', num(px), num(py)),
+              op('Tj', PDFHexString.of(enc.hex)),
+              op('ET'), op('Q'),
+            );
+            return;
+          }
+          // 2. Standard font, matched to the original weight and width.
+          const info = src?.fontInfo;
+          let useFont = font;
+          let stroke = 0;
+          if (unchanged && info && info.weight >= 450 && info.weight < 600 && !a.bold) {
+            // Medium weights: regular outlines thickened with a thin stroke.
+            stroke = Math.max(0.1, Math.min(0.5, ((info.stemV || 110) - 88) / 1000)) * a.size * 0.5;
+          }
+          let tz = 100;
+          if (src?.str && src.w > 0 && !li) {
+            const natural = useFont.widthOfTextAtSize(src.str, src.size0 ?? a.size);
+            const target = src.w - 0.8;
+            if (natural > 0 && target > 0 && line === src.str) tz = Math.max(85, Math.min(130, (target / natural) * 100));
+          }
+          const fontTag = page.node.newFontDictionary(useFont.name, useFont.ref);
+          const ops = [
+            op('q'), op('BT'),
+            op('rg', num(cr), num(cg), num(cb)),
+            op('Tf', fontTag, num(a.size)),
+          ];
+          if (stroke) ops.push(op('RG', num(cr), num(cg), num(cb)), op('w', num(stroke)), op('Tr', PDFNumber.of(2)));
+          if (tz !== 100) ops.push(op('Tz', num(tz)));
+          ops.push(op('Td', num(px), num(py)), op('Tj', PDFHexString.of(pdfEncodeWinAnsi(useFont, line))), op('ET'), op('Q'));
+          page.pushOperators(...ops);
         });
       } else if (a.kind === 'image') {
         const m = /^data:image\/(png|jpe?g);base64,(.+)$/.exec(a.dataUrl);
@@ -232,3 +277,9 @@ export async function exportEditedPdf(opts: ExportOptions): Promise<Uint8Array> 
 
   return doc.save();
 }
+
+// WinAnsi bytes for a standard font's text (callers have checked offenders).
+function pdfEncodeWinAnsi(font: { encodeText: (t: string) => { toString(): string } }, text: string): string {
+  const hex = font.encodeText(text).toString();
+  return hex.replace(/^<|>$/g, '');
+      }
