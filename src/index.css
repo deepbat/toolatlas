@@ -1157,7 +1157,7 @@ input,select,textarea { color-scheme:dark; }
   .stage .depth-scrim {
     background: linear-gradient(180deg,rgba(7,13,29,.16) 0%,rgba(7,13,29,.44) 35%,rgba(7,13,29,.93) 72%,#080f20 100%) !important;
   }
-  .stage > .relative { max-width: 100%; padding-top: 230px; }
+  .stage > .relative { max-width: 100%; padding-top: 135px; }
   .stage h1 { font-size: clamp(42px,11vw,58px) !important; }
   .stage .tray { min-height: 140px; }
 }
