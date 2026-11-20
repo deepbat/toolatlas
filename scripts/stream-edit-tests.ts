@@ -2,7 +2,7 @@
 import { PDFDocument, PDFName, PDFRawStream, PDFArray, PDFDict, StandardFonts, rgb, decodePDFRawStream } from 'pdf-lib';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import assert from 'node:assert/strict';
-import { planTextRemoval, removeSourceTexts, encodeWithSourceFont, sourceFontInfo } from '../src/tools/pdf-editor/streamEdit';
+import { planTextRemoval, removeSourceTexts, encodeWithSourceFont, sourceFontInfo, sourceFontChars } from '../src/tools/pdf-editor/streamEdit';
 
 // Rectangle (PDF user space) of the textContent item whose text matches, as
 // the editor computes it from the pdf.js viewport.
@@ -247,6 +247,9 @@ async function xobjectDoc(shared: boolean) {
   assert.equal(info?.weight, 500);
   assert.ok(encodeWithSourceFont(doc, obj!, 'TRANS FUND'), 'subset glyphs encode');
   assert.equal(encodeWithSourceFont(doc, obj!, 'SLIP'), undefined, 'missing glyph falls back');
+  const have = sourceFontChars(doc, obj!);
+  assert.ok(have.includes('F') && !have.includes('W'), 'subset char set excludes glyphs that were never used');
+  assert.equal(encodeWithSourceFont(doc, obj!, 'FUND TRANSFER FORM NEW'), undefined, 'appending a missing glyph (W) must not drop it silently');
   console.log('PASS subset font: plan, weight and glyph availability');
 }
 
