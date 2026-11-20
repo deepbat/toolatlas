@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test:e2e": "node scripts/e2e.mjs",
     "test:expanded": "node scripts/expanded-tests.mjs && node scripts/exact-kb-tests.mjs",
-    "prebuild": "node -e \"require('fs').copyFileSync('node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs','public/pdfjs.worker.min.js')\"",
+    "prebuild": "node scripts/prebuild.mjs",
     "test:search": "tsx scripts/search-tests.ts",
     "test:unit": "tsx scripts/studio-unit-tests.ts && tsx scripts/upgrades-unit.ts && tsx scripts/device-unit.ts && tsx scripts/glyph-unit.ts && tsx scripts/pvc-unit.ts",
     "test:device": "node scripts/device-tests.mjs",
@@ -38,10 +38,12 @@
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^7.18.5"
+    "react-router-dom": "^7.18.5",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.0",
+    "@tesseract.js-data/eng": "^1.0.0",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
