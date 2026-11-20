@@ -80,8 +80,8 @@ const DRAWERS: Drawer[] = [
     id: 'pdf-suite',
     num: '05',
     title: 'PDF Suite',
-    subtitle: 'Trim, number, crop, flatten and lay out PDFs for print, entirely on your device.',
-    ids: ['pdf-delete-pages', 'pdf-crop', 'pdf-header-footer', 'pdf-bates', 'pdf-nup', 'pdf-booklet', 'pdf-flatten'],
+    subtitle: 'Merge, split, compress, convert, trim, number, crop, flatten and lay out PDFs, entirely on your device.',
+    ids: ['pdf-merge', 'pdf-split', 'pdf-compress', 'pdf-to-images', 'image-to-pdf', 'pdf-extract-text', 'pdf-delete-pages', 'pdf-crop', 'pdf-header-footer', 'pdf-bates', 'pdf-nup', 'pdf-booklet', 'pdf-flatten'],
   },
 ];
 
@@ -156,7 +156,7 @@ export default function HomePage() {
         <div className="inline-flex items-center gap-2.5 border border-line bg-surface px-3 py-1.5 font-mono text-[10px] uppercase tracking-label text-muted">
           <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse-dot" />
           <ShieldCheck className="h-3.5 w-3.5 text-accent" />
-          <span>On-device workbench · 33 curated tools · 0 bytes uploaded</span>
+          <span>On-device workbench · 39 curated tools · 0 bytes uploaded</span>
         </div>
 
 
@@ -331,4 +331,4 @@ export default function HomePage() {
       </div>
     </div>
   );
-          }
+      }
