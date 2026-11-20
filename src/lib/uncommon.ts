@@ -2,7 +2,7 @@ import type { ToolMeta } from './types';
 
 
 /**
- * The 24 signature tools retained from the original 148-tool catalogue.
+ * The 18 signature tools retained from the original 148-tool catalogue.
  * Everything else (generic calculators, unit converters, basic text/dev tools)
  * is retired so visitors are never overwhelmed.
  */
@@ -21,8 +21,6 @@ export const CURATED_KEEP_IDS = new Set<string>([
   'photo-pixelator',
   'remove-exif',
   'bulk-renamer',
-  'list-cleaner',
-  'csv-excel-tools',
   // India Desk
   'land-area-india',
   'exam-age-eligibility',
@@ -30,16 +28,11 @@ export const CURATED_KEEP_IDS = new Set<string>([
   'income-tax-india',
   'gst-pan-validator',
   'number-to-words-inr',
-  // Clever Studio
-  'photo-colouring-page',
-  'colour-blind-simulator',
-  'split-bill',
-  'screen-ruler',
 ]);
 
 
 /**
- * 6 new uncommon, high-utility, 100% on-device tools.
+ * 8 uncommon, high-utility, 100% on-device tools.
  */
 export const UNCOMMON_TOOLS: ToolMeta[] = [
   {
@@ -86,12 +79,12 @@ export const UNCOMMON_TOOLS: ToolMeta[] = [
   },
   {
     id: 'screenshot-mockup',
-    name: 'Clean Screenshot Framer',
+    name: 'Screenshot Frame & Redact',
     description:
-      'Frame raw screenshots with balanced padding, shadows and optional click-to-blur privacy boxes.',
+      'Frame or paste a screenshot, then blur or black out names, numbers and faces before you share it.',
     category: 'image',
     icon: 'Monitor',
-    keywords: ['screenshot', 'mockup', 'frame', 'blur', 'share', 'presentation'],
+    keywords: ['screenshot', 'mockup', 'frame', 'blur', 'redact', 'blackout', 'share', 'presentation'],
     version: '1.0.0',
     status: 'stable',
     added: '2026-11-19',
@@ -122,6 +115,33 @@ export const UNCOMMON_TOOLS: ToolMeta[] = [
     status: 'stable',
     added: '2026-11-19',
     featured: true,
+    layout: 'wide',
+  },
+  {
+    id: 'image-ocr',
+    name: 'Copy Text from Picture (OCR)',
+    description:
+      'Read printed text out of a photo or screenshot and copy it, fully on your device. Nothing is uploaded.',
+    category: 'image',
+    icon: 'ScanText',
+    keywords: ['ocr', 'copy text from picture', 'image to text', 'photo to text', 'extract text', 'screenshot text', 'scan text'],
+    version: '1.0.0',
+    status: 'stable',
+    added: '2026-11-20',
+    featured: true,
+    layout: 'wide',
+  },
+  {
+    id: 'file-converter',
+    name: 'Local File Converter',
+    description:
+      'Convert WebP, PNG and JPG images or turn CSV into JSON and back, all in your browser with no upload.',
+    category: 'file',
+    icon: 'FileCog',
+    keywords: ['webp to png', 'png to jpg', 'jpg to webp', 'convert image', 'csv to json', 'json to csv', 'file converter', 'offline converter', 'spreadsheet', 'excel'],
+    version: '1.0.0',
+    status: 'stable',
+    added: '2026-11-20',
     layout: 'wide',
   },
 ];
