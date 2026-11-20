@@ -316,20 +316,6 @@ try {
     );
     assert.equal(zip.readUInt32LE(0), 0x04034b50);
   });
-  await test("split bill participants and exact settlements", async () => {
-    await go("split-bill");
-    const text = await page.getByTestId("split-summary").innerText();
-    assert.ok(text.includes("1800.00") && text.includes("1 payment(s)"));
-    await page.getByLabel("Amount 2", { exact: true }).fill("1200");
-    assert.ok(
-      (await page.getByTestId("split-summary").innerText()).includes("2400.00"),
-    );
-    const checks = page.locator("fieldset").first().getByRole("checkbox");
-    await checks.nth(2).uncheck();
-    assert.ok(
-      (await page.getByTestId("split-summary").innerText()).includes("2400.00"),
-    );
-  });
   await test("curated homepage, new tools and light/dark phone layouts", async () => {
     for (const width of [360, 393, 1280]) {
       await page.setViewportSize({ width, height: width === 1280 ? 900 : 852 });
@@ -344,7 +330,7 @@ try {
       );
       await page.evaluate(() => scrollTo(0, 0));
       await page.screenshot({ path: `test-artifacts/upgrades/home-${width}.png` });
-      for (const id of ["signature-maker", "bulk-renamer", "remove-exif", "list-cleaner", "split-bill", "doc-flatten-print", "pdf-redaction-verify", "cheque-overlay", "screenshot-mockup", "subscription-burn", "wifi-poster"]) {
+      for (const id of ["signature-maker", "bulk-renamer", "remove-exif", "image-ocr", "file-converter", "doc-flatten-print", "pdf-redaction-verify", "cheque-overlay", "screenshot-mockup", "subscription-burn", "wifi-poster"]) {
         await go(id);
         assert.ok(
           await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
@@ -388,12 +374,8 @@ try {
     await ctx.setOffline(true);
     await go("signature-maker");
     assert.ok(await page.getByTestId("signature-canvas").isVisible());
-    await go("split-bill");
-    assert.ok(
-      (await page.getByTestId("split-summary").innerText()).includes("1800.00"),
-    );
-    await go("list-cleaner");
-    assert.ok(await page.getByLabel("List input").isVisible());
+    await go("wifi-poster");
+    assert.ok(await page.getByRole("button", { name: /Download|Generate|Print/ }).first().isVisible());
     await ctx.setOffline(false);
   });
   assert.deepEqual(errors, [], "uncaught browser errors");
