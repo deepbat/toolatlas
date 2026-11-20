@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { incomeTax, gst, tds, gratuity, hra, rd, fd, loan, workingDays, addWorkingDays, rupeesInWords, checkGstin, gstinCheckChar, checkPan, checkIfsc, epf, salaryStructure, parseAmount, type TaxInput } from '../src/lib/india';
 import { ppf, cagr, invoiceTotals, parseInvoiceLines, summarise, textPdf } from '../src/lib/office';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
-import { locateSourceEdit } from '../src/tools/pdf-editor/streamEdit';
+import { planTextRemoval } from '../src/tools/pdf-editor/streamEdit';
 import { TRANSLATION_KEYS, translation } from '../src/lib/i18n';
 import { crc32, makeZip } from '../src/lib/zip';
 import { parseExif, stripJpeg, stripPng } from '../src/lib/exif';
@@ -105,8 +105,7 @@ await t('pdf editor: 400 lookups on one page stay fast and unambiguous', async (
   const t0 = Date.now();
   let hits = 0;
   for (let i = 0; i < 400; i++) {
-    const text = 'Line' + String(i).padStart(4, '0');
-    const e = locateSourceEdit(page, { text, codes: [...text].map((c) => c.charCodeAt(0)), width: 3000, spaces: 0 });
+    const e = planTextRemoval(page, { x: 19 + (i % 5) * 100, y: 776 - Math.floor(i / 5) * 9, w: 32, h: 8 });
     if (e) hits++;
   }
   const ms = Date.now() - t0;
