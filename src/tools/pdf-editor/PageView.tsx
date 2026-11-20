@@ -7,7 +7,17 @@ import type { ShapeKind } from './model';
 // While the style is untouched, preview with the PDF's own embedded font face
 // (loaded by pdf.js), so weight and spacing match what the page shows.
 const sameStyle = (a: any) => !!a.source?.css && a.bold === a.source.bold0 && !!a.italic === a.source.italic0 && a.fontFamily === a.source.family0;
-const previewFont = (a: any) => (sameStyle(a) ? `"${a.source.css}", ${cssFont(a.fontFamily)}` : cssFont(a.fontFamily));
+// The embedded face is only used when it has every typed glyph, exactly as the
+// export decides. Otherwise the whole line previews in the matched fallback,
+// so no character is thin, missing or a different weight from its neighbours.
+const usesEmbedded = (a: any) => {
+  if (!sameStyle(a)) return false;
+  const have: string | undefined = a.source.fontChars;
+  if (have === undefined) return true;
+  for (const ch of String(a.text).normalize('NFC')) if (ch !== '\n' && !have.includes(ch)) return false;
+  return true;
+};
+const previewFont = (a: any) => (usesEmbedded(a) ? `"${a.source.css}", ${cssFont(a.fontFamily)}` : cssFont(a.fontFamily));
 const cssFont = (family?: string) => family === 'Times' ? '"Times New Roman", serif' : family === 'Courier' ? '"Courier New", monospace' : 'Helvetica, Arial, sans-serif';
 
 interface PendingImage {
@@ -201,7 +211,7 @@ export default function PageView(props: PageViewProps) {
           kind: 'text', id: uid(), x: item.x, y: item.baseline - item.size * 0.78,
           text: item.str, size: item.size, color: item.color, bold: item.bold,
           italic: item.italic, fontFamily: item.fontFamily,
-          source: { key: item.key, x: item.x - 0.4, y: item.y - 0.3, w: item.w + 0.8, h: item.h + 0.6, background, edit: item.edit, str: item.str, fontObj: item.fontObj, fontInfo: item.fontInfo, css: item.css, bold0: item.bold, italic0: !!item.italic, family0: item.fontFamily, size0: item.size },
+          source: { key: item.key, x: item.x - 0.4, y: item.y - 0.3, w: item.w + 0.8, h: item.h + 0.6, background, edit: item.edit, str: item.str, fontObj: item.fontObj, fontInfo: item.fontInfo, fontChars: item.fontChars, css: item.css, bold0: item.bold, italic0: !!item.italic, family0: item.fontFamily, size0: item.size },
         };
         props.onAddAnns(pageIndex, [text], text.id);
       })();
@@ -422,7 +432,7 @@ export default function PageView(props: PageViewProps) {
           fontSize: a.size * scale, lineHeight: 1.2,
           fontStyle: a.italic ? 'italic' : 'normal',
           padding: 0, border: 0,
-          color: a.color, fontWeight: sameStyle(a) ? 400 : a.bold ? 700 : 400,
+          color: a.color, fontWeight: usesEmbedded(a) ? 400 : a.bold || (sameStyle(a) && (a.source?.fontInfo?.weight ?? 0) >= 500) ? 700 : 400,
           fontFamily: previewFont(a),
           transform: a.source ? 'translateY(-0.14em)' : undefined,
         };
@@ -566,4 +576,4 @@ export default function PageView(props: PageViewProps) {
       />
     </div>
   );
-                                             }
+                                            }
