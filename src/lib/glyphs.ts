@@ -2,7 +2,7 @@ import type { CategoryId, ToolMeta } from './types';
 
 
 /**
- * ToolAtlas 4.0 — Unique pictorial glyphs for all 30 curated tools.
+ * ToolAtlas 4.0 — Unique pictorial glyphs for all 26 curated tools.
  * Drop this file into `src/lib/glyphs.ts`.
  */
 export const TOOL_GLYPHS: Record<string, string> = {
@@ -24,8 +24,8 @@ export const TOOL_GLYPHS: Record<string, string> = {
   'photo-pixelator': '🕶️',
   'remove-exif': '📍',
   'bulk-renamer': '🏷️',
-  'list-cleaner': '🧾',
-  'csv-excel-tools': '📊',
+  'image-ocr': '🔤',
+  'file-converter': '🔁',
 
 
   // India Desk
@@ -39,10 +39,6 @@ export const TOOL_GLYPHS: Record<string, string> = {
 
 
   // Clever Studio
-  'photo-colouring-page': '🖍️',
-  'colour-blind-simulator': '👁️',
-  'split-bill': '🤝',
-  'screen-ruler': '📏',
   'screenshot-mockup': '🖼️',
   'subscription-burn': '🔥',
   'wifi-poster': '📶',
