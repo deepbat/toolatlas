@@ -16,6 +16,12 @@ export const CURATED_KEEP_IDS = new Set<string>([
   'pdf-compare',
   'pdf-form-filler',
   'pdf-background',
+  'pdf-merge',
+  'image-to-pdf',
+  'pdf-compress',
+  'pdf-split',
+  'pdf-to-images',
+  'pdf-extract-text',
   // Privacy Shield & Local Files
   'id-masker',
   'photo-pixelator',
