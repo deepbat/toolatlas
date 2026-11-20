@@ -259,8 +259,13 @@ export default function PdfEditor() {
       const fontH = Math.hypot(tx[2], tx[3]);
       if (!fontH) continue;
       const style = tc.styles[item.fontName] ?? {};
-      const ascent = fontH * (style.ascent ?? 0.8);
-      const descent = fontH * Math.abs(style.descent ?? -0.2);
+      // Some embedded fonts (e.g. Illustrator subsets) report 0/0 or nonsense
+      // ascent and descent. A zero-height box can never be tapped, so fall
+      // back to typical metrics when the reported ones do not make a line box.
+      let asc = Number(style.ascent), desc = Math.abs(Number(style.descent));
+      if (!Number.isFinite(asc) || !Number.isFinite(desc) || asc <= 0 || asc + desc < 0.5 || asc + desc > 2.5) { asc = 0.8; desc = 0.2; }
+      const ascent = fontH * asc;
+      const descent = fontH * desc;
       const horizontal = Math.abs(tx[1]) < 0.01 && tx[0] > 0;
       // Rotated/vertical runs remain searchable but are not offered as editable.
       let fontName = style.fontFamily ?? '';
@@ -902,4 +907,4 @@ export default function PdfEditor() {
       <Note tone="info">Everything runs on your device. The PDF never leaves your phone or computer.</Note>
     </div>
   );
-            }
+                                                             }
