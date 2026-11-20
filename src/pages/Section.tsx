@@ -14,6 +14,7 @@ import {
 } from '../lib/sections';
 import { searchTools, suggestQuery } from '../lib/search';
 import { useApp } from '../lib/store';
+import Tilt from '../components/Tilt';
 import type { ToolMeta } from '../lib/types';
 import { cn, tint } from '../lib/utils';
 
@@ -23,7 +24,8 @@ function LaunchCard({ tool }: { tool: ToolMeta }) {
   const favorite = isFavorite(tool.id);
 
   return (
-    <div className="group relative flex flex-col border border-line bg-surface/90 p-4 transition duration-300 ease-out hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lift">
+    <Tilt max={5}>
+    <div className="group relative flex h-full flex-col border border-line bg-surface/90 p-4 transition duration-300 ease-out hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lift">
       <div className="flex items-start justify-between gap-2">
         <ToolGlyph
           tool={tool}
@@ -61,6 +63,7 @@ function LaunchCard({ tool }: { tool: ToolMeta }) {
         </Link>
       </div>
     </div>
+    </Tilt>
   );
 }
 
@@ -101,7 +104,8 @@ export default function SectionPage({ sectionId }: { sectionId: SectionId }) {
         </ol>
       </nav>
 
-      <header className="section-line">
+      <div className="plate-scene mb-8">
+      <header className="section-line plate mb-0 w-full">
         <div className="flex items-baseline gap-3">
           <span className="label text-muted/60">Category</span>
           <h1 className="font-display text-2xl font-medium tracking-tight text-fg sm:text-3xl">
@@ -120,6 +124,7 @@ export default function SectionPage({ sectionId }: { sectionId: SectionId }) {
           {query && <> matching “{query}”</>}
         </p>
       </header>
+      </div>
 
       <p className="max-w-2xl text-sm leading-relaxed text-muted">{section.description}</p>
 
@@ -245,4 +250,4 @@ export default function SectionPage({ sectionId }: { sectionId: SectionId }) {
       </div>
     </div>
   );
-}
+          }
