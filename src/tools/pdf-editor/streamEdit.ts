@@ -133,6 +133,15 @@ function num(dict: PDFDict | undefined, key: string): number | undefined {
   return v ? v.asNumber() : undefined;
 }
 
+// Font descriptors sometimes carry 0/0 or missing Ascent/Descent (common in
+// Illustrator subsets). A zero-height line box would never overlap anything,
+// so fall back to typical metrics unless the pair forms a plausible line box.
+function sane(ascent: number | undefined, descent: number | undefined): { ascent: number; descent: number } {
+  const a = ascent ?? 0, d = descent == null ? 0 : -Math.abs(descent);
+  if (!(a > 0) || a - d < 500 || a - d > 2500) return { ascent: 800, descent: -200 };
+  return { ascent: a, descent: d };
+}
+
 function loadFont(resources: PDFDict | undefined, name: string): FontMetric | undefined {
   const fontDict = resources?.lookupMaybe(PDFName.of('Font'), PDFDict)?.lookupMaybe(PDFName.of(name), PDFDict);
   if (!fontDict) return undefined;
@@ -166,7 +175,8 @@ function loadFont(resources: PDFDict | undefined, name: string): FontMetric | un
           i += 3;
         }
       }
-      metric = { width: (c) => widths.get(c) ?? dw, bytesPerCode: 2, ascent: ascent ?? 800, descent: descent ?? -200 };
+      ({ ascent, descent } = sane(ascent, descent));
+      metric = { width: (c) => widths.get(c) ?? dw, bytesPerCode: 2, ascent, descent };
     } else {
       const first = num(fontDict, 'FirstChar') ?? 0;
       const widthsArr = fontDict.lookupMaybe(PDFName.of('Widths'), PDFArray)?.asArray().map((v: any) => (v as PDFNumber).asNumber()) ?? [];
@@ -176,11 +186,12 @@ function loadFont(resources: PDFDict | undefined, name: string): FontMetric | un
         if (fm && fm[0]) scale = fm[0] * 1000;
       }
       const missing = (num(fd, 'MissingWidth') ?? 600) * scale;
+      const ad = sane(ascent, descent);
       metric = {
         width: (c) => (widthsArr[c - first] ?? missing / scale) * scale,
         bytesPerCode: 1,
-        ascent: (ascent ?? 800) * scale,
-        descent: (descent ?? -200) * scale,
+        ascent: ad.ascent * scale,
+        descent: ad.descent * scale,
       };
     }
   } catch {
@@ -427,4 +438,4 @@ export function removeSourceTexts(page: any, edits: SourceEdit[]): Set<number> {
     } catch { /* leave stream untouched */ }
   }
   return done;
-                                            }
+}
