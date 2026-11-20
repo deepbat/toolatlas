@@ -20,32 +20,12 @@ await mkdir('test-artifacts/device', { recursive: true });
 let n = 0;
 const check = (name, ok) => { assert.ok(ok, name); n++; console.log('ok  ' + name); };
 
-const RETIRED = ['sound-meter','metronome','tuner','tone-generator','text-to-speech','compass','spirit-level','gps-speedometer','morse-code','qr-barcode-scanner'];
+const RETIRED = ['screen-ruler','sound-meter','metronome','tuner','tone-generator','text-to-speech','compass','spirit-level','gps-speedometer','morse-code','qr-barcode-scanner'];
 
 try {
   const page = await browser.newPage();
 
-  await page.goto(`${base}/tools/screen-ruler/`);
-  await page.getByRole('heading', { name: 'Screen Ruler', exact: true, level: 1 }).waitFor();
-  check('screen-ruler renders its page and title', true);
-
-  // Static prerender must carry the route's SEO shell.
-  const html = await (await fetch(`${base}/tools/screen-ruler/`)).text();
-  check('screen-ruler static HTML has canonical title', html.includes("<title>Screen Ruler | Deepak's Tool</title>"));
-  check('screen-ruler static HTML has schema', html.includes('WebApplication'));
-  const catHtml = await (await fetch(`${base}/category/device/`)).text();
-  check('device category page lists Screen Ruler', catHtml.includes('Screen Ruler'));
-  check('device category page lists no retired sensors', !catHtml.includes('Sound Level Meter') && !catHtml.includes('Metronome'));
-
-  // Screen ruler: calibration changes the reported scale.
-  const scale = page.getByTestId('ruler-scale');
-  const before = await scale.textContent();
-  await page.getByLabel('Calibration width').fill('428');
-  await page.getByRole('button', { name: 'Apply calibration' }).click();
-  const after = await scale.textContent();
-  check(`ruler calibration updates scale (${before} -> ${after})`, before !== after && after.includes('= 50 px'));
-
-  // Retired device tools render the not-found page.
+  // Every device-section tool (incl. screen-ruler, retired in the Nov 2026 trim) 404s.
   for (const id of RETIRED) {
     await page.goto(`${base}/tools/${id}/`);
     await page.locator('h1').first().waitFor();
@@ -53,14 +33,13 @@ try {
     check(`${id} is retired and 404s`, /not found|does not exist|404/i.test(text));
   }
 
-  // No horizontal overflow on phone and desktop.
+  // The homepage still fits on phone and desktop.
   for (const width of [360, 393, 1280]) {
     await page.setViewportSize({ width, height: 800 });
-    await page.goto(`${base}/tools/screen-ruler/`);
-    await page.getByRole('heading', { name: 'Screen Ruler', exact: true, level: 1 }).waitFor();
-    check(`screen-ruler fits ${width}px`, await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    await page.goto(`${base}/`);
+    await page.locator('h1').first().waitFor();
+    check(`home fits ${width}px`, await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   }
-  await page.screenshot({ path: 'test-artifacts/device/screen-ruler.png' });
 } finally {
   await browser.close();
   server?.kill();
