@@ -4,6 +4,10 @@ import { Ann, FormFieldInfo, TextItemRect, annBBox, uid } from './model';
 import type { ToolId } from './Toolbar';
 import type { ShapeKind } from './model';
 
+// While the style is untouched, preview with the PDF's own embedded font face
+// (loaded by pdf.js), so weight and spacing match what the page shows.
+const sameStyle = (a: any) => !!a.source?.css && a.bold === a.source.bold0 && !!a.italic === a.source.italic0 && a.fontFamily === a.source.family0;
+const previewFont = (a: any) => (sameStyle(a) ? `"${a.source.css}", ${cssFont(a.fontFamily)}` : cssFont(a.fontFamily));
 const cssFont = (family?: string) => family === 'Times' ? '"Times New Roman", serif' : family === 'Courier' ? '"Courier New", monospace' : 'Helvetica, Arial, sans-serif';
 
 interface PendingImage {
@@ -197,7 +201,7 @@ export default function PageView(props: PageViewProps) {
           kind: 'text', id: uid(), x: item.x, y: item.baseline - item.size * 0.78,
           text: item.str, size: item.size, color: item.color, bold: item.bold,
           italic: item.italic, fontFamily: item.fontFamily,
-          source: { key: item.key, x: item.x - 0.4, y: item.y - 0.3, w: item.w + 0.8, h: item.h + 0.6, background, edit: item.edit },
+          source: { key: item.key, x: item.x - 0.4, y: item.y - 0.3, w: item.w + 0.8, h: item.h + 0.6, background, edit: item.edit, str: item.str, fontObj: item.fontObj, fontInfo: item.fontInfo, css: item.css, bold0: item.bold, italic0: !!item.italic, family0: item.fontFamily, size0: item.size },
         };
         props.onAddAnns(pageIndex, [text], text.id);
       })();
@@ -418,12 +422,12 @@ export default function PageView(props: PageViewProps) {
           fontSize: a.size * scale, lineHeight: 1.2,
           fontStyle: a.italic ? 'italic' : 'normal',
           padding: 0, border: 0,
-          color: a.color, fontWeight: a.bold ? 700 : 400,
-          fontFamily: cssFont(a.fontFamily),
+          color: a.color, fontWeight: sameStyle(a) ? 400 : a.bold ? 700 : 400,
+          fontFamily: previewFont(a),
           transform: a.source ? 'translateY(-0.14em)' : undefined,
         };
         const measure = measureCtx();
-        measure.font = `${a.italic ? 'italic ' : ''}${a.bold ? 'bold ' : ''}${a.size * scale}px ${cssFont(a.fontFamily)}`;
+        measure.font = `${a.italic ? 'italic ' : ''}${a.bold ? 'bold ' : ''}${a.size * scale}px ${previewFont(a)}`;
         const width = Math.max(20 * scale, ...a.text.split('\n').map(line => measure.measureText(line).width + 8 * scale));
         return isSel ? (
           <textarea
@@ -562,4 +566,4 @@ export default function PageView(props: PageViewProps) {
       />
     </div>
   );
-              }
+                                             }
