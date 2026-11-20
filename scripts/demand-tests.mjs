@@ -17,6 +17,13 @@ const UNCOMMON={
  'wifi-poster':'Guest Wi-Fi Printable Card',
  'image-ocr':'Copy Text from Picture (OCR)',
  'file-converter':'Local File Converter',
+ 'pdf-delete-pages':'Delete PDF Pages',
+ 'pdf-crop':'Crop PDF',
+ 'pdf-header-footer':'PDF Header, Footer and Page Numbers',
+ 'pdf-bates':'Bates Numbering for PDF',
+ 'pdf-nup':'Multiple Pages per Sheet (N-up)',
+ 'pdf-booklet':'PDF Booklet Maker',
+ 'pdf-flatten':'Flatten PDF Forms',
 };
 try{
 for(const [id,name] of Object.entries(UNCOMMON)){
@@ -36,14 +43,14 @@ console.log('PASS uncommon tools have static SEO shells');n++;
 // Every catalogued tool page loads with a non-empty heading and no overflow.
 const catalog=JSON.parse(await readFile('dist/catalog.json','utf8'));
 const all=(catalog.tools||catalog).map(t=>t.id);
-assert.equal(all.length ,26,'catalogue holds exactly the 26 curated tools');
+assert.equal(all.length ,33,'catalogue holds exactly the 33 curated tools');
 for(const id of all){
   await go(id);
   const h1=await page.locator('h1').first().innerText();
   assert.ok(h1.trim().length>0,id+' has an empty heading');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),id+' overflows at 393px');
 }
-console.log('PASS all 26 curated tools load on a phone viewport');n++;
+console.log('PASS all 33 curated tools load on a phone viewport');n++;
 // The homepage workbench routes a dropped PDF to the new redactor.
 await page.goto(base+'/');
 await page.locator('input[type=file]').first().setInputFiles({name:'doc.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4 minimal')});
