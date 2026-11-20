@@ -11,7 +11,7 @@ import { Minus, Plus, Undo2, Redo2, Download } from './Toolbar';
 import { Ann, AnnMap, FormFieldInfo, TextItemRect, type ShapeKind } from './model';
 import { exportEditedPdf } from './exportPdf';
 import { PDFDocument } from 'pdf-lib';
-import { locateSourceEdit, type TextRun } from './streamEdit';
+import { planTextRemoval, type SourceEdit } from './streamEdit';
 
 const MAX_BYTES = 40 * 1024 * 1024;
 const MAX_PAGES = 200;
@@ -237,7 +237,7 @@ export default function PdfEditor() {
     const vp = viewportsRef.current[pageIdx];
     const tc = await page.getTextContent();
     const ops = await page.getOperatorList();
-    const runs: (TextRun & { color: string })[] = [];
+    const runs: { text: string; color: string }[] = [];
     let fill = '#000000';
     const fillStack: string[] = [];
     for (let i = 0; i < ops.fnArray.length; i++) {
@@ -247,8 +247,7 @@ export default function PdfEditor() {
       if (op === lib.OPS.setFillRGBColor) fill = '#' + Array.from(args as number[]).map((n: number) => Math.round(n).toString(16).padStart(2, '0')).join('');
       if (op !== lib.OPS.showText) continue;
       const glyphs = args[0].filter((g: any) => typeof g !== 'number');
-      runs.push({ text: glyphs.map((g: any) => g.unicode).join(''), codes: glyphs.map((g: any) => g.originalCharCode),
-        width: glyphs.reduce((n: number, g: any) => n + g.width, 0), spaces: glyphs.filter((g: any) => g.isSpace).length, color: fill });
+      runs.push({ text: glyphs.map((g: any) => g.unicode).join(''), color: fill });
     }
     let sourcePage: any;
     try { sourcePage = (await sourceDocRef.current)?.getPages()[pageIdx]; } catch { /* visual fallback */ }
@@ -267,9 +266,7 @@ export default function PdfEditor() {
       let fontName = style.fontFamily ?? '';
       try { fontName += ' ' + page.commonObjs.get(item.fontName)?.name; } catch { /* use generic */ }
       const family = /courier|mono/i.test(fontName) ? 'Courier' : /times|serif/i.test(fontName) && !/sans/i.test(fontName) ? 'Times' : 'Helvetica';
-      const matchingRuns = runs.filter(r => r.text === item.str);
-      const run = matchingRuns.length === 1 ? matchingRuns[0] : undefined;
-      const edit = horizontal && sourcePage && run ? locateSourceEdit(sourcePage, run) : undefined;
+      const run = runs.find(r => r.text === item.str);
       const width = item.width * (vp.scale ?? 1);
       const ul = Math.hypot(tx[0], tx[1]) || 1;
       const dx = tx[0] / ul, dy = tx[1] / ul;
@@ -280,6 +277,17 @@ export default function PdfEditor() {
         [tx[4] + dx * width + nx * descent, tx[5] + dy * width + ny * descent],
         [tx[4] + nx * descent, tx[5] + ny * descent],
       ];
+      // Plan the real removal now: every source text operator whose glyphs
+      // fall inside this item's rectangle gets blanked on export.
+      let edit: SourceEdit[] | undefined;
+      if (horizontal && sourcePage) {
+        const pcs = corners.map(c => vp.convertToPdfPoint(c[0], c[1]) as number[]);
+        const pxs = pcs.map(p => p[0]), pys = pcs.map(p => p[1]);
+        edit = planTextRemoval(sourcePage, {
+          x: Math.min(...pxs), y: Math.min(...pys),
+          w: Math.max(...pxs) - Math.min(...pxs), h: Math.max(...pys) - Math.min(...pys),
+        });
+      }
       const xs = corners.map(c => c[0]), ys = corners.map(c => c[1]);
       items.push({
         x: Math.min(...xs), y: Math.min(...ys),
@@ -726,7 +734,7 @@ export default function PdfEditor() {
                 <input type="checkbox" checked={selectedText?.bold ?? bold} onChange={(e) => changeTextStyle({ bold: e.target.checked })} aria-label="Bold text" />
                 Bold
               </label>
-              <span>{tool === 'edit' ? 'Tap the words already on the page. Their current text opens for editing.' : 'Add text creates a NEW text box. To change existing words, choose Edit text.'}</span>
+              <span>{tool === 'edit' ? 'Tap the words already on the page. Their current text opens for editing; clear it to erase the original.' : 'Add text creates a NEW text box. To change existing words, choose Edit text.'}</span>
             </>
           )}
           {tool === 'select' && !selAnn && <span>Tap an annotation to select, drag to move. Tap a form field to fill it.</span>}
@@ -866,10 +874,12 @@ export default function PdfEditor() {
         <div className="space-y-3 text-sm leading-relaxed text-muted">
           <p>
             Start with Edit text: tap a word or line, change the prefilled text, then tap outside it.
-            Add text creates a separate text box instead. Original text is removed from supported PDF text
-            operators on export; complex or ambiguous runs use a background-matched visual replacement.
-            Each selected replacement tells you which method is being used. The page is not re-typeset,
-            so longer replacements may need a smaller size or shorter wording. Rotated and vertical text is not yet editable.
+            Add text creates a separate text box instead. On export the original text operators are located
+            by their exact position and removed from the page, so the old words are gone from the file, not
+            just painted over. When a run cannot be located safely (for example text drawn inside shared
+            artwork), the selection falls back to a background-matched visual cover and says so. The page is
+            not re-typeset, so longer replacements may need a smaller size or shorter wording. Rotated and
+            vertical text is not yet editable.
           </p>
           <p>
             Whiteout and redact cover content visually. The covered text can still exist inside the file, so do not
@@ -892,4 +902,4 @@ export default function PdfEditor() {
       <Note tone="info">Everything runs on your device. The PDF never leaves your phone or computer.</Note>
     </div>
   );
-}
+            }
