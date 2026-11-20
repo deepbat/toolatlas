@@ -2,7 +2,7 @@
 import { PDFDocument, PDFName, PDFRawStream, PDFArray, PDFDict, StandardFonts, rgb, decodePDFRawStream } from 'pdf-lib';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import assert from 'node:assert/strict';
-import { planTextRemoval, removeSourceTexts } from '../src/tools/pdf-editor/streamEdit';
+import { planTextRemoval, removeSourceTexts, encodeWithSourceFont, sourceFontInfo } from '../src/tools/pdf-editor/streamEdit';
 
 // Rectangle (PDF user space) of the textContent item whose text matches, as
 // the editor computes it from the pdf.js viewport.
@@ -214,6 +214,40 @@ async function xobjectDoc(shared: boolean) {
   const edits = planTextRemoval(doc.getPage(0), { x: 200, y: 700, w: 4, h: 4 });
   assert.equal(edits, undefined, 'empty spot has no plan');
   console.log('PASS empty spot removes nothing');
+}
+
+// Case: Illustrator-style subset font (descriptor ascent/descent 0, only used
+// glyphs have widths). Removal must still be planned, and replacement text can
+// reuse the embedded font only when every glyph exists in the subset.
+{
+  const d = await PDFDocument.create();
+  const widths = Array.from({ length: 95 }, (_, i) => ('FUND TRANSFER'.includes(String.fromCharCode(32 + i)) ? 600 : 0));
+  const fd = d.context.register(d.context.obj({
+    Type: 'FontDescriptor', FontName: 'ABCDEF+Gotham-Medium', Flags: 32, FontBBox: [0, 0, 1000, 1000],
+    ItalicAngle: 0, Ascent: 0, Descent: 0, CapHeight: 700, StemV: 124, FontWeight: 500,
+  }));
+  const fontRef = d.context.register(d.context.obj({
+    Type: 'Font', Subtype: 'TrueType', BaseFont: 'ABCDEF+Gotham-Medium', FirstChar: 32, LastChar: 126,
+    Widths: widths, Encoding: 'WinAnsiEncoding', FontDescriptor: fd,
+  }));
+  const page = d.addPage([612, 792]);
+  const tag = page.node.newFontDictionary('GM', fontRef);
+  const { PDFOperator, PDFName: N, PDFString: S } = await import('pdf-lib');
+  page.pushOperators(
+    PDFOperator.of('BT' as any, []), PDFOperator.of('Tf' as any, [tag, (d.context.obj(11) as any)]),
+    PDFOperator.of('Td' as any, [d.context.obj(50) as any, d.context.obj(700) as any]),
+    PDFOperator.of('Tj' as any, [S.of('FUND TRANSFER')]), PDFOperator.of('ET' as any, []),
+  );
+  const doc = await PDFDocument.load(await d.save());
+  const edits = planTextRemoval(doc.getPage(0), { x: 48, y: 697, w: 80, h: 12 });
+  assert.ok(edits && edits.length, 'zero-ascent subset font still plans removal');
+  const obj = edits![0].font;
+  assert.ok(obj, 'plan names the source font');
+  const info = sourceFontInfo(doc, obj!);
+  assert.equal(info?.weight, 500);
+  assert.ok(encodeWithSourceFont(doc, obj!, 'TRANS FUND'), 'subset glyphs encode');
+  assert.equal(encodeWithSourceFont(doc, obj!, 'SLIP'), undefined, 'missing glyph falls back');
+  console.log('PASS subset font: plan, weight and glyph availability');
 }
 
 console.log('All content-stream cases passed.');
