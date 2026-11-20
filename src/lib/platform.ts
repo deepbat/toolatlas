@@ -24,15 +24,15 @@ export const INPUTS: Record<FileKind, string[]> = {
     'signature-maker',
     'photo-pixelator',
     'remove-exif',
+    'image-ocr',
     'screenshot-mockup',
-    'photo-colouring-page',
-    'colour-blind-simulator',
+    'file-converter',
   ],
   audio: [],
   video: [],
-  text: ['list-cleaner'],
-  json: [],
-  csv: ['list-cleaner', 'csv-excel-tools'],
+  text: [],
+  json: ['file-converter'],
+  csv: ['file-converter'],
 };
 
 
