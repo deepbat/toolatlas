@@ -8,3 +8,6 @@ dist-ssr
 
 # generated at prebuild from pdfjs-dist
 public/pdfjs.worker.min.js
+
+# generated at prebuild from tesseract.js packages
+public/tesseract/
