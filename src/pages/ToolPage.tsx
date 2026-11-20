@@ -67,12 +67,14 @@ export default function ToolPage() {
 
       <header className="mt-6 flex flex-col gap-5 border-b border-line pb-7 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 gap-4">
+          <div className="glyph-pop">
           <ToolGlyph
             tool={tool}
             accent={category.accent}
             className="h-14 w-14 rounded-2xl"
             emojiClassName="text-[28px]"
           />
+          </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-display text-2xl font-semibold tracking-tight text-fg sm:text-3xl">
