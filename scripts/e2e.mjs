@@ -150,29 +150,29 @@ async function resetStorage(keys) {
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
 
-test('Home page renders the hero and catalogue', async () => {
+test('Home page renders the curated hero and drawers', async () => {
   await goto('/');
   const data = await evaluate(`
     ${SET_INPUT}
     return {
-      hero: document.body.innerText.includes('One toolbox for every small job.'),
-      wall: !!document.querySelector('[data-tool-wall]'),
-      chips: document.querySelectorAll('[data-directory-category]').length,
-      closing: document.body.innerText.includes('Made for the small stuff.'),
-      toolCards: document.querySelectorAll('[data-tool-wall] a[href^="/toolatlas/tools/"]').length,
-      sectionLinks: ['pdf', 'image', 'video', 'audio', 'text', 'converter', 'web', 'utilities'].filter(
-        (slug) =>
-          document.querySelector('a[href="/toolatlas/' + slug + '/"]') ||
-          document.querySelector('a[href="/toolatlas/' + slug + '"]')
+      hero: document.body.innerText.includes('Rare, private tools for real-world jobs.'),
+      pill: document.body.innerText.toLowerCase().includes('26 curated tools'),
+      workbench: document.body.innerText.includes('Drop a PDF, photo, or CSV here'),
+      drawers: ['Portal & Print', 'Privacy Shield & Local Files', 'India Desk', 'Clever Studio'].filter(
+        (name) => document.body.innerText.includes(name)
+      ).length,
+      toolCards: document.querySelectorAll('main a[href^="/toolatlas/tools/"]').length,
+      anchors: ['portal', 'privacy', 'india', 'studio'].filter(
+        (id) => document.querySelector('a[href="#drawer-' + id + '"]')
       ).length,
     };
   `);
   check('hero tagline visible', data.hero);
-  check('bento tool wall rendered', data.wall);
-  check('category pills visible (All + 11)', data.chips === 12, `got ${data.chips}`);
-  check('closing statement visible', data.closing);
-  check('tool cards rendered', data.toolCards > 100, `got ${data.toolCards}`);
-  check('all eight sections linked from home', data.sectionLinks === 8, `got ${data.sectionLinks}`);
+  check('curated count pill visible', data.pill);
+  check('drop-first workbench visible', data.workbench);
+  check('all four drawers visible', data.drawers === 4, `got ${data.drawers}`);
+  check('all 26 curated tool cards rendered', data.toolCards === 26, `got ${data.toolCards}`);
+  check('drawer index anchors present', data.anchors === 4, `got ${data.anchors}`);
 });
 
 test('Global search filters the catalogue', async () => {
