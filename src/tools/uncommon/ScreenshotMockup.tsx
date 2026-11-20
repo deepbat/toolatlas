@@ -17,6 +17,7 @@ interface BlurBox {
   y: number;
   w: number;
   h: number;
+  mode: 'pixelate' | 'redact';
 }
 
 
@@ -27,6 +28,7 @@ export default function ScreenshotMockup() {
   const [radius, setRadius] = useState(14);
   const [shadow, setShadow] = useState(32);
   const [blurs, setBlurs] = useState<BlurBox[]>([]);
+  const [mode, setMode] = useState<'pixelate' | 'redact'>('pixelate');
   const [draft, setDraft] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -40,6 +42,18 @@ export default function ScreenshotMockup() {
     setImg(el);
     setBlurs([]);
   };
+
+
+  // Paste a screenshot straight from the clipboard.
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const item = Array.from(e.clipboardData?.items ?? []).find((i) => i.type.startsWith('image/'));
+      const f = item?.getAsFile();
+      if (f) void loadImage(f);
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, []);
 
 
   useEffect(() => {
@@ -86,6 +100,12 @@ export default function ScreenshotMockup() {
       const by = Math.round(padding + box.y * img.naturalHeight);
       const bw = Math.max(8, Math.round(box.w * img.naturalWidth));
       const bh = Math.max(8, Math.round(box.h * img.naturalHeight));
+      if (box.mode === 'redact') {
+        // Solid blackout: the original pixels are destroyed, not just blurred.
+        ctx.fillStyle = '#111111';
+        ctx.fillRect(bx, by, bw, bh);
+        continue;
+      }
       const block = Math.max(10, Math.round(Math.min(bw, bh) / 3));
       const tiny = document.createElement('canvas');
       tiny.width = Math.max(2, Math.round(bw / block));
@@ -128,7 +148,7 @@ export default function ScreenshotMockup() {
             if (files[0]) void loadImage(files[0]);
           }}
           title="Drop a screenshot here"
-          hint="Add clean framing, shadow and optional click-and-drag pixelation"
+          hint="or click to browse, or paste from the clipboard — then frame, blur or black out"
         />
 
 
@@ -169,13 +189,13 @@ export default function ScreenshotMockup() {
 
       {img && (
         <Panel
-          title="2. Preview & optional privacy blur"
-          description="Drag directly on the preview to pixelate sensitive emails, names or numbers."
+          title="2. Preview & privacy boxes"
+          description="Drag on the preview to hide emails, names or numbers. Pixelate keeps context; black out destroys the pixels for good."
           actions={
             <div className="flex gap-2">
               {blurs.length > 0 && (
                 <Button type="button" variant="ghost" size="sm" onClick={() => setBlurs([])}>
-                  Clear blurs ({blurs.length})
+                  Clear boxes ({blurs.length})
                 </Button>
               )}
               <Button type="button" size="sm" onClick={downloadPng}>
@@ -184,6 +204,21 @@ export default function ScreenshotMockup() {
             </div>
           }
         >
+          <div className="mb-3 flex gap-2" role="group" aria-label="Privacy box style">
+            {(['pixelate', 'redact'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                className={[
+                  'border px-3 py-1.5 text-xs font-medium transition',
+                  mode === m ? 'border-accent text-accent' : 'border-line text-muted hover:text-fg',
+                ].join(' ')}
+              >
+                {m === 'pixelate' ? 'Pixelate' : 'Black out (redact)'}
+              </button>
+            ))}
+          </div>
           <div
             className="relative mx-auto w-fit max-w-full cursor-crosshair select-none touch-none"
             onPointerDown={(e) => {
@@ -202,7 +237,7 @@ export default function ScreenshotMockup() {
               const y = Math.min(draft.y0, draft.y1);
               const w = Math.abs(draft.x1 - draft.x0);
               const h = Math.abs(draft.y1 - draft.y0);
-              if (w > 0.01 && h > 0.01) setBlurs((prev) => [...prev, { x, y, w, h }]);
+              if (w > 0.01 && h > 0.01) setBlurs((prev) => [...prev, { x, y, w, h, mode }]);
               setDraft(null);
             }}
           >
