@@ -136,7 +136,15 @@ export default function HomePage() {
     <div ref={rootRef} className="container-page pt-6 pb-24 sm:pt-8 space-y-14">
       {/* Telemetry + Hero on the 3D drafting stage */}
       <section className="stage" data-reveal>
-        <DepthScene />
+        <DepthScene
+          onDrawerActivate={(drawer) => {
+            const target = DRAWERS[drawer];
+            if (!target) return;
+            document
+              .getElementById(`drawer-${target.id}`)
+              ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+        />
         <div className="relative z-10 space-y-6">
         <div className="inline-flex items-center gap-2.5 border border-line bg-surface px-3 py-1.5 font-mono text-[10px] uppercase tracking-label text-muted">
           <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse-dot" />
@@ -169,9 +177,9 @@ export default function HomePage() {
               handleFile(e.dataTransfer.files?.[0]);
             }}
             className={[
-              'group flex cursor-pointer flex-col items-center justify-center border border-dashed px-6 py-8 text-center transition',
+              'tray group flex cursor-pointer flex-col items-center justify-center border border-dashed px-6 py-8 text-center transition',
               dragActive
-                ? 'border-accent bg-accent/10'
+                ? 'tray-open border-accent bg-accent/10'
                 : 'border-line bg-surface hover:border-accent',
             ].join(' ')}
           >
@@ -253,6 +261,7 @@ export default function HomePage() {
               {d.num} {d.title}
             </a>
           ))}
+          <span className="scene-tip text-muted/70">· click a drawer in the scene to jump to it</span>
         </div>
       </div>
 
@@ -315,4 +324,4 @@ export default function HomePage() {
       </div>
     </div>
   );
-}
+            }
