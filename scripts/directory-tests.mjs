@@ -1,5 +1,5 @@
 // Homepage checks for the Nov 2026 curated redesign: the drop-first workbench
-// and the four curated drawers are the hero on every screen size.
+// and current curated sections are the hero on every screen size.
 import {chromium} from '@playwright/test';
 import {spawn} from 'node:child_process';
 import {mkdir} from 'node:fs/promises';
@@ -51,7 +51,7 @@ await page.goto(base+'/');
 const hrefs=await page.locator('main a[href*="/tools/"]').evaluateAll(els=>els.map(a=>a.getAttribute('href')));
 assert.ok(new Set(hrefs).size>=20,'drawers link the curated tool set: '+new Set(hrefs).size);
 for(const href of new Set(hrefs)){const r=await page.goto(base+href.slice(href.indexOf('/tools')));assert.ok(r&&r.ok(),href+' resolves');}
-await page.close();console.log('PASS all 39 drawer cards resolve');n++;}
+await page.close();console.log('PASS all drawer cards resolve');n++;}
 // 5. Drawer anchor navigation jumps to the right section.
 {const page=await browser.newPage({viewport:{width:1280,height:800}});
 await page.goto(base+'/');
