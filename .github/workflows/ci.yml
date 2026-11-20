@@ -68,6 +68,9 @@ jobs:
       - name: Run studio browser tests
         run: npm run test:studio
 
+      - name: Run PDF editor browser regression tests
+        run: npm run test:pdf-editor
+
       - name: Upload browser evidence and report
         if: always()
         uses: actions/upload-artifact@v4
