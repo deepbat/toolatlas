@@ -74,6 +74,7 @@ export const SECTIONS: Section[] = [
     description: 'Count, clean, compare, sort and generate text without leaving the page.',
     icon: 'PenLine',
     accent: 'var(--cat-text)',
+    comingSoon: true,
   },
   {
     id: 'converter',
@@ -129,6 +130,7 @@ const SECTION_BY_CATEGORY: Record<CategoryId, SectionId> = {
 
 /** Individual tools placed outside their catalogue category's default section. */
 const SECTION_OVERRIDES: Record<string, SectionId> = {
+  'file-converter': 'converter',
   'csv-to-json': 'converter',
   'json-to-csv': 'converter',
   'css-gradient': 'web',
