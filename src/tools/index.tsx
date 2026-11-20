@@ -6,6 +6,7 @@ const ImageStudio = lazy(() => import('./studio/ImageStudio'));
 const FinanceTools = lazy(() => import('./studio/FinanceTools'));
 const UtilityApp = lazy(() => import('./expanded/UtilityApp'));
 const OutboxApp = lazy(() => import('./outbox/App'));
+const PdfSuite = lazy(() => import('./pdfsuite/Suite'));
 
 
 /**
@@ -24,6 +25,13 @@ const REGISTRY = {
   'pdf-background': PdfStudio,
   'doc-flatten-print': lazy(() => import('./uncommon/DocFlattenPrint')),
   'pdf-redaction-verify': lazy(() => import('./uncommon/TruePdfRedactor')),
+  'pdf-delete-pages': PdfSuite,
+  'pdf-crop': PdfSuite,
+  'pdf-header-footer': PdfSuite,
+  'pdf-bates': PdfSuite,
+  'pdf-nup': PdfSuite,
+  'pdf-booklet': PdfSuite,
+  'pdf-flatten': PdfSuite,
 
 
   // Privacy Shield (4 kept + 2 new)
