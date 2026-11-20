@@ -156,7 +156,7 @@ test('Home page renders the curated hero and drawers', async () => {
     ${SET_INPUT}
     return {
       hero: document.body.innerText.includes('Rare, private tools for real-world jobs.'),
-      pill: document.body.innerText.toLowerCase().includes('33 curated tools'),
+      pill: document.body.innerText.toLowerCase().includes('39 curated tools'),
       workbench: document.body.innerText.includes('Drop a PDF, photo, or CSV here'),
       drawers: ['Portal & Print', 'Privacy Shield & Local Files', 'India Desk', 'Clever Studio'].filter(
         (name) => document.body.innerText.includes(name)
@@ -171,7 +171,7 @@ test('Home page renders the curated hero and drawers', async () => {
   check('curated count pill visible', data.pill);
   check('drop-first workbench visible', data.workbench);
   check('all four drawers visible', data.drawers === 4, `got ${data.drawers}`);
-  check('all 33 curated tool cards rendered', data.toolCards === 33, `got ${data.toolCards}`);
+  check('all 39 curated tool cards rendered', data.toolCards === 39, `got ${data.toolCards}`);
   check('drawer index anchors present', data.anchors === 4, `got ${data.anchors}`);
 });
 
