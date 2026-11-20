@@ -6,11 +6,10 @@ const ImageStudio = lazy(() => import('./studio/ImageStudio'));
 const FinanceTools = lazy(() => import('./studio/FinanceTools'));
 const UtilityApp = lazy(() => import('./expanded/UtilityApp'));
 const OutboxApp = lazy(() => import('./outbox/App'));
-const DeviceApp = lazy(() => import('./device/App'));
 
 
 /**
- * ToolAtlas 4.0 — Curated 30-Tool Registry (24 signature + 6 uncommon).
+ * ToolAtlas 4.0 — Curated 26-Tool Registry (18 signature + 8 uncommon).
  * Drop this file into `src/tools/index.tsx`.
  */
 const REGISTRY = {
@@ -27,13 +26,13 @@ const REGISTRY = {
   'pdf-redaction-verify': lazy(() => import('./uncommon/TruePdfRedactor')),
 
 
-  // Privacy Shield (6 kept)
+  // Privacy Shield (4 kept + 2 new)
   'id-masker': UtilityApp,
   'photo-pixelator': OutboxApp,
   'remove-exif': lazy(() => import('./new/ExifStripper')),
   'bulk-renamer': lazy(() => import('./new/BulkRenamer')),
-  'list-cleaner': lazy(() => import('./new/ListCleaner')),
-  'csv-excel-tools': FinanceTools,
+  'image-ocr': lazy(() => import('./uncommon/ImageOcr')),
+  'file-converter': lazy(() => import('./uncommon/FileConverter')),
 
 
   // India Desk (6 kept + 1 new)
@@ -46,11 +45,7 @@ const REGISTRY = {
   'cheque-overlay': lazy(() => import('./uncommon/ChequeOverlay')),
 
 
-  // Clever Studio (4 kept + 3 new)
-  'photo-colouring-page': OutboxApp,
-  'colour-blind-simulator': OutboxApp,
-  'split-bill': lazy(() => import('./new/SplitBill')),
-  'screen-ruler': DeviceApp,
+  // Clever Studio (3 new)
   'screenshot-mockup': lazy(() => import('./uncommon/ScreenshotMockup')),
   'subscription-burn': lazy(() => import('./uncommon/SubscriptionBurn')),
   'wifi-poster': lazy(() => import('./uncommon/WifiPoster')),
