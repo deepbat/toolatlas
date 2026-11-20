@@ -912,3 +912,178 @@ input[type=color] {min-height:46px;padding:4px}button {touch-action:manipulation
     transform: none !important;
   }
 }
+
+
+/* ================================================================
+   TOOLATLAS REDESIGN — Midnight / electric blue visual system
+   ================================================================ */
+:root {
+  --bg: 8 13 27;
+  --surface: 15 23 43;
+  --raised: 23 34 59;
+  --line: 115 139 180;
+  --line-a: .2;
+  --fg: 239 245 255;
+  --soft: 190 205 228;
+  --muted: 137 157 190;
+  --accent: 104 135 255;
+  --accent-2: 48 218 218;
+  --accent-soft: 24 35 72;
+  --on-accent: 255 255 255;
+}
+.dark {
+  --bg: 7 11 24;
+  --surface: 14 21 40;
+  --raised: 23 33 58;
+  --line: 122 149 195;
+  --line-a: .2;
+  --fg: 240 246 255;
+  --soft: 190 207 233;
+  --muted: 132 153 190;
+  --accent: 116 145 255;
+  --accent-2: 53 220 220;
+  --accent-soft: 24 35 72;
+  --on-accent: 255 255 255;
+}
+html { background: #080d1b; }
+body {
+  background:
+    radial-gradient(ellipse at 12% 0%, rgba(73,99,210,.19), transparent 32rem),
+    radial-gradient(ellipse at 92% 22%, rgba(31,174,190,.10), transparent 30rem),
+    #080d1b;
+  color: #eff5ff;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: .22;
+  background-image: linear-gradient(rgba(136,160,210,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(136,160,210,.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, black, transparent 82%);
+}
+.container-page { max-width: 1440px; }
+header.sticky {
+  background: rgba(8,13,27,.82) !important;
+  border-color: rgba(125,153,210,.18) !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,.2);
+}
+header.sticky .container-page { height: 76px; }
+header.sticky a[aria-label="ToolAtlas home"] > span:first-child {
+  width: 42px; height: 42px; border-radius: 13px;
+  border: 1px solid rgba(116,145,255,.55);
+  background: linear-gradient(145deg, #263d83, #101a38);
+  box-shadow: 0 8px 24px rgba(75,105,240,.28), inset 0 1px rgba(255,255,255,.2);
+}
+header.sticky a[aria-label="ToolAtlas home"] > span:first-child span {
+  color: #b9c8ff; font-size: 13px;
+}
+header.sticky a[aria-label="ToolAtlas home"] > span:last-child span {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 17px; letter-spacing: -.04em;
+}
+header.sticky nav a { font-size: 13px; font-weight: 600; }
+header.sticky button, header.sticky select, header.sticky a[aria-label="ToolAtlas on GitHub"] {
+  border-radius: 10px; border-color: rgba(135,157,204,.25);
+  background: rgba(255,255,255,.035);
+}
+.stage {
+  position: relative;
+  overflow: hidden;
+  min-height: 490px;
+  padding: clamp(28px,5vw,66px);
+  border: 1px solid rgba(131,157,220,.24);
+  border-radius: 30px;
+  background:
+    radial-gradient(ellipse at 82% 30%, rgba(55,91,225,.28), transparent 35%),
+    radial-gradient(ellipse at 70% 100%, rgba(22,188,199,.13), transparent 40%),
+    linear-gradient(135deg, #111d3b 0%, #0d1730 48%, #101b35 100%);
+  box-shadow: 0 35px 90px rgba(0,0,0,.35), inset 0 1px rgba(255,255,255,.1);
+}
+.stage::after {
+  content: ""; position:absolute; inset:0; pointer-events:none;
+  background: linear-gradient(115deg, transparent 42%, rgba(119,150,255,.08) 60%, transparent 78%);
+}
+.stage > .relative { position:relative; z-index:3; }
+.stage .depth-scene { opacity:.55; }
+.stage .depth-scrim { background: linear-gradient(90deg, rgba(10,18,39,.94) 0%, rgba(10,18,39,.72) 52%, rgba(10,18,39,.15) 100%); }
+.stage .inline-flex.items-center.gap-2\.5 {
+  border-radius: 999px; border-color: rgba(104,135,255,.32);
+  background: rgba(7,14,32,.62); color:#a9c1ff;
+  padding: 9px 15px; letter-spacing:.12em;
+}
+.stage h1 { max-width: 720px; font-size: clamp(42px,6.3vw,76px); line-height:1.02; letter-spacing:-.065em; color:#f4f7ff; }
+.stage h1::first-line { color:#f4f7ff; }
+.stage p { color:#b7c5e0; }
+.stage .tray {
+  min-height: 220px; border-radius: 22px; border:1px dashed rgba(126,158,255,.6);
+  background: linear-gradient(145deg, rgba(31,50,94,.78), rgba(13,26,53,.86));
+  box-shadow: 0 20px 48px rgba(0,0,0,.28), inset 0 1px rgba(255,255,255,.09);
+  backdrop-filter: blur(14px);
+}
+.stage .tray:hover { border-color:#62dce2; background:linear-gradient(145deg,rgba(39,67,119,.88),rgba(13,31,58,.92)); }
+.stage .tray span { color:#e5edff; }
+.stage .tray svg { color:#7e9dff; }
+.stage .tray span.font-mono { color:#8fa7d4; }
+.stage .tray-open { transform: perspective(900px) rotateX(4deg) translateY(-3px); }
+.container-page.pt-6 { padding-top: 38px; }
+.container-page.space-y-14 { gap: 76px; }
+.wall-chips { gap: 9px; }
+.wall-chip {
+  border:1px solid rgba(129,154,207,.24) !important;
+  border-radius:999px !important; padding:9px 15px !important;
+  color:#b7c6e4 !important; background:rgba(17,29,55,.8) !important;
+  box-shadow:0 7px 18px rgba(0,0,0,.16) !important;
+}
+.wall-chip[data-active="true"] {
+  color:#fff !important; border-color:rgba(117,145,255,.75) !important;
+  background:linear-gradient(135deg,#425ed0,#263e91) !important;
+  box-shadow:0 8px 24px rgba(67,91,205,.28) !important;
+}
+.wall-card {
+  border:1px solid rgba(133,157,207,.18) !important;
+  border-radius:19px !important;
+  background:linear-gradient(145deg,rgba(25,39,69,.98),rgba(13,22,43,.98)) !important;
+  box-shadow:0 12px 30px rgba(0,0,0,.23), inset 0 1px rgba(255,255,255,.07) !important;
+}
+.wall-card:hover {
+  border-color:rgba(107,145,255,.62) !important;
+  box-shadow:0 25px 48px rgba(0,0,0,.36),0 0 30px rgba(70,104,224,.14) !important;
+}
+.wall-preview { border-radius:14px !important; }
+.wall-name { color:#eff4ff !important; font-size:15px !important; }
+.wall-desc { color:#9aaccd !important; }
+.wall-meta { color:#8296bd !important; }
+.wall-tag { border-radius:999px !important; }
+.plate {
+  border-radius:18px; border:1px solid rgba(124,151,207,.2);
+  background:linear-gradient(120deg,rgba(21,34,63,.98),rgba(13,23,45,.98));
+  box-shadow:0 14px 32px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.06);
+}
+.plate h2 { color:#eff4ff; }
+.plate p { color:#9fb0d0; }
+.card-3d {
+  border-radius:17px; border-color:rgba(130,155,210,.18) !important;
+  background:linear-gradient(145deg,rgba(23,36,66,.98),rgba(13,22,43,.98)) !important;
+  box-shadow:0 12px 28px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.05);
+}
+.card-3d h3 { color:#eef3ff; }
+.card-3d p { color:#9aaccd; }
+footer { background:rgba(8,14,29,.82) !important; border-color:rgba(129,154,207,.18) !important; }
+footer p, footer li { color:#94a8cc; }
+footer h3 { color:#7e9dff !important; }
+input,select,textarea { color-scheme:dark; }
+@media (max-width: 640px) {
+  .container-page.pt-6 { padding-top:18px; }
+  .stage { min-height:0; padding:24px 18px; border-radius:22px; }
+  .stage h1 { font-size:43px; }
+  .stage .depth-scene { opacity:.25; }
+  .stage .depth-scrim { background:linear-gradient(180deg,rgba(10,18,39,.5),rgba(10,18,39,.92) 70%); }
+  header.sticky .container-page { height:64px; }
+  .wall-card { padding:10px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage *, .wall-card, .wall-chip { transition-duration:.01ms !important; animation-duration:.01ms !important; }
+}
