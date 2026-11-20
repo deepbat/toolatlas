@@ -24,12 +24,11 @@ const test = (name: string, fn: () => void) => {
   console.log("ok " + name);
 };
 
-test("curated catalogue keeps only screen-ruler from the device section", () => {
+test("curated catalogue keeps no device-section tools after the Nov 2026 trim", () => {
   assert.equal(new Set(DEVICE_TOOLS.map((t) => t.id)).size, DEVICE_TOOLS.length);
   const curated = DEVICE_TOOLS.filter((t) => TOOL_MAP[t.id]);
-  assert.deepEqual(curated.map((t) => t.id), ["screen-ruler"]);
-  assert.equal(TOOL_MAP["screen-ruler"].category, "device");
-  assert.ok(TOOL_MAP["screen-ruler"].keywords.length >= 4);
+  assert.deepEqual(curated.map((t) => t.id), []);
+  assert.equal(TOOL_MAP["screen-ruler"], undefined);
 });
 
 test("morse encodes SOS and round-trips mixed text", () => {
