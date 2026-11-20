@@ -2,10 +2,18 @@ import { useEffect, useRef, useState } from 'react';
 
 /* Hero depth scene: a static layered "drafting paper" backdrop that is always
    there (and is the whole experience under prefers-reduced-motion or without
-   WebGL), upgraded after first paint to the interactive WebGL drawer cabinet. */
-export default function DepthScene() {
+   WebGL), upgraded after first paint to the interactive WebGL drawer cabinet.
+   When onDrawerActivate is given, the cabinet drawers are clickable and report
+   the activated drawer index. */
+export default function DepthScene({
+  onDrawerActivate,
+}: {
+  onDrawerActivate?: (drawer: number) => void;
+}) {
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawerRef = useRef(onDrawerActivate);
+  drawerRef.current = onDrawerActivate;
   const [live, setLive] = useState(false);
 
   useEffect(() => {
@@ -22,7 +30,9 @@ export default function DepthScene() {
       import('../lib/scene3d')
         .then((mod) => {
           if (cancelled || !canvasRef.current) return;
-          const cleanup = mod.startScene(canvasRef.current);
+          const cleanup = mod.startScene(canvasRef.current, {
+            onDrawer: (drawer) => drawerRef.current?.(drawer),
+          });
           if (cleanup) {
             stop = cleanup;
             setLive(true);
