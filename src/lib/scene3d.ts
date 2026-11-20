@@ -518,4 +518,4 @@ export function startScene(canvas: HTMLCanvasElement): (() => void) | null {
     const ext = gl.getExtension('WEBGL_lose_context');
     ext?.loseContext();
   };
-      }
+}
