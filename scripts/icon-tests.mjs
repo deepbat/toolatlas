@@ -40,7 +40,7 @@ console.log('PASS category + browse pictorial cards');n++;
 for(const [width,height] of [[393,852],[1280,900]]){
   await page.setViewportSize({width,height});
   await page.goto(base+'/');
-  await page.getByRole('heading',{name:'Rare, private tools for real-world jobs.',exact:true}).waitFor();
+  await page.getByRole('heading',{name:'Useful tools. Zero friction.',exact:true}).waitFor();
   await page.evaluate(()=>document.fonts.ready);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'no horizontal overflow at '+width);
   await page.waitForTimeout(500);
