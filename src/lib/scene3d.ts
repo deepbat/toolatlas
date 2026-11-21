@@ -134,7 +134,7 @@ export function startScene(canvas: HTMLCanvasElement, options: SceneOptions = {}
 
   const front = new THREE.Mesh(
     new THREE.PlaneGeometry(2.2, 2.2),
-    new THREE.MeshBasicMaterial({ map: labelTexture('ATLAS', 'TOOLS FOR EVERYDAY WORK', '#82a0ff') }),
+    new THREE.MeshBasicMaterial({ map: labelTexture('TOOLKIT', 'TOOLS FOR EVERYDAY WORK', '#82a0ff') }),
   );
   front.position.z = 1.035;
   core.add(front);
@@ -319,4 +319,4 @@ export function startScene(canvas: HTMLCanvasElement, options: SceneOptions = {}
     renderer.dispose();
   };
   return cleanup;
-        }
+}
