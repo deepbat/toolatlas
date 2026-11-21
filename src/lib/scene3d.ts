@@ -49,7 +49,7 @@ function makeCard(title: string, subtitle: string, accent: string, width = 1.72,
   const body = new THREE.Mesh(
     new THREE.BoxGeometry(width, height, 0.12),
     new THREE.MeshPhysicalMaterial({
-      color: '#142342', metalness: 0.48, roughness: 0.26,
+      color: '#22376a', metalness: 0.45, roughness: 0.28, emissive: '#101f48', emissiveIntensity: 0.5,
       clearcoat: 1, clearcoatRoughness: 0.18,
     }),
   );
@@ -85,16 +85,16 @@ export function startScene(canvas: HTMLCanvasElement, options: SceneOptions = {}
   camera.position.set(0.1, 0.15, 11.8);
   camera.lookAt(0.35, 0, 0);
 
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.7));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth < 640 ? 1.5 : 1.7));
   renderer.setClearColor(0x000000, 0);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
+  renderer.toneMappingExposure = 1.4;
 
-  scene.add(new THREE.HemisphereLight(0xa9c8ff, 0x10182c, 2.0));
-  const key = new THREE.DirectionalLight(0xe5edff, 4.2);
+  scene.add(new THREE.HemisphereLight(0xa9c8ff, 0x1a2848, 2.6));
+  const key = new THREE.DirectionalLight(0xe5edff, 5);
   key.position.set(-3, 6, 7);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
@@ -118,7 +118,7 @@ export function startScene(canvas: HTMLCanvasElement, options: SceneOptions = {}
   const core = new THREE.Group();
   world.add(core);
   const coreMat = new THREE.MeshPhysicalMaterial({
-    color: '#243d77', metalness: 0.58, roughness: 0.22,
+    color: '#2f4d96', metalness: 0.5, roughness: 0.24, emissive: '#16306e', emissiveIntensity: 0.55,
     clearcoat: 1, clearcoatRoughness: 0.12,
   });
   const coreGeometry = new THREE.BoxGeometry(2.55, 2.55, 2.05);
@@ -179,14 +179,14 @@ export function startScene(canvas: HTMLCanvasElement, options: SceneOptions = {}
 
   // Thick torus rings and a smaller satellite ring provide depth and motion cues.
   const ringA = new THREE.Mesh(
-    new THREE.TorusGeometry(3.65, 0.035, 12, 180),
-    new THREE.MeshStandardMaterial({ color: accent, metalness: 0.72, roughness: 0.24, emissive: accent, emissiveIntensity: 0.38 }),
+    new THREE.TorusGeometry(3.65, 0.06, 12, 180),
+    new THREE.MeshStandardMaterial({ color: accent, metalness: 0.72, roughness: 0.24, emissive: accent, emissiveIntensity: 0.7 }),
   );
   ringA.rotation.set(1.13, 0.2, 0.28);
   world.add(ringA);
   const ringB = new THREE.Mesh(
-    new THREE.TorusGeometry(3.12, 0.022, 10, 160),
-    new THREE.MeshStandardMaterial({ color: accent2, metalness: 0.65, roughness: 0.22, emissive: accent2, emissiveIntensity: 0.5 }),
+    new THREE.TorusGeometry(3.12, 0.045, 10, 160),
+    new THREE.MeshStandardMaterial({ color: accent2, metalness: 0.65, roughness: 0.22, emissive: accent2, emissiveIntensity: 0.85 }),
   );
   ringB.rotation.set(0.4, 1.08, -0.35);
   world.add(ringB);
@@ -203,14 +203,14 @@ export function startScene(canvas: HTMLCanvasElement, options: SceneOptions = {}
   particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   const particles = new THREE.Points(
     particleGeometry,
-    new THREE.PointsMaterial({ color: 0x9bb4ff, size: 0.025, transparent: true, opacity: 0.65, sizeAttenuation: true }),
+    new THREE.PointsMaterial({ color: 0x9bb4ff, size: 0.045, transparent: true, opacity: 0.9, sizeAttenuation: true }),
   );
   scene.add(particles);
 
   const floor = new THREE.GridHelper(22, 36, 0x4566bd, 0x26375f);
   floor.position.set(1.5, -2.75, -1.5);
   (floor.material as THREE.Material).transparent = true;
-  (floor.material as THREE.Material).opacity = 0.2;
+  (floor.material as THREE.Material).opacity = 0.38;
   scene.add(floor);
 
   const raycaster = new THREE.Raycaster();
@@ -222,6 +222,7 @@ export function startScene(canvas: HTMLCanvasElement, options: SceneOptions = {}
   let scroll = 0;
   let hovered = -1;
   let raf = 0;
+  let baseY = 0;
   let visible = true;
   let disposed = false;
   const clock = new THREE.Clock();
@@ -231,9 +232,10 @@ export function startScene(canvas: HTMLCanvasElement, options: SceneOptions = {}
     const height = Math.max(1, canvas.clientHeight);
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
-    camera.position.z = width < 640 ? 14.5 : width < 900 ? 13.2 : 11.8;
-    world.scale.setScalar(width < 640 ? 0.58 : width < 900 ? 0.82 : 1);
-    world.position.x = width < 640 ? 0.15 : width < 900 ? 1.35 : 2.05;
+    camera.position.z = width < 640 ? 13.5 : width < 900 ? 13.2 : 11.8;
+    world.scale.setScalar(width < 640 ? 0.74 : width < 900 ? 0.95 : 1.12);
+    baseY = width < 640 ? 2.4 : 0;
+    world.position.x = width < 640 ? 0.1 : width < 900 ? 1.35 : 2.05;
     camera.updateProjectionMatrix();
   };
   const onPointerMove = (event: PointerEvent) => {
@@ -273,7 +275,7 @@ export function startScene(canvas: HTMLCanvasElement, options: SceneOptions = {}
     const elapsed = clock.getElapsedTime();
     world.rotation.y += ((targetX * 0.13 + Math.sin(elapsed * 0.18) * 0.055) - world.rotation.y) * 0.025;
     world.rotation.x += ((-targetY * 0.07 + scroll * 0.035) - world.rotation.x) * 0.025;
-    world.position.y = Math.sin(elapsed * 0.55) * 0.12;
+    world.position.y = baseY + Math.sin(elapsed * 0.55) * 0.12;
     core.rotation.y = Math.sin(elapsed * 0.22) * 0.08;
     core.rotation.x = Math.cos(elapsed * 0.2) * 0.035;
     ringA.rotation.z += 0.0018;
@@ -319,4 +321,4 @@ export function startScene(canvas: HTMLCanvasElement, options: SceneOptions = {}
     renderer.dispose();
   };
   return cleanup;
-}
+                     }
