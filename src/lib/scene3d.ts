@@ -30,7 +30,7 @@ function labelTexture(title: string, subtitle: string, accent: string): THREE.Ca
   ctx.fillRect(48, 54, 58, 8);
   ctx.font = '600 27px Arial';
   ctx.fillStyle = '#9fb4e5';
-  ctx.fillText('TOOLATLAS / WORKSPACE', 48, 112);
+  ctx.fillText("DEEPAK'S TOOL / WORKSPACE", 48, 112);
   ctx.font = '700 72px Arial';
   ctx.fillStyle = '#f5f7ff';
   ctx.fillText(title, 48, 220);
@@ -319,4 +319,4 @@ export function startScene(canvas: HTMLCanvasElement, options: SceneOptions = {}
     renderer.dispose();
   };
   return cleanup;
-}
+        }
