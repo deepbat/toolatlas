@@ -963,21 +963,21 @@ header.sticky {
   box-shadow: 0 12px 40px rgba(0,0,0,.2);
 }
 header.sticky .container-page { height: 76px; }
-header.sticky a[aria-label="ToolAtlas home"] > span:first-child {
+header.sticky a[aria-label="Deepak's Tool home"] > span:first-child {
   width: 42px; height: 42px; border-radius: 13px;
   border: 1px solid rgba(116,145,255,.55);
   background: linear-gradient(145deg, #263d83, #101a38);
   box-shadow: 0 8px 24px rgba(75,105,240,.28), inset 0 1px rgba(255,255,255,.2);
 }
-header.sticky a[aria-label="ToolAtlas home"] > span:first-child span {
+header.sticky a[aria-label="Deepak's Tool home"] > span:first-child span {
   color: #b9c8ff; font-size: 13px;
 }
-header.sticky a[aria-label="ToolAtlas home"] > span:last-child span {
+header.sticky a[aria-label="Deepak's Tool home"] > span:last-child span {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 17px; letter-spacing: -.04em;
 }
 header.sticky nav a { font-size: 13px; font-weight: 600; }
-header.sticky button, header.sticky select, header.sticky a[aria-label="ToolAtlas on GitHub"] {
+header.sticky button, header.sticky select, header.sticky a[aria-label="Deepak's Tool on GitHub"] {
   border-radius: 10px; border-color: rgba(135,157,204,.25);
   background: rgba(255,255,255,.035);
 }
@@ -1257,13 +1257,13 @@ header.sticky {
   box-shadow: 0 8px 28px rgb(15 23 42 / .06) !important;
 }
 .dark header.sticky { box-shadow: 0 8px 28px rgb(0 0 0 / .22) !important; }
-header.sticky a[aria-label="ToolAtlas home"] > span:first-child {
+header.sticky a[aria-label="Deepak's Tool home"] > span:first-child {
   border-radius: 11px !important;
   background: rgb(var(--accent) / .12) !important;
   border-color: rgb(var(--accent) / .38) !important;
   box-shadow: none !important;
 }
-header.sticky a[aria-label="ToolAtlas home"] > span:first-child span { color: rgb(var(--accent)) !important; }
+header.sticky a[aria-label="Deepak's Tool home"] > span:first-child span { color: rgb(var(--accent)) !important; }
 .stage {
   min-height: 620px !important;
   border: 1px solid rgb(var(--line) / .32) !important;
