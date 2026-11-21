@@ -1158,80 +1158,213 @@ input,select,textarea { color-scheme:dark; }
 }
 
 
-/* Final theme override: keep all legacy redesign layers theme-aware. */
+/* Final theme system: neutral surfaces, accessible contrast, restrained teal accent. */
 :root {
-  --bg: 250 248 218;
-  --surface: 255 253 231;
-  --raised: 242 239 196;
-  --line: 42 91 55;
-  --line-a: .18;
-  --fg: 35 91 48;
-  --soft: 49 105 59;
-  --muted: 75 119 78;
-  --accent: 42 132 65;
-  --accent-2: 112 160 79;
-  --accent-soft: 230 241 207;
-  --on-accent: 255 255 235;
-  --wall-bg: 250 248 218;
-  --wall-card: 255 253 231;
-  --wall-ink: 35 91 48;
-  --wall-muted: 75 119 78;
-  --wall-blue: 42 132 65;
+  color-scheme: light;
+  --bg: 247 248 250;
+  --surface: 255 255 255;
+  --raised: 238 242 245;
+  --line: 148 163 184;
+  --line-a: .24;
+  --fg: 31 41 55;
+  --soft: 71 85 105;
+  --muted: 100 116 139;
+  --accent: 13 148 136;
+  --accent-2: 45 212 191;
+  --accent-soft: 204 251 241;
+  --on-accent: 255 255 255;
+  --danger: 220 70 70;
+  --warn: 180 120 30;
+  --cat-calculators: 13 148 136;
+  --cat-converters: 8 145 178;
+  --cat-date: 79 70 229;
+  --cat-finance: 5 150 105;
+  --cat-text: 71 85 105;
+  --cat-pdf: 190 80 65;
+  --cat-image: 124 88 190;
+  --cat-file: 71 105 120;
+  --cat-productivity: 13 148 136;
+  --cat-developer: 59 130 246;
+  --cat-internet: 8 145 178;
+  --cat-generators: 124 88 190;
+  --cat-misc: 100 116 139;
+  --wall-bg: 247 248 250;
+  --wall-card: 255 255 255;
+  --wall-ink: 31 41 55;
+  --wall-muted: 100 116 139;
+  --wall-blue: 13 148 136;
 }
 .dark {
-  --bg: 13 39 25;
-  --surface: 20 53 33;
-  --raised: 29 68 42;
-  --line: 222 224 117;
-  --line-a: .18;
-  --fg: 248 239 119;
-  --soft: 235 226 127;
-  --muted: 207 202 116;
-  --accent: 167 220 112;
-  --accent-2: 220 218 104;
-  --accent-soft: 45 76 43;
-  --on-accent: 16 43 25;
-  --wall-bg: 13 39 25;
-  --wall-card: 20 53 33;
-  --wall-ink: 248 239 119;
-  --wall-muted: 207 202 116;
-  --wall-blue: 167 220 112;
+  color-scheme: dark;
+  --bg: 15 23 32;
+  --surface: 24 33 45;
+  --raised: 34 45 59;
+  --line: 100 116 139;
+  --line-a: .28;
+  --fg: 226 232 240;
+  --soft: 203 213 225;
+  --muted: 148 163 184;
+  --accent: 45 212 191;
+  --accent-2: 94 234 212;
+  --accent-soft: 19 78 74;
+  --on-accent: 8 30 29;
+  --danger: 248 113 113;
+  --warn: 251 191 36;
+  --cat-calculators: 94 234 212;
+  --cat-converters: 103 232 249;
+  --cat-date: 165 180 252;
+  --cat-finance: 110 231 183;
+  --cat-text: 203 213 225;
+  --cat-pdf: 252 165 165;
+  --cat-image: 196 181 253;
+  --cat-file: 148 197 207;
+  --cat-productivity: 94 234 212;
+  --cat-developer: 147 197 253;
+  --cat-internet: 103 232 249;
+  --cat-generators: 196 181 253;
+  --cat-misc: 203 213 225;
+  --wall-bg: 15 23 32;
+  --wall-card: 24 33 45;
+  --wall-ink: 226 232 240;
+  --wall-muted: 148 163 184;
+  --wall-blue: 45 212 191;
 }
 html { background: rgb(var(--bg)) !important; }
 body {
-  background: rgb(var(--bg)) !important;
+  background:
+    radial-gradient(ellipse at 12% 0%, rgb(var(--accent) / .055), transparent 34rem),
+    rgb(var(--bg)) !important;
   color: rgb(var(--fg)) !important;
 }
 body::before {
-  background-image: linear-gradient(rgb(var(--accent-2) / .07) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--accent-2) / .07) 1px, transparent 1px) !important;
+  opacity: .12;
+  background-image:
+    linear-gradient(rgb(var(--line) / .12) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--line) / .12) 1px, transparent 1px) !important;
 }
-body :is(h1,h2,h3,h4,h5,h6,p,a,span,li,label,small,strong,em,button,input,textarea,select,summary,dt,dd,th,td) {
+body :is(input, textarea, select) {
   color: rgb(var(--fg)) !important;
-}
-body :is(input,textarea,select) {
   background-color: rgb(var(--surface)) !important;
-  border-color: rgb(var(--line) / .3) !important;
+  border-color: rgb(var(--line) / .34) !important;
+  color-scheme: inherit;
 }
-body :is(input,textarea)::placeholder { color: rgb(var(--muted)) !important; }
+body :is(input, textarea)::placeholder { color: rgb(var(--muted)) !important; }
+a { text-decoration-color: rgb(var(--accent) / .35); }
+:focus-visible { outline-color: rgb(var(--accent)) !important; }
 header.sticky {
-  background: rgb(var(--surface) / .96) !important;
-  border-color: rgb(var(--line) / .24) !important;
+  background: rgb(var(--surface) / .92) !important;
+  border-color: rgb(var(--line) / .28) !important;
+  box-shadow: 0 8px 28px rgb(15 23 42 / .06) !important;
 }
+.dark header.sticky { box-shadow: 0 8px 28px rgb(0 0 0 / .22) !important; }
 header.sticky a[aria-label="ToolAtlas home"] > span:first-child {
+  border-radius: 11px !important;
   background: rgb(var(--accent) / .12) !important;
-  border-color: rgb(var(--accent) / .55) !important;
+  border-color: rgb(var(--accent) / .38) !important;
   box-shadow: none !important;
 }
+header.sticky a[aria-label="ToolAtlas home"] > span:first-child span { color: rgb(var(--accent)) !important; }
 .stage {
-  background: linear-gradient(145deg, rgb(var(--surface)), rgb(var(--raised))) !important;
-  border-color: rgb(var(--line) / .28) !important;
+  min-height: 620px !important;
+  border: 1px solid rgb(var(--line) / .32) !important;
+  border-radius: 26px !important;
+  background:
+    radial-gradient(ellipse at 82% 40%, rgb(var(--accent) / .10), transparent 42%),
+    linear-gradient(145deg, rgb(var(--surface)), rgb(var(--raised))) !important;
+  box-shadow: 0 18px 50px rgb(15 23 42 / .06), inset 0 1px rgb(255 255 255 / .65) !important;
 }
+.dark .stage {
+  background:
+    radial-gradient(ellipse at 82% 40%, rgb(var(--accent) / .12), transparent 42%),
+    linear-gradient(145deg, rgb(var(--surface)), rgb(var(--bg))) !important;
+  box-shadow: 0 24px 60px rgb(0 0 0 / .24), inset 0 1px rgb(255 255 255 / .035) !important;
+}
+.stage::after { background: linear-gradient(115deg, transparent 40%, rgb(var(--accent) / .035) 60%, transparent 78%) !important; }
+.stage .depth-scene { opacity: .42 !important; }
+.dark .stage .depth-scene { opacity: .68 !important; }
+.stage .depth-scrim {
+  background: linear-gradient(90deg, rgb(var(--surface) / .96) 0%, rgb(var(--surface) / .84) 43%, rgb(var(--surface) / .18) 100%) !important;
+}
+@media (max-width: 760px) {
+  .stage .depth-scrim {
+    background: linear-gradient(180deg, rgb(var(--surface) / .22), rgb(var(--surface) / .66) 42%, rgb(var(--surface) / .98) 82%) !important;
+  }
+  .stage > .relative { padding-top: 135px; }
+}
+.stage h1, .stage h1::first-line { color: rgb(var(--fg)) !important; text-shadow: none !important; }
+.stage p { color: rgb(var(--soft)) !important; }
+.stage .inline-flex.items-center.gap-2\.5 {
+  color: rgb(var(--accent)) !important;
+  border: 1px solid rgb(var(--accent) / .25) !important;
+  background: rgb(var(--accent) / .08) !important;
+  box-shadow: none !important;
+}
+.stage .tray {
+  border: 1px solid rgb(var(--accent) / .38) !important;
+  border-bottom: 3px solid rgb(var(--accent) / .48) !important;
+  border-radius: 18px !important;
+  background: linear-gradient(145deg, rgb(var(--surface) / .96), rgb(var(--raised) / .96)) !important;
+  box-shadow: 0 16px 34px rgb(15 23 42 / .08), inset 0 1px rgb(255 255 255 / .7) !important;
+}
+.dark .stage .tray {
+  background: linear-gradient(145deg, rgb(var(--raised) / .94), rgb(var(--surface) / .96)) !important;
+  box-shadow: 0 18px 38px rgb(0 0 0 / .28), inset 0 1px rgb(255 255 255 / .06) !important;
+}
+.stage .tray span { color: rgb(var(--fg)) !important; }
+.stage .tray span.font-mono { color: rgb(var(--muted)) !important; }
+.stage .tray svg { color: rgb(var(--accent)) !important; }
 .wall-page { background-color: rgb(var(--wall-bg)) !important; }
-.wall-card,.wall-chip {
+.wall-page { background-image: radial-gradient(rgb(var(--line) / .16) 1px, transparent 1px) !important; }
+.wall-chip {
+  border: 1px solid rgb(var(--line) / .28) !important;
+  color: rgb(var(--soft)) !important;
   background: rgb(var(--wall-card)) !important;
-  border-color: rgb(var(--line) / .22) !important;
+  box-shadow: 0 2px 8px rgb(15 23 42 / .045) !important;
 }
-.wall-chip[data-active='true'] {
+.wall-chip:hover { color: rgb(var(--accent)) !important; }
+.wall-chip[data-active="true"] {
+  color: rgb(var(--on-accent)) !important;
+  border-color: rgb(var(--accent)) !important;
   background: rgb(var(--accent)) !important;
+  box-shadow: 0 6px 16px rgb(var(--accent) / .18) !important;
 }
-.dark .wall-chip[data-active='true'] { color: rgb(var(--on-accent)) !important; }
+.wall-card {
+  border: 1px solid rgb(var(--line) / .22) !important;
+  border-radius: 18px !important;
+  background: rgb(var(--wall-card)) !important;
+  box-shadow: 0 8px 24px rgb(15 23 42 / .055), inset 0 1px rgb(255 255 255 / .75) !important;
+}
+.dark .wall-card {
+  background: rgb(var(--wall-card)) !important;
+  box-shadow: 0 12px 28px rgb(0 0 0 / .22), inset 0 1px rgb(255 255 255 / .035) !important;
+}
+.wall-card:hover {
+  border-color: rgb(var(--accent) / .45) !important;
+  box-shadow: 0 18px 34px rgb(15 23 42 / .10), 0 0 22px rgb(var(--accent) / .07) !important;
+}
+.dark .wall-card:hover { box-shadow: 0 20px 36px rgb(0 0 0 / .32), 0 0 22px rgb(var(--accent) / .10) !important; }
+.wall-name { color: rgb(var(--wall-ink)) !important; }
+.wall-desc, .wall-meta { color: rgb(var(--wall-muted)) !important; }
+.plate, .card-3d {
+  border-color: rgb(var(--line) / .28) !important;
+  background: linear-gradient(145deg, rgb(var(--surface)), rgb(var(--raised))) !important;
+  box-shadow: 0 10px 26px rgb(15 23 42 / .055), inset 0 1px rgb(255 255 255 / .55) !important;
+}
+.dark .plate, .dark .card-3d {
+  box-shadow: 0 12px 28px rgb(0 0 0 / .2), inset 0 1px rgb(255 255 255 / .035) !important;
+}
+.plate h2, .card-3d h3 { color: rgb(var(--fg)) !important; }
+.plate p, .card-3d p { color: rgb(var(--soft)) !important; }
+footer {
+  background: rgb(var(--surface) / .82) !important;
+  border-color: rgb(var(--line) / .26) !important;
+}
+footer p, footer li { color: rgb(var(--muted)) !important; }
+footer h3 { color: rgb(var(--accent)) !important; }
+@media (max-width: 640px) {
+  .stage { min-height: 0 !important; padding: 24px 18px !important; border-radius: 22px !important; }
+  .stage h1 { font-size: clamp(42px, 11vw, 58px) !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage *, .wall-card, .wall-chip { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
