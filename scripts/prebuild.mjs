@@ -18,4 +18,8 @@ for (const variant of ['relaxedsimd-lstm', 'simd-lstm', 'lstm']) {
 }
 copyFileSync('node_modules/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz', out('tesseract/eng.traineddata.gz'));
 
-console.log('prebuild: copied pdfjs worker and tesseract assets to public/');
+// qpdf engine (Protect / Unlock / Repair PDF tools), loaded lazily from <base>/qpdf/.
+mkdirSync(out('qpdf'), { recursive: true });
+copyFileSync('node_modules/@neslinesli93/qpdf-wasm/dist/qpdf.wasm', out('qpdf/qpdf.wasm'));
+
+console.log('prebuild: copied pdfjs worker, tesseract and qpdf assets to public/');
