@@ -45,6 +45,7 @@ async function step(name, fn) {
   ws1['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }];
   ws1['!cols'] = [{ wpx: 140 }, { wpx: 80 }, { wpx: 80 }];
   XLSX.utils.book_append_sheet(wb, ws1, 'बिक्री Data');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Second', 'sheet']]), 'Second');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([[]]), 'Empty');
   const xlsxBuf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 async function convert(tool, file, mime, buf, out) {
