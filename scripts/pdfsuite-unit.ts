@@ -186,9 +186,10 @@ console.log('PASS n-up');
   const empty = sheetToTable({});
   assert.ok(empty.includes('empty'), 'empty sheet handled');
   const tables = workbookToTables(['S1', 'S2'], { S1: ws, S2: {} });
-  assert.equal(tables.length, 2);
-  assert.equal(tables[1].name, 'S2');
-  assert.ok(tables[1].html.includes('empty'), 'sheet structure preserved per sheet');
+  assert.equal(tables.length, 1, 'an empty worksheet adds no page');
+  assert.equal(tables[0].name, 'S1');
+  assert.equal(workbookToTables(['A', 'B'], { A: ws, B: ws }).length, 2, 'every worksheet with cells keeps its own table');
+  assert.throws(() => workbookToTables(['E1', 'E2'], { E1: {}, E2: {} }), /empty/, 'all-empty workbook is an error');
   console.log('PASS xlsx sheet to table');
 }
 console.log('All PDF suite ops passed.');
