@@ -121,6 +121,7 @@ jobs:
           path: installer-test
       - name: Functional test in the desktop window (test-only build)
         shell: pwsh
+        timeout-minutes: 10
         run: |
           Get-Process deepaks-tool -ErrorAction SilentlyContinue | Stop-Process -Force
           $exe = Get-ChildItem installer-test -Filter *.exe | Select-Object -First 1
