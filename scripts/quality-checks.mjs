@@ -15,7 +15,7 @@ await check('runtime dependencies use permissive licences', async () => {
   }
 });
 await check('no new runtime dependencies beyond the reviewed list', () => {
-  const reviewed = ['@fontsource/dm-sans', '@fontsource/ibm-plex-mono', '@fontsource/space-grotesk', 'dompurify', 'lucide-react', 'marked', 'pdf-lib', 'pdfjs-dist', 'qrcode', 'react', 'react-dom', 'react-router-dom', 'tesseract.js', 'three', '@neslinesli93/qpdf-wasm', 'docx-preview', 'jszip', 'xlsx', 'html2canvas'];
+  const reviewed = ['@fontsource/dm-sans', '@fontsource/ibm-plex-mono', '@fontsource/space-grotesk', 'dompurify', 'lucide-react', 'marked', 'pdf-lib', 'pdfjs-dist', 'qrcode', 'react', 'react-dom', 'react-router-dom', 'tesseract.js', 'three', '@neslinesli93/qpdf-wasm', 'docx-preview', 'jszip', 'xlsx'];
   const extra = Object.keys(pkg.dependencies).filter((d) => !reviewed.includes(d));
   assert.deepEqual(extra, [], 'review the licence and size of: ' + extra.join(', '));
 });
