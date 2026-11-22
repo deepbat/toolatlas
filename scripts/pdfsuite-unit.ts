@@ -1,7 +1,7 @@
 // Unit tests for the pure PDF suite operations.
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import assert from 'node:assert/strict';
-import { booklet, bookletOrder, cropPages, deletePages, flattenForms, nUp, parsePageRanges, reorderPages, rotatePages, stampText, watermark } from '../src/tools/pdfsuite/ops';
+import { booklet, bookletOrder, cropPages, deletePages, flattenForms, nUp, parsePageRanges, reorderPages, rotatePages, signPdf, stampText, watermark } from '../src/tools/pdfsuite/ops';
 
 async function make(n: number, size: [number, number] = [595, 842]) {
   const d = await PDFDocument.create();
@@ -94,5 +94,15 @@ console.log('PASS n-up');
   await assert.rejects(reorderPages(sized, '  '));
   await assert.rejects(reorderPages(sized, '2,x'));
   console.log('PASS reorder pages');
+}
+{
+  const png = new Uint8Array(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64'));
+  const input = await make(2);
+  const out = await signPdf(input, { page: 2, png, width: 140, height: 60, x: 'right', y: 'bottom' });
+  assert.equal(await count(out), 2);
+  assert.ok(out.length > input.length);
+  await assert.rejects(signPdf(input, { page: 9, png, width: 140, height: 60, x: 'left', y: 'top' }));
+  await assert.rejects(signPdf(input, { page: 1, png, width: 4, height: 4, x: 'left', y: 'top' }));
+  console.log('PASS sign pdf');
 }
 console.log('All PDF suite ops passed.');
