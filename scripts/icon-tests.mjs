@@ -24,7 +24,7 @@ for(const t of (catalog.tools||catalog)){
   const text=await page.locator('h1').evaluate(h=>(h.closest('header')||h.parentElement).textContent);
   assert.ok(/[\u20B9\u2190-\u2BFF\u{1F000}-\u{1FAFF}\u{FE0F}]/u.test(text),t.id+' header has no pictorial glyph');
 }
-console.log('PASS all 47 tool pages show their glyph');n++;
+console.log('PASS all 48 tool pages show their glyph');n++;
 // 3. Category and browse pages render pictorial cards for curated tools.
 await page.goto(base+'/category/generators/');
 await page.locator('h1').waitFor();
@@ -34,7 +34,7 @@ await page.screenshot({path:'test-artifacts/icons/category-generators-393.png'})
 await page.goto(base+'/tools/');
 await page.locator('h1').waitFor();
 const browseCards=await page.locator('main a[href*="/tools/"]').count();
-assert.equal(browseCards,47,'browse page lists all 47 curated tools');
+assert.equal(browseCards,48,'browse page lists all 48 curated tools');
 console.log('PASS category + browse pictorial cards');n++;
 // 4. Phone and desktop hero screenshots of the new curated homepage.
 for(const [width,height] of [[393,852],[1280,900]]){
