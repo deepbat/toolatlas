@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Minimal capability: the app only shows its own bundled pages.",
+  "description": "Minimal capability: the app only shows its own bundled pages. Only the main window may call the PDF save command.",
   "windows": ["main"],
-  "permissions": []
+  "permissions": ["allow-save-print-pdf"]
 }
