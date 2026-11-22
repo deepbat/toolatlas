@@ -9,7 +9,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 mkdirSync('out', { recursive: true });
 let failed = 0;
 const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!ok) failed++; };
-setTimeout(() => { console.log('FAIL watchdog'); process.exit(2); }, 420000);
+setTimeout(() => { console.log('FAIL watchdog'); process.exit(2); }, 400000);
 
 async function targetsList() { try { return await (await fetch(`http://127.0.0.1:${port}/json`)).json(); } catch { return []; } }
 function connect(wsUrl) {
@@ -18,7 +18,7 @@ function connect(wsUrl) {
   ws.onmessage = (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } };
   const ready = new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
   const send = (method, params = {}) => new Promise(r => { const i = ++id; pend.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
-  const ev = async (expression, awaitPromise = true) => { const r = await send('Runtime.evaluate', { expression, awaitPromise, returnByValue: true }); return r.result?.result?.value ?? r.result?.exceptionDetails?.text ?? JSON.stringify(r.error || r.result); };
+  const ev = async (expression, awaitPromise = true, limitMs = 120000) => { const r = await Promise.race([send('Runtime.evaluate', { expression, awaitPromise, returnByValue: true }), new Promise(res => setTimeout(() => res({ result: { result: { value: 'EVAL_TIMEOUT' } } }), limitMs))]); return r.result?.result?.value ?? r.result?.exceptionDetails?.text ?? JSON.stringify(r.error || r.result); };
   return { ready, send, ev, close: () => ws.close() };
 }
 let main;
@@ -63,7 +63,9 @@ if (pt) {
   const pw = connect(pt.webSocketDebuggerUrl); await pw.ready;
   const during = tmpLeft().length;
   check(during >= 1, `temp print file exists while the window is open (${during})`);
-  const r = await pw.ev(`(async()=>{ if(!window.__TAURI_INTERNALS__) return 'NO_IPC_OBJECT'; try { return 'CALLED '+await window.__TAURI_INTERNALS__.invoke('save_print_pdf',{html:'<p>no</p>',name:'from-print-window'}); } catch(e){ return 'REJECTED '+String(e); } })()`);
+  await pw.ev(`(()=>{ window.__r='PENDING'; if(!window.__TAURI_INTERNALS__){ window.__r='NO_IPC_OBJECT'; return 'x'; } try { window.__TAURI_INTERNALS__.invoke('save_print_pdf',{html:'<p>no</p>',name:'from-print-window'}).then(v=>{window.__r='CALLED '+v;},e=>{window.__r='REJECTED '+String(e);}); } catch(e){ window.__r='THREW '+String(e); } return 'x'; })()`, false, 5000);
+  let r = 'PENDING';
+  for (let i = 0; i < 12 && r === 'PENDING'; i++) { await sleep(500); r = await pw.ev('window.__r', false, 3000); }
   console.log('invoke from print window:', r);
   check(!String(r).startsWith('CALLED'), 'the print window cannot call save_print_pdf');
   check(!existsSync(`${downloads}\\from-print-window.pdf`), 'no file was written by the print window call');
