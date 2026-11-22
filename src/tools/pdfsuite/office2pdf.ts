@@ -171,14 +171,56 @@ export function tablesToSections(tables: SheetTable[], host: HTMLElement): HTMLE
 
 /* ---- Shared outputs ---- */
 
+/** Rasterise one rendered page element through an SVG foreignObject, so the
+ * browser's own layout engine does the wrapping and script shaping — the
+ * pixels match what the page shows. Everything is inlined (base64 assets),
+ * so the canvas stays clean. */
+async function rasterise(el: HTMLElement, cssHtml: string, scale: number): Promise<HTMLCanvasElement> {
+  const w = Math.max(1, el.offsetWidth);
+  const h = Math.max(1, el.offsetHeight);
+  // foreignObject content must be well-formed XML: build it as DOM and let
+  // XMLSerializer close void elements and escape text, which outerHTML does not.
+  const container = document.createElement('div');
+  if (cssHtml) {
+    const t = document.createElement('template');
+    t.innerHTML = cssHtml;
+    container.appendChild(t.content.cloneNode(true));
+  }
+  const content = el.classList.contains('docx')
+    ? Object.assign(document.createElement('div'), { className: 'docx-wrapper' })
+    : container;
+  if (content !== container) content.style.cssText = 'background:#fff;padding:0';
+  if (content !== container) container.appendChild(content);
+  content.appendChild(el.cloneNode(true));
+  const xhtml = new XMLSerializer().serializeToString(container);
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">` +
+    `<foreignObject width="100%" height="100%">${xhtml}</foreignObject></svg>`;
+  const img = new Image();
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(Error('The page could not be rendered. Try the selectable-text option instead.'));
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  });
+  const canvas = document.createElement('canvas');
+  canvas.width = w * scale;
+  canvas.height = h * scale;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw Error('Canvas is unavailable in this browser.');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.scale(scale, scale);
+  ctx.drawImage(img, 0, 0);
+  return canvas;
+}
+
 /** Capture rendered page elements into a PDF of page images at high DPI. */
-export async function sectionsToPdf(sections: HTMLElement[], scale = 2): Promise<Uint8Array> {
+export async function sectionsToPdf(sections: HTMLElement[], cssHtml: string, scale = 2): Promise<Uint8Array> {
   if (!sections.length) throw Error('Nothing to convert: the document rendered no pages.');
-  const html2canvas = (await import('html2canvas')).default;
   const { PDFDocument } = await import('pdf-lib');
   const doc = await PDFDocument.create();
   for (const el of sections) {
-    const canvas = await html2canvas(el, { scale, backgroundColor: '#ffffff', logging: false });
+    const canvas = await rasterise(el, cssHtml, scale);
     const png = await doc.embedPng(canvas.toDataURL('image/png'));
     const w = Math.max(72, (el.offsetWidth * 72) / 96);
     const h = Math.max(72, (el.offsetHeight * 72) / 96);
@@ -187,13 +229,28 @@ export async function sectionsToPdf(sections: HTMLElement[], scale = 2): Promise
   return doc.save();
 }
 
+/** Print-view styles: strip the on-screen wrapper chrome and give every page room. */
+export const PRINT_CSS =
+  'body{margin:0;background:#fff}' +
+  '.docx-wrapper{background:#fff!important;padding:0!important;display:block!important}' +
+  '.docx-wrapper>section.docx{margin:0 auto 24px!important;box-shadow:none!important;overflow:visible!important}' +
+  'section.sheetpage{box-sizing:border-box;max-width:100%}' +
+  'table.sheet{max-width:100%}' +
+  '@media print{' +
+  // Full-page-height sections would spill a blank page after every real page.
+  '.docx-wrapper>section.docx{margin:0 auto!important;height:auto!important;min-height:0!important;page-break-after:always}' +
+  '.docx-wrapper>section.docx:last-child{page-break-after:auto}' +
+  'section.sheetpage{page-break-after:always}' +
+  'section.sheetpage:last-child{page-break-after:auto}}' +
+  '@page{margin:12mm}';
+
 /** Open the styled document in a print window; the browser's Save as PDF keeps text selectable. */
 export function openPrintView(title: string, cssHtml: string, bodyHtml: string): void {
   const w = window.open('', '_blank');
   if (!w) throw Error('The browser blocked the print window. Allow pop-ups for this site and try again.');
   w.document.write(
     `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>${cssHtml}` +
-      '<style>@media print{.docx-wrapper{background:#fff!important;padding:0!important}}</style></head><body>' +
+      `<style>${PRINT_CSS}</style></head><body>` +
       bodyHtml +
       '<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},250);});<\/script></body></html>',
   );
