@@ -436,7 +436,7 @@ function OfficeToPdf({ kind }: { kind: 'word' | 'excel' }) {
           </label>
           <label className="flex items-start gap-2">
             <input type="radio" name="office2pdf-mode" className="mt-1" checked={mode === 'print'} onChange={() => setMode('print')} />
-            <span><strong>Selectable text.</strong> Opens a print view; pick "Save as PDF" in the print dialog. Page breaks may shift compared with Word.</span>
+            <span><strong>Selectable text.</strong> Opens a print view; pick "Save as PDF" in the print dialog. Page breaks may shift compared with {word ? 'Word' : 'the original spreadsheet'}.</span>
           </label>
         </div>
         <div className="mt-3">
