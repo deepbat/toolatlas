@@ -43,6 +43,7 @@ const REGISTRY = {
   'pdf-protect': PdfSuite,
   'pdf-unlock': PdfSuite,
   'pdf-repair': PdfSuite,
+  'pdf-to-word': PdfSuite,
   'pdf-nup': PdfSuite,
   'pdf-booklet': PdfSuite,
   'pdf-flatten': PdfSuite,
