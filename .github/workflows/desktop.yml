@@ -217,6 +217,19 @@ jobs:
           Start-Sleep -Seconds 10
           node scripts/desktop-nativesave.mjs
           "nativesave exit: $LASTEXITCODE"
+      - name: Native PDF save, real tools, isolation, authorization, cleanup
+        shell: pwsh
+        timeout-minutes: 8
+        continue-on-error: true
+        run: |
+          Get-Process deepaks-tool -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 3
+          $app = Get-ChildItem "$env:LOCALAPPDATA" -Recurse -Filter deepaks-tool.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          Start-Process -FilePath $app.FullName
+          Start-Sleep -Seconds 10
+          node scripts/desktop-nativereal.mjs *>&1 | Tee-Object -FilePath out/native-real-log.txt
+          "nativereal exit: $LASTEXITCODE"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
