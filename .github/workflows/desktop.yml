@@ -68,3 +68,71 @@ jobs:
           name: deepaks-tool-linux-deb
           path: src-tauri/target/release/bundle/deb/*.deb
           if-no-files-found: error
+
+  smoke-windows:
+    name: Windows smoke test (install, launch, screenshot)
+    needs: windows
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: deepaks-tool-windows-unsigned
+          path: installer
+      - name: Silent install, launch, screenshot
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem installer -Filter *.exe | Select-Object -First 1
+          "Installer: $($exe.Name) $([math]::Round($exe.Length/1MB,1)) MB"
+          Get-FileHash $exe.FullName -Algorithm SHA256 | Format-List
+          Get-AuthenticodeSignature $exe.FullName | Select-Object Status, StatusMessage | Format-List
+          $p = Start-Process -FilePath $exe.FullName -ArgumentList '/S' -Wait -PassThru
+          "Installer exit code: $($p.ExitCode)"
+          $app = Get-ChildItem "$env:LOCALAPPDATA" -Recurse -Filter deepaks-tool.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          "Installed exe: $($app.FullName)"
+          $proc = Start-Process -FilePath $app.FullName -PassThru
+          Start-Sleep -Seconds 25
+          $proc.Refresh()
+          "App running after 25s: $(-not $proc.HasExited)"
+          "WebView2 children: $((Get-Process msedgewebview2 -ErrorAction SilentlyContinue | Measure-Object).Count)"
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+          [System.Drawing.Graphics]::FromImage($bmp).CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+          $bmp.Save("$PWD\win-smoke.png")
+          if ($proc.HasExited) { exit 1 }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-smoke-screenshot
+          path: win-smoke.png
+
+  smoke-linux:
+    name: Linux smoke test (xvfb, screenshot)
+    needs: linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: deepaks-tool-linux-deb
+          path: pkg
+      - name: Install, launch under xvfb, screenshot
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb imagemagick x11-utils ./pkg/*.deb
+          ls -la pkg
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1280x900x24 &
+          sleep 2
+          deepaks-tool > app.log 2>&1 &
+          APP=$!
+          sleep 25
+          if kill -0 $APP; then echo "app running"; else echo "app exited"; cat app.log; exit 1; fi
+          import -window root linux-smoke.png
+          cat app.log | head -20
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-smoke-screenshot
+          path: linux-smoke.png
