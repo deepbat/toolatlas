@@ -4,7 +4,7 @@
 
 import { makeZip } from '../../lib/zip';
 
-export interface TextItem { text: string; size: number; bold: boolean; italic: boolean; y: number; x: number }
+export interface TextItem { text: string; size: number; bold: boolean; italic: boolean; y: number; x: number; w?: number }
 export interface ParaRun { text: string; bold: boolean; italic: boolean }
 export interface Para { runs: ParaRun[]; level: 0 | 1 | 2 | 3 } // 0 = body, 1-3 = heading
 
@@ -28,9 +28,14 @@ export function itemsToParagraphs(items: TextItem[]): Para[] {
     const runs: ParaRun[] = line.map((i) => ({ text: i.text, bold: i.bold || level > 0, italic: i.italic }));
     // Merge runs with identical styling and join fragments with spaces where needed.
     const merged: ParaRun[] = [];
-    for (const r of runs) {
+    for (let ri = 0; ri < runs.length; ri++) {
+      const r = runs[ri];
       const prev = merged[merged.length - 1];
-      const needsSpace = prev && !prev.text.endsWith(' ') && !r.text.startsWith(' ') && !/^[,.;:!?%\)\]]/.test(r.text) && !/[\(\[]$/.test(prev.text);
+      // With item widths, add a space only where a real gap separates the fragments; pdf.js often splits one word
+      // into pieces (Indic clusters, kerning), and gluing a space into those would break the word.
+      const before = ri > 0 ? line[ri - 1] : undefined;
+      const gapOk = before && before.w !== undefined ? line[ri].x - (before.x + before.w) > Math.max(1, line[ri].size * 0.18) : true;
+      const needsSpace = prev && gapOk && !prev.text.endsWith(' ') && !r.text.startsWith(' ') && !/^[,.;:!?%\)\]]/.test(r.text) && !/[\(\[]$/.test(prev.text);
       if (prev && prev.bold === r.bold && prev.italic === r.italic) prev.text += (needsSpace ? ' ' : '') + r.text;
       else merged.push({ ...r });
     }
@@ -100,4 +105,4 @@ export function buildDocx(paras: Para[]): Uint8Array {
     { name: 'word/document.xml', data: enc.encode(document) },
     { name: 'word/styles.xml', data: enc.encode(STYLES) },
   ]);
-}
+    }
