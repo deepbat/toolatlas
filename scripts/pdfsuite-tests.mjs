@@ -25,19 +25,18 @@ const page = await browser.newPage({ viewport: { width: 1200, height: 900 }, acc
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
 let n = 0;
-const VERB = { 'pdf-delete-pages': 'Delete pages', 'pdf-crop': 'Crop PDF', 'pdf-header-footer': 'Add header or footer', 'pdf-bates': 'Add Bates numbers', 'pdf-nup': 'Combine pages', 'pdf-booklet': 'Make booklet', 'pdf-flatten': 'Flatten forms', 'pdf-rotate': 'Rotate pages', 'pdf-watermark': 'Add watermark', 'pdf-page-organiser': 'Reorder pages', 'pdf-sign': 'Sign PDF', 'pdf-ocr': 'Make searchable' };
-async function run(id, data, setup, check, timeoutMs) {
+const VERB = { 'pdf-delete-pages': 'Delete pages', 'pdf-crop': 'Crop PDF', 'pdf-header-footer': 'Add header or footer', 'pdf-bates': 'Add Bates numbers', 'pdf-nup': 'Combine pages', 'pdf-booklet': 'Make booklet', 'pdf-flatten': 'Flatten forms', 'pdf-rotate': 'Rotate pages', 'pdf-watermark': 'Add watermark', 'pdf-page-organiser': 'Reorder pages', 'pdf-sign': 'Sign PDF', 'pdf-ocr': 'Make searchable', 'pdf-protect': 'Protect PDF', 'pdf-unlock': 'Unlock PDF', 'pdf-repair': 'Repair PDF' };
+async function run(id, data, setup, check, timeoutMs, raw) {
   await page.goto(`${base}/tools/${id}/`);
   await page.locator('input[type=file]').first().setInputFiles({ name: 'in.pdf', mimeType: 'application/pdf', buffer: data });
-  await page.getByText(/\d+ pages? ·/).first().waitFor();
+  await page.getByText('in.pdf').first().waitFor();
   if (setup) await setup();
   const pending = page.waitForEvent('download', { timeout: timeoutMs ?? 30000 });
   await page.getByRole('button', { name: VERB[id], exact: true }).click();
   const dl = await pending;
   const path = `/tmp/suite-${id}.pdf`;
   await dl.saveAs(path);
-  const out = await PDFDocument.load(await readFile(path));
-  await check(out);
+  if (raw) { await check(path); } else { const out = await PDFDocument.load(await readFile(path)); await check(out); }
   console.log('PASS ' + id); n++;
 }
 try {
@@ -71,8 +70,14 @@ try {
   const scanBytes = Buffer.from(await scan.save());
   await run('pdf-ocr', scanBytes, null, o => assert.equal(o.getPageCount(), 1), 180000);
   await page.getByText(/words read/).waitFor({ timeout: 10000 });
+  await run('pdf-protect', bytes, async () => {
+    await page.getByPlaceholder('Password', { exact: true }).fill('s3cret');
+    await page.getByPlaceholder('Repeat password').fill('s3cret');
+  }, async (path) => { await assert.rejects(PDFDocument.load(await readFile(path))); }, 60000, true);
+  await run('pdf-unlock', await readFile('/tmp/suite-pdf-protect.pdf'), () => page.getByPlaceholder('Password (if any)').fill('s3cret'), o => assert.equal(o.getPageCount(), 6), 60000);
+  await run('pdf-repair', bytes, null, o => assert.equal(o.getPageCount(), 6), 60000);
   assert.deepEqual(errors, []);
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-}
+                   }
