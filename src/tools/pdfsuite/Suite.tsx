@@ -11,6 +11,8 @@ import { protectPdf, repairPdf, unlockPdf } from './qpdf';
 import { buildDocx, itemsToParagraphs, type Para, type TextItem } from './docx';
 import { openPrintView, renderDocx, sectionsToPdf, tablesToSections, workbookToTables, SHEET_CSS } from './office2pdf';
 import { pdfjs } from '../pdf-editor/pdfjs';
+import { PDFDocument } from 'pdf-lib';
+import { applyActualText, pageActualTexts } from './actualtext';
 
 /** Shared shell: pick one PDF, run an operation, download the result. */
 function Shell({ verb, help, outSuffix, outExt = 'pdf', mime = 'application/pdf', run, children, ready = true, lenient = false }: {
@@ -272,21 +274,29 @@ function ToWord() {
         const doc = await pdfjs().getDocument({ data: new Uint8Array(b), isEvalSupported: false }).promise;
         const paras: Para[] = [];
         let unreadable = 0;
+        let lib: PDFDocument | null = null;
+        try { lib = await PDFDocument.load(b, { ignoreEncryption: true, updateMetadata: false }); } catch { lib = null; }
         for (const i of parsePageRanges(pages, doc.numPages)) {
           const page = await doc.getPage(i + 1);
           const tc = await page.getTextContent();
           const items: TextItem[] = [];
+          const strItems = tc.items.filter((x: any) => 'str' in x) as any[];
+          // Use /ActualText where the PDF carries it: pdf.js ignores it, and Indic conjuncts and reordered matras depend on it.
+          let fixed: string[] | null = null;
+          try { if (lib) fixed = await applyActualText(pdfjs(), page, strItems.map((x) => x.str), pageActualTexts(lib, i)); } catch { fixed = null; }
+          let si = 0;
           for (const it of tc.items) {
             if (!('str' in it)) continue;
+            const str: string = fixed ? fixed[si] : it.str; si++;
             // pdf.js yields NUL for glyphs it cannot map back to text (seen with Devanagari and Gurmukhi conjuncts).
-            unreadable += (it.str.match(/\u0000/g) ?? []).length;
+            unreadable += (str.match(/\u0000/g) ?? []).length;
             let bold = false, italic = false;
             try {
               const fname = String(page.commonObjs.get(it.fontName)?.name ?? '').toLowerCase();
               bold = /bold|black|semibold|demi/.test(fname);
               italic = /italic|oblique/.test(fname);
             } catch { /* font style unknown */ }
-            items.push({ text: it.str, size: Math.hypot(it.transform[2], it.transform[3]) || it.height || 12, bold, italic, y: it.transform[5], x: it.transform[4] });
+            items.push({ text: str, size: Math.hypot(it.transform[2], it.transform[3]) || it.height || 12, bold, italic, y: it.transform[5], x: it.transform[4], w: typeof it.width === 'number' ? it.width : undefined });
           }
           paras.push(...itemsToParagraphs(items));
           page.cleanup();
@@ -474,4 +484,4 @@ export default function PdfSuite() {
   const { toolId } = useParams();
   const Part = PARTS[toolId ?? ''];
   return Part ? <Part /> : null;
-}
+      }
