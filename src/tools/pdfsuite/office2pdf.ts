@@ -224,7 +224,12 @@ export async function sectionsToPdf(sections: HTMLElement[], cssHtml: string, sc
     const png = await doc.embedPng(canvas.toDataURL('image/png'));
     const w = Math.max(72, (el.offsetWidth * 72) / 96);
     const h = Math.max(72, (el.offsetHeight * 72) / 96);
-    doc.addPage([w, h]).drawImage(png, { x: 0, y: 0, width: w, height: h });
+    // Spreadsheet sections are only as big as their content: give each sheet at least an A4 page,
+    // content anchored top-left, so the PDF is printable instead of a postage-stamp page.
+    const sheet = el.classList.contains('sheetpage');
+    const pw = sheet ? Math.max(w, 595) : w;
+    const ph = sheet ? Math.max(h, 842) : h;
+    doc.addPage([pw, ph]).drawImage(png, { x: 0, y: ph - h, width: w, height: h });
   }
   return doc.save();
 }
