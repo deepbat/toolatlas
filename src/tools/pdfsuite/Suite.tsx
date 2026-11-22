@@ -4,7 +4,7 @@ import { Button, Dropzone, Field, FileRow, Grid, Input, Note, Panel, Select, Tog
 import { downloadBlob, formatBytes } from '../../lib/utils';
 import { checkPdfFile, friendlyPdfError, openPdfLib } from '../../lib/pdfio';
 import { Failure } from '../studio/kit';
-import { booklet, cropPages, deletePages, flattenForms, nUp, stampText, type StampPlace } from './ops';
+import { booklet, cropPages, deletePages, flattenForms, nUp, reorderPages, rotatePages, stampText, watermark, type StampPlace } from './ops';
 
 /** Shared shell: pick one PDF, run an operation, download the result. */
 function Shell({ verb, help, outSuffix, run, children, ready = true }: {
@@ -157,6 +157,56 @@ function Booklet() {
   );
 }
 
+function Rotate() {
+  const [angle, setAngle] = useState('90');
+  const [pages, setPages] = useState('');
+  return (
+    <Shell verb="Rotate pages" outSuffix="rotated" help="Rotation adds to any rotation the page already has. The content itself is not re-rendered, so quality stays identical."
+      run={(b) => rotatePages(b, Number(angle) as 90 | 180 | 270, pages)}>
+      <Grid cols={2}>
+        <Field label="Rotation"><Select value={angle} onChange={(e) => setAngle(e.target.value)}>
+          <option value="90">90° clockwise</option>
+          <option value="180">180° upside down</option>
+          <option value="270">90° counter-clockwise</option>
+        </Select></Field>
+        <Field label="Pages" hint="Blank means every page."><Input value={pages} onChange={(e) => setPages(e.target.value)} placeholder="1-3,5" /></Field>
+      </Grid>
+    </Shell>
+  );
+}
+
+const STRENGTHS: [string, string][] = [['0.08', 'Very faint'], ['0.15', 'Faint'], ['0.3', 'Noticeable'], ['0.5', 'Strong']];
+
+function Watermark() {
+  const [text, setText] = useState('CONFIDENTIAL');
+  const [size, setSize] = useState('48');
+  const [strength, setStrength] = useState('0.15');
+  const [pages, setPages] = useState('');
+  return (
+    <Shell verb="Add watermark" outSuffix="watermarked" ready={!!text.trim()} help="Draws faint diagonal text across the centre of each page. Long text is scaled down to fit."
+      run={(b) => watermark(b, { text, size: Number(size) || 48, opacity: Number(strength), pages })}>
+      <Field label="Watermark text"><Input value={text} onChange={(e) => setText(e.target.value)} placeholder="CONFIDENTIAL" /></Field>
+      <div className="mt-3"><Grid cols={2}>
+        <Field label="Size (pt)"><Input type="number" min={12} max={120} value={size} onChange={(e) => setSize(e.target.value)} /></Field>
+        <Field label="Strength"><Select value={strength} onChange={(e) => setStrength(e.target.value)}>{STRENGTHS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</Select></Field>
+        <Field label="Pages" hint="Blank means every page."><Input value={pages} onChange={(e) => setPages(e.target.value)} placeholder="1-3,5" /></Field>
+      </Grid></div>
+      <div className="mt-3"><Note>The watermark is a visible label drawn on top of the page. It does not hide or remove the content underneath; use the True PDF Redactor for that.</Note></div>
+    </Shell>
+  );
+}
+
+function Organise() {
+  const [order, setOrder] = useState('');
+  return (
+    <Shell verb="Reorder pages" outSuffix="reordered" ready={!!order.trim()} help="List the pages in their new order. Repeat a number to duplicate that page; pages you leave out are removed."
+      run={(b) => reorderPages(b, order)}>
+      <Field label="New page order" hint="Page numbers with commas, for example 3,1,2."><Input value={order} onChange={(e) => setOrder(e.target.value)} placeholder="3,1,2" inputMode="text" /></Field>
+      <div className="mt-3"><Note>The rebuilt file keeps the page content, title, author and subject. Fillable form fields and bookmarks are not carried over.</Note></div>
+    </Shell>
+  );
+}
+
 function Flatten() {
   return (
     <Shell verb="Flatten forms" outSuffix="flattened" help="Turns fillable fields into plain page content so they can no longer be edited."
@@ -171,6 +221,9 @@ const PARTS: Record<string, () => JSX.Element> = {
   'pdf-crop': Crop,
   'pdf-header-footer': () => <Stamp mode="header-footer" />,
   'pdf-bates': () => <Stamp mode="bates" />,
+  'pdf-rotate': Rotate,
+  'pdf-watermark': Watermark,
+  'pdf-page-organiser': Organise,
   'pdf-nup': NUp,
   'pdf-booklet': Booklet,
   'pdf-flatten': Flatten,
@@ -180,4 +233,4 @@ export default function PdfSuite() {
   const { toolId } = useParams();
   const Part = PARTS[toolId ?? ''];
   return Part ? <Part /> : null;
-}
+                                                                                                           }
