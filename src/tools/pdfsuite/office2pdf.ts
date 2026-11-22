@@ -15,6 +15,7 @@
 //    because only Word/LibreOffice reproduce Word's own pagination.
 // Page breaks stored in the .docx are honoured in both outputs.
 
+import { sanitizePrintHtml } from './printSanitize';
 import DOMPurify from 'dompurify';
 
 export interface RenderedDoc {
@@ -264,6 +265,18 @@ export function openPrintView(title: string, cssHtml: string, bodyHtml: string):
   const doc = (script: string) =>
     `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>${cssHtml}` +
     `<style>${PRINT_CSS}</style></head><body>` + bodyHtml + script + '</body></html>';
+  // Desktop app, behind an opt-in flag until its saved output, isolation and cleanup are verified: save through the native PDF command.
+  const internals = (window as unknown as { __TAURI_INTERNALS__?: { invoke?: (c: string, a: unknown) => Promise<string> } }).__TAURI_INTERNALS__;
+  if (internals?.invoke && localStorage.getItem('toolatlas.nativePdfSave') === '1') {
+    const w = window as unknown as { __nativePdfSave?: { ok: boolean; path?: string; error?: string } };
+    delete w.__nativePdfSave;
+    const name = title.replace(/\.[^.]+$/, '') || 'document';
+    internals.invoke('save_print_pdf', { html: sanitizePrintHtml(doc('')), name }).then(
+      path => { w.__nativePdfSave = { ok: true, path }; },
+      err => { w.__nativePdfSave = { ok: false, error: String(err) }; },
+    );
+    return;
+  }
   const w = window.open('', '_blank');
   if (w) {
     w.document.write(doc('<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},250);});<\/script>'));
@@ -286,4 +299,4 @@ export function openPrintView(title: string, cssHtml: string, bodyHtml: string):
     cw.print();
     setTimeout(() => frame.remove(), 120000);
   }, 500);
-}
+    }
