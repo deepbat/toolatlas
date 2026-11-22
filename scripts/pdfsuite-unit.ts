@@ -5,6 +5,7 @@ import { addTextLayer, booklet, bookletOrder, cropPages, deletePages, flattenFor
 import { protectPdf, repairPdf, unlockPdf } from '../src/tools/pdfsuite/qpdf';
 import { buildDocx, itemsToParagraphs } from '../src/tools/pdfsuite/docx';
 import { readZip } from '../src/lib/zip';
+import { indexToCol, parseRange, sheetToTable, workbookToTables } from '../src/tools/pdfsuite/office2pdf';
 
 async function make(n: number, size: [number, number] = [595, 842]) {
   const d = await PDFDocument.create();
@@ -152,5 +153,42 @@ console.log('PASS n-up');
   assert.ok(xml.includes('First line of body'));
   assert.ok(xml.includes('second line continues'));
   console.log('PASS pdf to word docx');
+}
+{
+  // Indic scripts survive the PDF-to-Word path byte for byte (Unicode end to end).
+  const paras = itemsToParagraphs([
+    { text: 'नमस्ते दुनिया', size: 12, bold: false, italic: false, y: 100, x: 50 },
+    { text: 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ', size: 12, bold: false, italic: false, y: 86, x: 50 },
+    { text: 'क्षत्रिय और ज्ञान', size: 12, bold: false, italic: false, y: 72, x: 50 },
+    { text: 'Hello world', size: 12, bold: false, italic: false, y: 58, x: 50 },
+  ]);
+  const xml = new TextDecoder().decode((await readZip(buildDocx(paras))).get('word/document.xml'));
+  for (const t of ['नमस्ते दुनिया', 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ', 'क्षत्रिय और ज्ञान', 'Hello world']) assert.ok(xml.includes(t), t);
+  console.log('PASS pdf to word Indic scripts');
+}
+{
+  assert.deepEqual(parseRange('B2:D4'), { s: { r: 1, c: 1 }, e: { r: 3, c: 3 } });
+  assert.equal(indexToCol(0), 'A');
+  assert.equal(indexToCol(27), 'AB');
+  const ws = {
+    '!ref': 'A1:C3',
+    '!merges': [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }],
+    '!cols': [{ wpx: 120 }, {}, {}],
+    A1: { v: 'Quarterly बिक्री', w: 'Quarterly बिक्री' },
+    A2: { v: 'Item' }, B2: { v: 'गणना' }, A3: { v: 'Total <b>' },
+  };
+  const html = sheetToTable(ws);
+  assert.ok(html.includes('colspan="3"'), 'merge keeps colspan');
+  assert.ok(html.includes('<col style="width:120px">'), 'column width kept');
+  assert.ok(html.includes('गणना'), 'Devanagari cell text kept');
+  assert.ok(html.includes('Total &lt;b&gt;'), 'cell text is escaped');
+  assert.ok(!html.includes('rowspan'), 'no phantom rowspan');
+  const empty = sheetToTable({});
+  assert.ok(empty.includes('empty'), 'empty sheet handled');
+  const tables = workbookToTables(['S1', 'S2'], { S1: ws, S2: {} });
+  assert.equal(tables.length, 2);
+  assert.equal(tables[1].name, 'S2');
+  assert.ok(tables[1].html.includes('empty'), 'sheet structure preserved per sheet');
+  console.log('PASS xlsx sheet to table');
 }
 console.log('All PDF suite ops passed.');
