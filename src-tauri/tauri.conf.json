@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Deepak's Tool",
+  "productName": "DeepaksTool",
   "version": "0.1.0",
   "identifier": "io.github.deepbat.toolatlas",
   "build": {
