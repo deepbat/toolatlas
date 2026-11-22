@@ -7,15 +7,18 @@ import { Failure } from '../studio/kit';
 import { booklet, cropPages, deletePages, flattenForms, nUp, reorderPages, rotatePages, signPdf, stampText, watermark, type StampPlace } from './ops';
 import SignaturePad from '../pdf-editor/SignaturePad';
 import Ocr from './Ocr';
+import { protectPdf, repairPdf, unlockPdf } from './qpdf';
 
 /** Shared shell: pick one PDF, run an operation, download the result. */
-function Shell({ verb, help, outSuffix, run, children, ready = true }: {
+function Shell({ verb, help, outSuffix, run, children, ready = true, lenient = false }: {
   verb: string;
   help: ReactNode;
   outSuffix: string;
   run: (bytes: Uint8Array, pages: number) => Promise<Uint8Array>;
   children?: ReactNode;
   ready?: boolean;
+  /** Skip the pdf-lib readability probe for encrypted or damaged inputs. */
+  lenient?: boolean;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [pages, setPages] = useState(0);
@@ -28,6 +31,12 @@ function Shell({ verb, help, outSuffix, run, children, ready = true }: {
     const f = files[0];
     if (!f) return;
     try {
+      if (lenient) {
+        await checkPdfFile(f);
+        setFile(f);
+        setPages(0);
+        return;
+      }
       const doc = await openPdfLib(f);
       setFile(f);
       setPages(doc.getPageCount());
@@ -59,7 +68,7 @@ function Shell({ verb, help, outSuffix, run, children, ready = true }: {
         {!file ? (
           <Dropzone accept="application/pdf,.pdf" multiple={false} onFiles={load} title="Drop a PDF or browse" hint="PDF files up to 150 MB" />
         ) : (
-          <FileRow name={file.name} meta={`${pages} ${pages === 1 ? 'page' : 'pages'} · ${formatBytes(file.size)}`} onRemove={() => { setFile(null); setDone(''); }} />
+          <FileRow name={file.name} meta={pages ? `${pages} ${pages === 1 ? 'page' : 'pages'} · ${formatBytes(file.size)}` : formatBytes(file.size)} onRemove={() => { setFile(null); setDone(''); }} />
         )}
       </Panel>
       <Panel title="2. Options" description={help}>{children}</Panel>
@@ -249,6 +258,46 @@ function Sign() {
   );
 }
 
+function Protect() {
+  const [pw, setPw] = useState('');
+  const [pw2, setPw2] = useState('');
+  const mismatch = pw.length > 0 && pw2.length > 0 && pw !== pw2;
+  return (
+    <Shell verb="Protect PDF" outSuffix="protected" ready={pw.length > 0 && pw === pw2} lenient
+      help="Encrypts every page with 256-bit AES. Without the password the file cannot be opened."
+      run={(b) => protectPdf(b, pw)}>
+      <Grid cols={2}>
+        <Field label="Password"><Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Password" autoComplete="new-password" /></Field>
+        <Field label="Repeat password"><Input type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="Repeat password" autoComplete="new-password" /></Field>
+      </Grid>
+      {mismatch && <p className="mt-2 text-sm text-danger">The passwords do not match.</p>}
+      <div className="mt-3"><Note>The password is used only on this device and is never stored or uploaded. If you lose it, the file cannot be recovered here.</Note></div>
+    </Shell>
+  );
+}
+
+function Unlock() {
+  const [pw, setPw] = useState('');
+  return (
+    <Shell verb="Unlock PDF" outSuffix="unlocked" lenient
+      help="Removes password protection from a file you are allowed to open, so it no longer asks for a password."
+      run={(b) => unlockPdf(b, pw)}>
+      <Field label="Password" hint="The password the file asks for. Leave blank only if it opens without one."><Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Password (if any)" /></Field>
+      <div className="mt-3"><Note>The password is used only on this device and is never stored or uploaded.</Note></div>
+    </Shell>
+  );
+}
+
+function Repair() {
+  return (
+    <Shell verb="Repair PDF" outSuffix="repaired" lenient
+      help="Rebuilds the internal structure of a file that viewers call damaged or refuse to open."
+      run={(b) => repairPdf(b)}>
+      <Note>Repair fixes broken file structure. Content that was never saved correctly, or pages missing from the original, cannot be brought back.</Note>
+    </Shell>
+  );
+}
+
 function Flatten() {
   return (
     <Shell verb="Flatten forms" outSuffix="flattened" help="Turns fillable fields into plain page content so they can no longer be edited."
@@ -268,6 +317,9 @@ const PARTS: Record<string, () => JSX.Element> = {
   'pdf-page-organiser': Organise,
   'pdf-sign': Sign,
   'pdf-ocr': Ocr,
+  'pdf-protect': Protect,
+  'pdf-unlock': Unlock,
+  'pdf-repair': Repair,
   'pdf-nup': NUp,
   'pdf-booklet': Booklet,
   'pdf-flatten': Flatten,
@@ -277,4 +329,4 @@ export default function PdfSuite() {
   const { toolId } = useParams();
   const Part = PARTS[toolId ?? ''];
   return Part ? <Part /> : null;
-        }
+                                                                                                }
