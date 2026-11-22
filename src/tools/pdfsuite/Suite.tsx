@@ -4,16 +4,20 @@ import { Button, Dropzone, Field, FileRow, Grid, Input, Note, Panel, Select, Tog
 import { downloadBlob, formatBytes } from '../../lib/utils';
 import { checkPdfFile, friendlyPdfError, openPdfLib } from '../../lib/pdfio';
 import { Failure } from '../studio/kit';
-import { booklet, cropPages, deletePages, flattenForms, nUp, reorderPages, rotatePages, signPdf, stampText, watermark, type StampPlace } from './ops';
+import { booklet, cropPages, deletePages, flattenForms, nUp, parsePageRanges, reorderPages, rotatePages, signPdf, stampText, watermark, type StampPlace } from './ops';
 import SignaturePad from '../pdf-editor/SignaturePad';
 import Ocr from './Ocr';
 import { protectPdf, repairPdf, unlockPdf } from './qpdf';
+import { buildDocx, itemsToParagraphs, type Para, type TextItem } from './docx';
+import { pdfjs } from '../pdf-editor/pdfjs';
 
 /** Shared shell: pick one PDF, run an operation, download the result. */
-function Shell({ verb, help, outSuffix, run, children, ready = true, lenient = false }: {
+function Shell({ verb, help, outSuffix, outExt = 'pdf', mime = 'application/pdf', run, children, ready = true, lenient = false }: {
   verb: string;
   help: ReactNode;
   outSuffix: string;
+  outExt?: string;
+  mime?: string;
   run: (bytes: Uint8Array, pages: number) => Promise<Uint8Array>;
   children?: ReactNode;
   ready?: boolean;
@@ -52,8 +56,8 @@ function Shell({ verb, help, outSuffix, run, children, ready = true, lenient = f
     try {
       const bytes = new Uint8Array(await checkPdfFile(file));
       const out = await run(bytes, pages);
-      const blob = new Blob([out as unknown as BlobPart], { type: 'application/pdf' });
-      downloadBlob(`${file.name.replace(/\.pdf$/i, '')}-${outSuffix}.pdf`, blob);
+      const blob = new Blob([out as unknown as BlobPart], { type: mime });
+      downloadBlob(`${file.name.replace(/\.pdf$/i, '')}-${outSuffix}.${outExt}`, blob);
       setDone(`Saved ${formatBytes(blob.size)}. The download should have started.`);
     } catch (e) {
       setError(friendlyPdfError(e, file.name).message);
@@ -258,6 +262,40 @@ function Sign() {
   );
 }
 
+function ToWord() {
+  const [pages, setPages] = useState('');
+  return (
+    <Shell verb="Convert to Word" outSuffix="word" outExt="docx" mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      help="Turns the text layer into an editable Word document with real paragraphs, headings and bold or italic runs."
+      run={async (b) => {
+        const doc = await pdfjs().getDocument({ data: new Uint8Array(b), isEvalSupported: false }).promise;
+        const paras: Para[] = [];
+        for (const i of parsePageRanges(pages, doc.numPages)) {
+          const page = await doc.getPage(i + 1);
+          const tc = await page.getTextContent();
+          const items: TextItem[] = [];
+          for (const it of tc.items) {
+            if (!('str' in it)) continue;
+            let bold = false, italic = false;
+            try {
+              const fname = String(page.commonObjs.get(it.fontName)?.name ?? '').toLowerCase();
+              bold = /bold|black|semibold|demi/.test(fname);
+              italic = /italic|oblique/.test(fname);
+            } catch { /* font style unknown */ }
+            items.push({ text: it.str, size: Math.hypot(it.transform[2], it.transform[3]) || it.height || 12, bold, italic, y: it.transform[5], x: it.transform[4] });
+          }
+          paras.push(...itemsToParagraphs(items));
+          page.cleanup();
+        }
+        if (!paras.length) throw new Error('This PDF has no text layer, so it is probably a scan. Run it through OCR PDF first, then convert the result.');
+        return buildDocx(paras);
+      }}>
+      <Field label="Pages" hint="Blank means every page."><Input value={pages} onChange={(e) => setPages(e.target.value)} placeholder="1-3,5" /></Field>
+      <div className="mt-3"><Note>Fidelity is honest: text becomes editable paragraphs and headings, but images, tables, multi-column layouts and exact fonts are not preserved. Complex layouts read better in the original PDF.</Note></div>
+    </Shell>
+  );
+}
+
 function Protect() {
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
@@ -320,6 +358,7 @@ const PARTS: Record<string, () => JSX.Element> = {
   'pdf-protect': Protect,
   'pdf-unlock': Unlock,
   'pdf-repair': Repair,
+  'pdf-to-word': ToWord,
   'pdf-nup': NUp,
   'pdf-booklet': Booklet,
   'pdf-flatten': Flatten,
@@ -329,4 +368,4 @@ export default function PdfSuite() {
   const { toolId } = useParams();
   const Part = PARTS[toolId ?? ''];
   return Part ? <Part /> : null;
-                                                                                                }
+                                                                                                           }
