@@ -222,6 +222,43 @@ export async function signPdf(bytes: Uint8Array, p: SignPlacement): Promise<Uint
   return doc.save();
 }
 
+export interface OcrWord { text: string; x0: number; y0: number; x1: number; y1: number }
+export interface OcrPageLayer { page: number; imgWidth: number; imgHeight: number; words: OcrWord[] }
+
+/** Helvetica (WinAnsi) cannot encode everything OCR may emit; map common punctuation and drop the rest. */
+export function toWinAnsi(text: string): string {
+  return text
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/[^\x20-\x7E]/g, '')
+    .trim();
+}
+
+/** Invisible text layer over scanned pages so the document can be searched and copied. */
+export async function addTextLayer(bytes: Uint8Array, layers: OcrPageLayer[]): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const pages = doc.getPages();
+  for (const layer of layers) {
+    const page = pages[layer.page - 1];
+    if (!page) throw new Error(`Page ${layer.page} is outside this ${pages.length}-page document.`);
+    if (layer.imgWidth < 1 || layer.imgHeight < 1) throw new Error('The scan image has no size.');
+    const { width, height } = page.getSize();
+    const sx = width / layer.imgWidth, sy = height / layer.imgHeight;
+    for (const w of layer.words) {
+      const text = toWinAnsi(w.text);
+      if (!text) continue;
+      const bw = Math.max(1, (w.x1 - w.x0) * sx), bh = Math.max(1, (w.y1 - w.y0) * sy);
+      let size = bh;
+      const tw = font.widthOfTextAtSize(text, size);
+      if (tw > bw) size = Math.max(1, size * (bw / tw));
+      page.drawText(text, { x: w.x0 * sx, y: height - w.y1 * sy, size, font, opacity: 0 });
+    }
+  }
+  return doc.save();
+}
+
 /** Bake form fields into the page so they can no longer be edited. */
 export async function flattenForms(bytes: Uint8Array): Promise<Uint8Array> {
   const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
