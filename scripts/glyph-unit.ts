@@ -24,7 +24,7 @@ console.log(`PASS glyph coverage and uniqueness for ${TOOLS.length} tools, ${CAT
 
 // The approved removal is exact: no substitute tools were removed.
 const retired = ['list-cleaner','csv-excel-tools','photo-colouring-page','colour-blind-simulator','split-bill','screen-ruler','calculator','unit-converter','temperature-converter','todo-list','quick-notes','speech-to-text','screen-recorder','video-trim','voice-recorder','image-rotate','image-filters','stopwatch','find-replace','image-metadata','reverse-text'];
-assert.equal(TOOLS.length, 44);
+assert.equal(TOOLS.length, 47);
 for (const id of retired) assert.ok(!TOOLS.some(t => t.id === id), `${id} must stay retired`);
 for (const tool of TOOLS) for (const related of relatedTools(tool)) assert.ok(TOOLS.some(t => t.id === related.id));
-console.log('PASS curated 44-tool catalogue (Nov 2026 trim + OCR/converter/suite additions) and remaining related-tool coverage');
+console.log('PASS curated 47-tool catalogue (Nov 2026 trim + OCR/converter/suite additions) and remaining related-tool coverage');
