@@ -35,8 +35,40 @@ fn with_csp(html: &str) -> String {
     format!("<!doctype html><html><head><meta charset=\"utf-8\">{CSP}</head><body>{html}</body></html>")
 }
 
+/// Removes the temporary print HTML on every exit path: success, error, timeout, or the command future being dropped.
+struct TempFile(std::path::PathBuf);
+impl Drop for TempFile {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.0);
+    }
+}
+
+/// Destroys the hidden print window on every exit path.
+struct WinGuard(tauri::WebviewWindow);
+impl Drop for WinGuard {
+    fn drop(&mut self) {
+        let _ = self.0.destroy();
+    }
+}
+
+/// Deletes print files left behind by an earlier crash or forced quit.
+pub fn sweep_stale() {
+    if let Ok(rd) = std::fs::read_dir(std::env::temp_dir()) {
+        for e in rd.flatten() {
+            let n = e.file_name().to_string_lossy().to_string();
+            if n.starts_with("deepaks-tool-print-") && n.ends_with(".html") {
+                let _ = std::fs::remove_file(e.path());
+            }
+        }
+    }
+}
+
 #[tauri::command]
-pub async fn save_print_pdf(app: AppHandle, html: String, name: String) -> Result<String, String> {
+pub async fn save_print_pdf(app: AppHandle, window: tauri::WebviewWindow, html: String, name: String) -> Result<String, String> {
+    // Authorization in code, independent of the CSP and of the capability file: only the main window may call this.
+    if window.label() != "main" {
+        return Err("save_print_pdf is not available from this window".to_string());
+    }
     let dir = app.path().download_dir().map_err(|e| e.to_string())?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let stem = safe_stem(&name);
@@ -49,6 +81,7 @@ pub async fn save_print_pdf(app: AppHandle, html: String, name: String) -> Resul
     let stamp = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
     let tmp = std::env::temp_dir().join(format!("deepaks-tool-print-{stamp}.html"));
     std::fs::write(&tmp, with_csp(&html).as_bytes()).map_err(|e| e.to_string())?;
+    let _tmp_guard = TempFile(tmp.clone());
     let url = tauri::Url::from_file_path(&tmp).map_err(|_| "Could not build a file URL".to_string())?;
 
     let (load_tx, load_rx) = mpsc::channel::<()>();
@@ -74,8 +107,18 @@ pub async fn save_print_pdf(app: AppHandle, html: String, name: String) -> Resul
     let win = builder.build().map_err(|e| e.to_string())?;
 
     let out_path = out.clone();
+    let test_name = name.clone();
     let result = tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+        let win = WinGuard(win);
+        let win = &win.0;
         load_rx.recv_timeout(Duration::from_secs(30)).map_err(|_| "The print view did not finish loading".to_string())?;
+        // Test-only hooks (this whole module is behind the native-pdf feature): hold the window open, or fail on purpose.
+        if test_name.starts_with("__test_hold__") {
+            std::thread::sleep(Duration::from_millis(9000));
+        }
+        if test_name.starts_with("__test_fail__") {
+            return Err("forced failure for cleanup test".to_string());
+        }
         std::thread::sleep(Duration::from_millis(800));
         let (dtx, drx) = mpsc::channel::<Result<(), String>>();
         let path_h = HSTRING::from(out_path.to_string_lossy().as_ref());
@@ -99,12 +142,10 @@ pub async fn save_print_pdf(app: AppHandle, html: String, name: String) -> Resul
         })
         .map_err(|e| e.to_string())?;
         let res = drx.recv_timeout(Duration::from_secs(60)).map_err(|_| "PrintToPdf timed out".to_string())?;
-        let _ = win.destroy();
         res
     })
     .await
     .map_err(|e| e.to_string())?;
-    let _ = std::fs::remove_file(&tmp);
     result?;
     Ok(out.to_string_lossy().to_string())
 }
