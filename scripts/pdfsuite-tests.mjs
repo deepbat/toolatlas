@@ -25,7 +25,7 @@ const page = await browser.newPage({ viewport: { width: 1200, height: 900 }, acc
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
 let n = 0;
-const VERB = { 'pdf-delete-pages': 'Delete pages', 'pdf-crop': 'Crop PDF', 'pdf-header-footer': 'Add header or footer', 'pdf-bates': 'Add Bates numbers', 'pdf-nup': 'Combine pages', 'pdf-booklet': 'Make booklet', 'pdf-flatten': 'Flatten forms', 'pdf-rotate': 'Rotate pages', 'pdf-watermark': 'Add watermark', 'pdf-page-organiser': 'Reorder pages' };
+const VERB = { 'pdf-delete-pages': 'Delete pages', 'pdf-crop': 'Crop PDF', 'pdf-header-footer': 'Add header or footer', 'pdf-bates': 'Add Bates numbers', 'pdf-nup': 'Combine pages', 'pdf-booklet': 'Make booklet', 'pdf-flatten': 'Flatten forms', 'pdf-rotate': 'Rotate pages', 'pdf-watermark': 'Add watermark', 'pdf-page-organiser': 'Reorder pages', 'pdf-sign': 'Sign PDF' };
 async function run(id, data, setup, check) {
   await page.goto(`${base}/tools/${id}/`);
   await page.locator('input[type=file]').first().setInputFiles({ name: 'in.pdf', mimeType: 'application/pdf', buffer: data });
@@ -51,6 +51,12 @@ try {
   await run('pdf-rotate', bytes, null, o => { assert.equal(o.getPage(0).getRotation().angle, 90); assert.equal(o.getPageCount(), 6); });
   await run('pdf-watermark', bytes, null, o => assert.equal(o.getPageCount(), 6));
   await run('pdf-page-organiser', bytes, () => page.getByPlaceholder('3,1,2').fill('6,1,2,3,4,5'), o => assert.equal(o.getPageCount(), 6));
+  await run('pdf-sign', bytes, async () => {
+    await page.getByRole('button', { name: 'Create a signature' }).click();
+    await page.getByRole('button', { name: 'Type', exact: true }).click();
+    await page.getByLabel('Type your signature').fill('Deepak');
+    await page.getByRole('button', { name: 'Use signature' }).click();
+  }, o => assert.equal(o.getPageCount(), 6));
   assert.deepEqual(errors, []);
   console.log(`${n} PDF suite checks passed`);
 } finally {
