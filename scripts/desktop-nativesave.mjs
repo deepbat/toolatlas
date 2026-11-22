@@ -16,15 +16,31 @@ const send = (method, params = {}) => new Promise(r => { const i = ++id; pend.se
 setTimeout(() => { console.log('FAIL watchdog'); process.exit(2); }, 150000);
 await mkdir('out', { recursive: true });
 const html = '<!doctype html><html><head><meta charset="utf-8"><title>native save test</title><style>body{font-family:Georgia,serif;font-size:14pt}table{border-collapse:collapse}td{border:1px solid #000;padding:4px}</style></head><body><h1>Native save test</h1><p>नमस्ते दुनिया क्षत्रिय ज्ञान</p><p>ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ ਦੂਜੇ ਸਫ਼ੇ ਦੀ</p><p>Quarterly report, selectable text check.</p><table><tr><td>Item</td><td>गणना</td></tr><tr><td>Apples</td><td>42</td></tr></table></body></html>';
-const expr = `(async()=>{ if(!window.__TAURI_INTERNALS__) return 'NO_TAURI'; try { return 'OK '+await window.__TAURI_INTERNALS__.invoke('save_print_pdf',{html:${JSON.stringify(html)},name:'native-save-test'}); } catch(e){ return 'ERR '+String(e); } })()`;
-const r = await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true });
-const v = r.result?.result?.value ?? JSON.stringify(r.result);
+const call = async (h, name) => {
+  const expr = `(async()=>{ if(!window.__TAURI_INTERNALS__) return 'NO_TAURI'; try { return 'OK '+await window.__TAURI_INTERNALS__.invoke('save_print_pdf',{html:${JSON.stringify(h)},name:${JSON.stringify(name)}}); } catch(e){ return 'ERR '+String(e); } })()`;
+  const r = await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true });
+  return r.result?.result?.value ?? JSON.stringify(r.result);
+};
+let fail = 0;
+const v = await call(html, 'native-save-test');
 console.log('invoke result:', v);
 if (typeof v === 'string' && v.startsWith('OK ')) {
   const p = v.slice(3);
   const s = await stat(p);
   await copyFile(p, 'out/native-save-test.pdf');
   console.log('saved', p, s.size, 'bytes; copied to out/native-save-test.pdf');
-  process.exit(0);
-}
-process.exit(1);
+} else fail = 1;
+// Untrusted document HTML: scripts must not run and nothing may load from the network.
+const evil = '<!doctype html><html><head><meta charset="utf-8"><title>x</title></head><body><p>VISIBLE-TEXT</p><script>document.body.insertAdjacentText("beforeend","SCRIPT-RAN")</script><img src="https://example.com/x.png"><iframe src="https://example.com/"></iframe><a href="https://example.com/">link</a></body></html>';
+const v2 = await call(evil, '..\\..\\evil/CON');
+console.log('hostile html + hostile name result:', v2);
+if (typeof v2 === 'string' && v2.startsWith('OK ')) {
+  const p = v2.slice(3);
+  console.log('hostile-name output path:', p);
+  await copyFile(p, 'out/native-save-hostile.pdf');
+} else fail = 1;
+const v3 = await call(html, 'native-save-test');
+console.log('same name again (collision):', v3);
+if (typeof v3 === 'string' && v3.startsWith('OK ')) console.log('collision path differs from first:', v3 !== v);
+else fail = 1;
+process.exit(fail);
