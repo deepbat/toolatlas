@@ -1,0 +1,70 @@
+name: Desktop build (Tauri)
+
+# Separate from ci.yml and deploy.yml. Manual only, so it never runs on pushes.
+# Uses free GitHub-hosted runners only. No signing certificates or secrets.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows installer (unsigned)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - name: Build static site at root path
+        run: npm run build
+        env:
+          BASE_PATH: /
+      - name: Generate app icons from the existing 512px icon
+        run: npx --yes @tauri-apps/cli@2 icon public/icon-512.png
+      - name: Build NSIS installer
+        run: npx --yes @tauri-apps/cli@2 build --bundles nsis
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deepaks-tool-windows-unsigned
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+
+  linux:
+    name: Linux build (secondary)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: System libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - run: npm ci
+      - name: Build static site at root path
+        run: npm run build
+        env:
+          BASE_PATH: /
+      - run: npx --yes @tauri-apps/cli@2 icon public/icon-512.png
+      - run: npx --yes @tauri-apps/cli@2 build --bundles deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deepaks-tool-linux-deb
+          path: src-tauri/target/release/bundle/deb/*.deb
+          if-no-files-found: error
