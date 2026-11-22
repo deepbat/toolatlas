@@ -1,7 +1,7 @@
 // Unit tests for the pure PDF suite operations.
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import assert from 'node:assert/strict';
-import { booklet, bookletOrder, cropPages, deletePages, flattenForms, nUp, parsePageRanges, stampText } from '../src/tools/pdfsuite/ops';
+import { booklet, bookletOrder, cropPages, deletePages, flattenForms, nUp, parsePageRanges, reorderPages, rotatePages, stampText, watermark } from '../src/tools/pdfsuite/ops';
 
 async function make(n: number, size: [number, number] = [595, 842]) {
   const d = await PDFDocument.create();
@@ -62,5 +62,37 @@ console.log('PASS n-up');
   const flat = await PDFDocument.load(await flattenForms(await d.save()));
   assert.equal(flat.getForm().getFields().length, 0);
   console.log('PASS flatten');
+}
+{
+  const out = await rotatePages(await make(2), 90, '1');
+  const d = await PDFDocument.load(out);
+  assert.equal(d.getPage(0).getRotation().angle, 90);
+  assert.equal(d.getPage(1).getRotation().angle, 0);
+  const back = await PDFDocument.load(await rotatePages(out, 270, '1'));
+  assert.equal(back.getPage(0).getRotation().angle, 0);
+  console.log('PASS rotate pages');
+}
+
+{
+  const out = await watermark(await make(2), { text: 'CONFIDENTIAL' });
+  assert.equal(await count(out), 2);
+  assert.ok(out.length > 0);
+  await assert.rejects(watermark(await make(1), { text: '   ' }));
+  console.log('PASS watermark');
+}
+
+{
+  const d = await PDFDocument.create();
+  const f = await d.embedFont(StandardFonts.Helvetica);
+  [595, 600, 605, 610].forEach((w, i) => d.addPage([w, 842]).drawText(`Page ${i + 1}`, { x: 50, y: 700, size: 24, font: f }));
+  d.setTitle('Order check');
+  const sized = await d.save();
+  const out = await PDFDocument.load(await reorderPages(sized, '3,1,1'));
+  assert.deepEqual(out.getPages().map((p) => p.getWidth()), [605, 595, 595]);
+  assert.equal(out.getTitle(), 'Order check');
+  await assert.rejects(reorderPages(sized, '9'));
+  await assert.rejects(reorderPages(sized, '  '));
+  await assert.rejects(reorderPages(sized, '2,x'));
+  console.log('PASS reorder pages');
 }
 console.log('All PDF suite ops passed.');
