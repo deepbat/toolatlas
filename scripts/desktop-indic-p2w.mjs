@@ -17,9 +17,15 @@ const pdf = await readFile('out/word-print-webview2.pdf');
 await page.goto(`${origin}${base}/tools/pdf-to-word/`);
 await page.locator('input[type=file]').first().setInputFiles({ name: 'indic.pdf', mimeType: 'application/pdf', buffer: pdf });
 await page.getByText('indic.pdf').first().waitFor({ timeout: 20000 });
-const p = page.waitForEvent('download', { timeout: 90000 });
+const p = page.waitForEvent('download', { timeout: 40000 }).then((d) => ({ d }), () => null);
 await page.getByRole('button', { name: 'Convert to Word', exact: true }).click();
-const dl = await p;
-await dl.saveAs('out/indic-pdf-to-word.docx');
-console.log('PASS saved ' + dl.suggestedFilename());
+const got = await p;
+if (got && got.d) {
+  await got.d.saveAs('out/indic-pdf-to-word.docx');
+  console.log('SAVED docx ' + got.d.suggestedFilename() + ' (inspect it)');
+} else {
+  const msg = (await page.locator('[role=alert], .text-danger').allInnerTexts()).join(' | ');
+  console.log('NO DOWNLOAD. visible message: ' + msg);
+  await page.screenshot({ path: 'out/indic-p2w-ui.png' });
+}
 process.exit(0);
