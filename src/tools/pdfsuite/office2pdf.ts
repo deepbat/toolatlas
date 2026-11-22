@@ -144,8 +144,14 @@ export function sheetToTable(ws: SheetLike): string {
   return `<table class="sheet"><colgroup>${colWidths.join('')}</colgroup>${rows.join('')}</table>`;
 }
 
+/**
+ * One table per worksheet that has cells. A worksheet with no cells is left out rather than printed as a page of
+ * invented text; if every worksheet is empty there is nothing to print and this throws.
+ */
 export function workbookToTables(names: string[], sheets: Record<string, SheetLike>): SheetTable[] {
-  return names.map((name) => ({ name, html: sheetToTable(sheets[name] ?? {}) }));
+  const filled = names.filter((name) => Boolean((sheets[name] ?? {})['!ref']));
+  if (names.length && !filled.length) throw new Error('Every worksheet in this workbook is empty, so there is nothing to convert.');
+  return filled.map((name) => ({ name, html: sheetToTable(sheets[name] ?? {}) }));
 }
 
 /** Styles used by both the raster route and the print view for spreadsheets. */
