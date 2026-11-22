@@ -218,6 +218,28 @@ export const UNCOMMON_TOOLS: ToolMeta[] = [
     added: '2026-11-22',
   },
   {
+    id: 'word-to-pdf',
+    name: 'Word to PDF',
+    description: 'Convert a .docx into a PDF that keeps fonts, tables and images, on your device.',
+    category: 'pdf',
+    icon: 'FileText',
+    keywords: ['word to pdf', 'docx to pdf', 'convert word', 'save as pdf', 'document to pdf'],
+    version: '1.0.0',
+    status: 'stable',
+    added: '2026-11-22',
+  },
+  {
+    id: 'excel-to-pdf',
+    name: 'Excel to PDF',
+    description: 'Convert an .xlsx into a PDF with every sheet, merged cells and column widths kept.',
+    category: 'pdf',
+    icon: 'FileSpreadsheet',
+    keywords: ['excel to pdf', 'xlsx to pdf', 'convert excel', 'spreadsheet to pdf', 'sheets to pdf'],
+    version: '1.0.0',
+    status: 'stable',
+    added: '2026-11-22',
+  },
+  {
     id: 'doc-flatten-print',
     name: 'Phone-Scan A4 Prepper',
     description:
