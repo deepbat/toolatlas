@@ -3,6 +3,8 @@ import { PDFDocument, StandardFonts } from 'pdf-lib';
 import assert from 'node:assert/strict';
 import { addTextLayer, booklet, bookletOrder, cropPages, deletePages, flattenForms, nUp, parsePageRanges, reorderPages, rotatePages, signPdf, stampText, toWinAnsi, watermark } from '../src/tools/pdfsuite/ops';
 import { protectPdf, repairPdf, unlockPdf } from '../src/tools/pdfsuite/qpdf';
+import { buildDocx, itemsToParagraphs } from '../src/tools/pdfsuite/docx';
+import { readZip } from '../src/lib/zip';
 
 async function make(n: number, size: [number, number] = [595, 842]) {
   const d = await PDFDocument.create();
@@ -130,5 +132,25 @@ console.log('PASS n-up');
   await assert.rejects(protectPdf(input, '', wasm));
   assert.equal(await count(await repairPdf(input, wasm)), 2);
   console.log('PASS protect/unlock/repair');
+}
+{
+  const paras = itemsToParagraphs([
+    { text: 'Annual', size: 24, bold: false, italic: false, y: 100, x: 50 },
+    { text: 'Report', size: 24, bold: false, italic: false, y: 100, x: 150 },
+    { text: 'First line of body', size: 12, bold: false, italic: false, y: 70, x: 50 },
+    { text: 'second line', size: 12, bold: true, italic: false, y: 56, x: 50 },
+    { text: 'continues', size: 12, bold: true, italic: false, y: 56, x: 200 },
+  ]);
+  assert.equal(paras.length, 2);
+  assert.equal(paras[0].level, 1);
+  assert.equal(paras[1].level, 0);
+  assert.match(paras[0].runs[0].text, /Annual Report/);
+  const zip = await readZip(buildDocx(paras));
+  for (const name of ['[Content_Types].xml', '_rels/.rels', 'word/_rels/document.xml.rels', 'word/document.xml', 'word/styles.xml']) assert.ok(zip.has(name), name);
+  const xml = new TextDecoder().decode(zip.get('word/document.xml'));
+  assert.ok(xml.includes('<w:pStyle w:val="Heading1"/>'));
+  assert.ok(xml.includes('First line of body'));
+  assert.ok(xml.includes('second line continues'));
+  console.log('PASS pdf to word docx');
 }
 console.log('All PDF suite ops passed.');
