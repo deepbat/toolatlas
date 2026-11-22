@@ -207,6 +207,17 @@ export const UNCOMMON_TOOLS: ToolMeta[] = [
     added: '2026-11-22',
   },
   {
+    id: 'pdf-to-word',
+    name: 'PDF to Word',
+    description: 'Turn a text-based PDF into an editable Word document with paragraphs and headings.',
+    category: 'pdf',
+    icon: 'FileType',
+    keywords: ['pdf to word', 'pdf to docx', 'convert pdf', 'editable word', 'word document'],
+    version: '1.0.0',
+    status: 'stable',
+    added: '2026-11-22',
+  },
+  {
     id: 'doc-flatten-print',
     name: 'Phone-Scan A4 Prepper',
     description:
