@@ -271,12 +271,15 @@ function ToWord() {
       run={async (b) => {
         const doc = await pdfjs().getDocument({ data: new Uint8Array(b), isEvalSupported: false }).promise;
         const paras: Para[] = [];
+        let unreadable = 0;
         for (const i of parsePageRanges(pages, doc.numPages)) {
           const page = await doc.getPage(i + 1);
           const tc = await page.getTextContent();
           const items: TextItem[] = [];
           for (const it of tc.items) {
             if (!('str' in it)) continue;
+            // pdf.js yields NUL for glyphs it cannot map back to text (seen with Devanagari and Gurmukhi conjuncts).
+            unreadable += (it.str.match(/\u0000/g) ?? []).length;
             let bold = false, italic = false;
             try {
               const fname = String(page.commonObjs.get(it.fontName)?.name ?? '').toLowerCase();
@@ -288,6 +291,7 @@ function ToWord() {
           paras.push(...itemsToParagraphs(items));
           page.cleanup();
         }
+        if (unreadable) throw new Error(`${unreadable} characters in this PDF could not be read back as text (common with Indic scripts such as Devanagari and Gurmukhi). A Word file would be missing text, so none was written. Use PDF to Image or keep the PDF.`);
         if (!paras.length) throw new Error('This PDF has no text layer, so it is probably a scan. Run it through OCR PDF first, then convert the result.');
         return buildDocx(paras);
       }}>
