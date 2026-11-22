@@ -134,6 +134,12 @@ jobs:
           node scripts/desktop-convert.mjs
           $b = $LASTEXITCODE
           "convert exit: $b"
+          Start-Sleep -Seconds 2
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          $sb = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $sbmp = New-Object System.Drawing.Bitmap $sb.Width, $sb.Height
+          [System.Drawing.Graphics]::FromImage($sbmp).CopyFromScreen($sb.Location, [System.Drawing.Point]::Empty, $sb.Size)
+          $sbmp.Save("$PWD\win-print.png")
           if ($a -ne 0 -or $b -ne 0) { exit 1 }
       - uses: actions/upload-artifact@v4
         if: always()
@@ -142,6 +148,7 @@ jobs:
           path: |
             win-smoke.png
             win-after.png
+            win-print.png
             rotated.pdf
             ocr.pdf
             out/*
