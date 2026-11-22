@@ -2,6 +2,7 @@
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import assert from 'node:assert/strict';
 import { addTextLayer, booklet, bookletOrder, cropPages, deletePages, flattenForms, nUp, parsePageRanges, reorderPages, rotatePages, signPdf, stampText, toWinAnsi, watermark } from '../src/tools/pdfsuite/ops';
+import { protectPdf, repairPdf, unlockPdf } from '../src/tools/pdfsuite/qpdf';
 
 async function make(n: number, size: [number, number] = [595, 842]) {
   const d = await PDFDocument.create();
@@ -117,5 +118,17 @@ console.log('PASS n-up');
   await assert.rejects(addTextLayer(input, [{ page: 9, imgWidth: 100, imgHeight: 100, words: [] }]));
   await assert.rejects(addTextLayer(input, [{ page: 1, imgWidth: 0, imgHeight: 100, words: [] }]));
   console.log('PASS ocr text layer');
+}
+{
+  const wasm = new URL('../node_modules/@neslinesli93/qpdf-wasm/dist/qpdf.wasm', import.meta.url).pathname;
+  const input = await make(2);
+  const locked = await protectPdf(input, 's3cret', wasm);
+  await assert.rejects(PDFDocument.load(locked));
+  const back = await unlockPdf(locked, 's3cret', wasm);
+  assert.equal(await count(back), 2);
+  await assert.rejects(unlockPdf(locked, 'wr0ng', wasm), /password/i);
+  await assert.rejects(protectPdf(input, '', wasm));
+  assert.equal(await count(await repairPdf(input, wasm)), 2);
+  console.log('PASS protect/unlock/repair');
 }
 console.log('All PDF suite ops passed.');
