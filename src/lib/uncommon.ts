@@ -130,6 +130,17 @@ export const UNCOMMON_TOOLS: ToolMeta[] = [
     added: '2026-11-22',
   },
   {
+    id: 'pdf-ocr',
+    name: 'OCR PDF - Make Searchable',
+    description: 'Add an invisible text layer to scanned pages so they can be searched, selected and copied.',
+    category: 'pdf',
+    icon: 'ScanText',
+    keywords: ['ocr pdf', 'searchable pdf', 'scanned pdf', 'read scan', 'text layer', 'copy text from pdf'],
+    version: '1.0.0',
+    status: 'stable',
+    added: '2026-11-22',
+  },
+  {
     id: 'pdf-nup',
     name: 'Multiple Pages per Sheet (N-up)',
     description: 'Print 2, 4, 6 or 9 PDF pages on one A4 sheet to save paper.',
