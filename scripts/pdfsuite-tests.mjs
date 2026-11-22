@@ -133,6 +133,21 @@ try {
     assert.ok(printOut.getPageCount() >= 2, 'print PDF paginates across pages');
     console.log('PASS word-to-pdf print view'); n++;
   }
+  {
+    // Desktop webviews and popup blockers refuse window.open: the print view must fall back to a hidden frame.
+    await page.goto(`${base}/tools/word-to-pdf/`);
+    await page.evaluate(() => { window.open = () => null; window.__printed = 0; });
+    await page.locator('input[type=file]').first().setInputFiles({ name: 'fixture.docx', mimeType: 'application/octet-stream', buffer: docxBuf });
+    await page.getByText('fixture.docx').first().waitFor();
+    await page.locator('label', { hasText: 'Selectable text' }).click();
+    await page.evaluate(() => { const orig = HTMLIFrameElement.prototype; const d = Object.getOwnPropertyDescriptor(orig, 'contentWindow'); Object.defineProperty(orig, 'contentWindow', { get() { const w = d.get.call(this); if (w && !w.__hooked) { w.__hooked = true; w.print = () => { window.__printed++; }; } return w; }, configurable: true }); });
+    await page.getByRole('button', { name: 'Convert to PDF', exact: true }).click();
+    await page.waitForFunction(() => window.__printed === 1, null, { timeout: 15000 });
+    const frameText = await page.evaluate(() => document.querySelector('iframe[data-print-frame]')?.contentDocument?.body?.innerText || '');
+    for (const t of ['नमस्ते दुनिया', 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ', 'Quarterly Report']) assert.ok(frameText.includes(t), t);
+    assert.equal(await page.getByText('blocked the print window').count(), 0);
+    console.log('PASS word-to-pdf print view falls back to a hidden frame when popups are blocked'); n++;
+  }
 
   const wb = XLSX.utils.book_new();
   const ws1 = XLSX.utils.aoa_to_sheet([['Quarterly बिक्री', '', ''], ['Item', 'गणना', 'Amount'], ['Apples', 5, 125.5], ['कुल', 7, 200]]);
