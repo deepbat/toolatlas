@@ -145,6 +145,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Save print views as PDF through WebView2 (raw CDP)
+        shell: pwsh
+        timeout-minutes: 8
+        run: |
+          Get-Process deepaks-tool -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 3
+          $app = Get-ChildItem "$env:LOCALAPPDATA" -Recurse -Filter deepaks-tool.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          Start-Process -FilePath $app.FullName
+          Start-Sleep -Seconds 10
+          node scripts/desktop-printpdf.mjs
+          "printpdf exit: $LASTEXITCODE"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
       - name: Real download file name (raw CDP, no Playwright)
         shell: pwsh
         timeout-minutes: 8
