@@ -25,13 +25,13 @@ const page = await browser.newPage({ viewport: { width: 1200, height: 900 }, acc
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
 let n = 0;
-const VERB = { 'pdf-delete-pages': 'Delete pages', 'pdf-crop': 'Crop PDF', 'pdf-header-footer': 'Add header or footer', 'pdf-bates': 'Add Bates numbers', 'pdf-nup': 'Combine pages', 'pdf-booklet': 'Make booklet', 'pdf-flatten': 'Flatten forms', 'pdf-rotate': 'Rotate pages', 'pdf-watermark': 'Add watermark', 'pdf-page-organiser': 'Reorder pages', 'pdf-sign': 'Sign PDF' };
-async function run(id, data, setup, check) {
+const VERB = { 'pdf-delete-pages': 'Delete pages', 'pdf-crop': 'Crop PDF', 'pdf-header-footer': 'Add header or footer', 'pdf-bates': 'Add Bates numbers', 'pdf-nup': 'Combine pages', 'pdf-booklet': 'Make booklet', 'pdf-flatten': 'Flatten forms', 'pdf-rotate': 'Rotate pages', 'pdf-watermark': 'Add watermark', 'pdf-page-organiser': 'Reorder pages', 'pdf-sign': 'Sign PDF', 'pdf-ocr': 'Make searchable' };
+async function run(id, data, setup, check, timeoutMs) {
   await page.goto(`${base}/tools/${id}/`);
   await page.locator('input[type=file]').first().setInputFiles({ name: 'in.pdf', mimeType: 'application/pdf', buffer: data });
   await page.getByText(/\d+ pages? ·/).first().waitFor();
   if (setup) await setup();
-  const pending = page.waitForEvent('download');
+  const pending = page.waitForEvent('download', { timeout: timeoutMs ?? 30000 });
   await page.getByRole('button', { name: VERB[id], exact: true }).click();
   const dl = await pending;
   const path = `/tmp/suite-${id}.pdf`;
@@ -57,6 +57,20 @@ try {
     await page.getByLabel('Type your signature').fill('Deepak');
     await page.getByRole('button', { name: 'Use signature' }).click();
   }, o => assert.equal(o.getPageCount(), 6));
+  // OCR: build an image-only "scanned" PDF (text baked into a PNG, no text layer) and read it back.
+  const pngDataUrl = await page.evaluate(() => {
+    const c = document.createElement('canvas'); c.width = 595; c.height = 200;
+    const x = c.getContext('2d');
+    x.fillStyle = '#ffffff'; x.fillRect(0, 0, 595, 200);
+    x.fillStyle = '#000000'; x.font = '48px sans-serif'; x.fillText('HELLO SCAN', 40, 110);
+    return c.toDataURL('image/png');
+  });
+  const scan = await PDFDocument.create();
+  const img = await scan.embedPng(Buffer.from(pngDataUrl.split(',')[1], 'base64'));
+  scan.addPage([595, 842]).drawImage(img, { x: 0, y: 442, width: 595, height: 200 });
+  const scanBytes = Buffer.from(await scan.save());
+  await run('pdf-ocr', scanBytes, null, o => assert.equal(o.getPageCount(), 1), 180000);
+  await page.getByText(/words read/).waitFor({ timeout: 10000 });
   assert.deepEqual(errors, []);
   console.log(`${n} PDF suite checks passed`);
 } finally {
