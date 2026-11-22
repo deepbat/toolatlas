@@ -142,6 +142,25 @@ jobs:
           [System.Drawing.Graphics]::FromImage($sbmp).CopyFromScreen($sb.Location, [System.Drawing.Point]::Empty, $sb.Size)
           $sbmp.Save("$PWD\win-print.png")
           if ($a -ne 0 -or $b -ne 0) { exit 1 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Real download file name (raw CDP, no Playwright)
+        shell: pwsh
+        timeout-minutes: 8
+        run: |
+          Get-Process deepaks-tool -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 3
+          $before = @(Get-ChildItem "$env:USERPROFILE\Downloads" -ErrorAction SilentlyContinue | ForEach-Object Name)
+          $app = Get-ChildItem "$env:LOCALAPPDATA" -Recurse -Filter deepaks-tool.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          Start-Process -FilePath $app.FullName
+          Start-Sleep -Seconds 10
+          node scripts/desktop-download-names.mjs
+          Start-Sleep -Seconds 3
+          "Downloads before: $($before -join ', ')"
+          "Downloads after:"
+          Get-ChildItem "$env:USERPROFILE\Downloads" -ErrorAction SilentlyContinue | Select-Object Name, Length | Format-Table | Out-String
+          Get-ChildItem "$env:USERPROFILE" -Recurse -Filter 'names-test*' -ErrorAction SilentlyContinue | Select-Object FullName | Format-Table | Out-String
       - uses: actions/upload-artifact@v4
         if: always()
         with:
