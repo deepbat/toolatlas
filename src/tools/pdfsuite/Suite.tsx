@@ -418,17 +418,17 @@ function OfficeToPdf({ kind }: { kind: 'word' | 'excel' }) {
         <div className="space-y-2 text-sm">
           <label className="flex items-start gap-2">
             <input type="radio" name="office2pdf-mode" className="mt-1" checked={mode === 'image'} onChange={() => setMode('image')} />
-            <span><strong>Image PDF (recommended).</strong> Pages look exactly as rendered on this device, including Indic scripts. Text in the PDF is not selectable.</span>
+            <span><strong>Image PDF (recommended).</strong> Each page is drawn as an image from this app's own rendering, with Indic scripts shown when the fonts are available. Text in the PDF is not selectable.</span>
           </label>
           <label className="flex items-start gap-2">
             <input type="radio" name="office2pdf-mode" className="mt-1" checked={mode === 'print'} onChange={() => setMode('print')} />
-            <span><strong>Selectable text.</strong> Opens a print view; pick "Save as PDF" in the browser dialog. Page breaks may shift compared with Word.</span>
+            <span><strong>Selectable text.</strong> Opens a print view; pick "Save as PDF" in the print dialog. Page breaks may shift compared with Word.</span>
           </label>
         </div>
         <div className="mt-3">
           <Note>
             {word
-              ? 'Your document keeps its fonts, tables, images and headings as rendered here. Only Word itself reproduces Word pagination exactly; page breaks stored in the file are honoured.'
+              ? 'This app renders the document itself, so layout can differ from Word: fonts may be substituted and some features, such as text boxes or charts, may be missing. Page breaks stored in the file are honoured.'
               : 'Every sheet becomes its own section with merged cells and column widths preserved. Charts and embedded images are not included.'}
           </Note>
         </div>
