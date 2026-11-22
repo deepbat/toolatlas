@@ -249,15 +249,35 @@ export const PRINT_CSS =
   'section.sheetpage:last-child{page-break-after:auto}}' +
   '@page{margin:12mm}';
 
-/** Open the styled document in a print window; the browser's Save as PDF keeps text selectable. */
+/**
+ * Open the styled document for printing; "Save as PDF" in the print dialog keeps text selectable.
+ * Uses a print window when the browser allows one. Desktop webviews and popup blockers refuse
+ * window.open, so fall back to printing from a hidden frame inside the page.
+ */
 export function openPrintView(title: string, cssHtml: string, bodyHtml: string): void {
-  const w = window.open('', '_blank');
-  if (!w) throw Error('The browser blocked the print window. Allow pop-ups for this site and try again.');
-  w.document.write(
+  const doc = (script: string) =>
     `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>${cssHtml}` +
-      `<style>${PRINT_CSS}</style></head><body>` +
-      bodyHtml +
-      '<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},250);});<\/script></body></html>',
-  );
-  w.document.close();
+    `<style>${PRINT_CSS}</style></head><body>` + bodyHtml + script + '</body></html>';
+  const w = window.open('', '_blank');
+  if (w) {
+    w.document.write(doc('<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},250);});<\/script>'));
+    w.document.close();
+    return;
+  }
+  const frame = document.createElement('iframe');
+  frame.setAttribute('aria-hidden', 'true');
+  frame.setAttribute('data-print-frame', 'true');
+  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+  document.body.appendChild(frame);
+  const d = frame.contentDocument;
+  const cw = frame.contentWindow;
+  if (!d || !cw) { frame.remove(); throw Error('Could not open a print view in this window.'); }
+  d.open();
+  d.write(doc(''));
+  d.close();
+  setTimeout(() => {
+    cw.focus();
+    cw.print();
+    setTimeout(() => frame.remove(), 120000);
+  }, 500);
 }
