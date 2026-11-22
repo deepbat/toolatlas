@@ -81,8 +81,83 @@ try {
     const buf = await readFile(path);
     assert.ok(buf[0] === 0x50 && buf[1] === 0x4b, 'docx should be a zip');
   }, 60000, true, '.docx');
+  // Office to PDF: .docx/.xlsx inputs, image-PDF output, and the selectable-text print view.
+  const JSZip = (await import('jszip')).default;
+  const XLSX = await import('xlsx');
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const para = (text, style = '') => `<w:p>${style ? `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>` : ''}<w:r><w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
+  const docxZip = new JSZip();
+  docxZip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>');
+  docxZip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+  docxZip.file('word/_rels/document.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>');
+  docxZip.file('word/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph" w:styleId="Normal"><w:name w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:pPr><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:sz w:val="32"/></w:rPr></w:style></w:styles>');
+  docxZip.file('word/document.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' +
+    para('Quarterly Report', 'Heading1') +
+    para('नमस्ते दुनिया क्षत्रिय ज्ञान') +
+    para('ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ') +
+    para('English body text.') +
+    `<w:tbl><w:tr><w:tc>${para('Item')}</w:tc><w:tc>${para('गणना')}</w:tc></w:tr><w:tr><w:tc>${para('Apples')}</w:tc><w:tc>${para('42')}</w:tc></w:tr></w:tbl>` +
+    '<w:sectPr/></w:body></w:document>');
+  const docxBuf = await docxZip.generateAsync({ type: 'nodebuffer' });
+
+  await page.goto(`${base}/tools/word-to-pdf/`);
+  await page.locator('input[type=file]').first().setInputFiles({ name: 'fixture.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', buffer: docxBuf });
+  await page.getByText('fixture.docx').first().waitFor();
+  const dlwP = page.waitForEvent('download', { timeout: 90000 });
+  await page.getByRole('button', { name: 'Convert to PDF', exact: true }).click();
+  const dlw = await dlwP;
+  await dlw.saveAs('/tmp/suite-word-to-pdf.pdf');
+  assert.ok(dlw.suggestedFilename().endsWith('.pdf'), dlw.suggestedFilename());
+  const wordOut = await PDFDocument.load(await readFile('/tmp/suite-word-to-pdf.pdf'));
+  assert.ok(wordOut.getPageCount() >= 1);
+  assert.ok(wordOut.getPage(0).getWidth() > 100);
+  console.log('PASS word-to-pdf image PDF'); n++;
+  {
+    const popP = page.waitForEvent('popup', { timeout: 30000 });
+    await page.locator('label', { hasText: 'Selectable text' }).click();
+    await page.getByRole('button', { name: 'Convert to PDF', exact: true }).click();
+    const pop = await popP;
+    await pop.waitForLoadState();
+    const bodyText = await pop.locator('body').innerText();
+    for (const t of ['नमस्ते दुनिया क्षत्रिय ज्ञान', 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ', 'Quarterly Report', 'गणना']) assert.ok(bodyText.includes(t), t);
+    await pop.screenshot({ path: '/tmp/word-to-pdf-print.png', fullPage: true });
+    await pop.close();
+    console.log('PASS word-to-pdf print view'); n++;
+  }
+
+  const wb = XLSX.utils.book_new();
+  const ws1 = XLSX.utils.aoa_to_sheet([['Quarterly बिक्री', '', ''], ['Item', 'गणना', 'Amount'], ['Apples', 5, 125.5], ['कुल', 7, 200]]);
+  ws1['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }];
+  ws1['!cols'] = [{ wpx: 140 }, { wpx: 80 }, { wpx: 80 }];
+  XLSX.utils.book_append_sheet(wb, ws1, 'बिक्री Data');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([[]]), 'Empty');
+  const xlsxBuf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+  await page.goto(`${base}/tools/excel-to-pdf/`);
+  await page.locator('input[type=file]').first().setInputFiles({ name: 'book.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: xlsxBuf });
+  await page.getByText('book.xlsx').first().waitFor();
+  const dlxP = page.waitForEvent('download', { timeout: 90000 });
+  await page.getByRole('button', { name: 'Convert to PDF', exact: true }).click();
+  const dlx = await dlxP;
+  await dlx.saveAs('/tmp/suite-excel-to-pdf.pdf');
+  assert.ok(dlx.suggestedFilename().endsWith('.pdf'), dlx.suggestedFilename());
+  const xlsOut = await PDFDocument.load(await readFile('/tmp/suite-excel-to-pdf.pdf'));
+  assert.equal(xlsOut.getPageCount(), 2, 'one PDF page per sheet');
+  console.log('PASS excel-to-pdf image PDF'); n++;
+  {
+    const popP = page.waitForEvent('popup', { timeout: 30000 });
+    await page.locator('label', { hasText: 'Selectable text' }).click();
+    await page.getByRole('button', { name: 'Convert to PDF', exact: true }).click();
+    const pop = await popP;
+    await pop.waitForLoadState();
+    const bodyText = await pop.locator('body').innerText();
+    for (const t of ['बिक्री Data', 'गणना', 'कुल', 'Empty', 'This sheet is empty.']) assert.ok(bodyText.includes(t), t);
+    await pop.screenshot({ path: '/tmp/excel-to-pdf-print.png', fullPage: true });
+    await pop.close();
+    console.log('PASS excel-to-pdf print view'); n++;
+  }
   assert.deepEqual(errors, []);
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-            }
+}
