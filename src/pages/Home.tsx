@@ -80,8 +80,8 @@ const DRAWERS: Drawer[] = [
     id: 'pdf-suite',
     num: '05',
     title: 'PDF Suite',
-    subtitle: 'Merge, split, compress, convert, OCR, trim, rotate, watermark, sign, reorder, number, crop, flatten and lay out PDFs, entirely on your device.',
-    ids: ['pdf-merge', 'pdf-split', 'pdf-compress', 'pdf-to-images', 'image-to-pdf', 'pdf-extract-text', 'pdf-ocr', 'pdf-delete-pages', 'pdf-page-organiser', 'pdf-rotate', 'pdf-crop', 'pdf-header-footer', 'pdf-watermark', 'pdf-sign', 'pdf-bates', 'pdf-nup', 'pdf-booklet', 'pdf-flatten'],
+    subtitle: 'Merge, split, compress, convert, OCR, trim, rotate, watermark, sign, reorder, number, crop, flatten, protect and repair PDFs, entirely on your device.',
+    ids: ['pdf-merge', 'pdf-split', 'pdf-compress', 'pdf-to-images', 'image-to-pdf', 'pdf-extract-text', 'pdf-ocr', 'pdf-delete-pages', 'pdf-page-organiser', 'pdf-rotate', 'pdf-crop', 'pdf-header-footer', 'pdf-watermark', 'pdf-sign', 'pdf-bates', 'pdf-nup', 'pdf-booklet', 'pdf-flatten', 'pdf-protect', 'pdf-unlock', 'pdf-repair'],
   },
 ];
 
@@ -331,4 +331,4 @@ export default function HomePage() {
       </div>
     </div>
   );
-    }
+}
