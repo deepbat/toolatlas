@@ -1,0 +1,15 @@
+{
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Deepak's Tool",
+        "width": 1280,
+        "height": 840,
+        "minWidth": 480,
+        "minHeight": 600,
+        "additionalBrowserArgs": "--remote-debugging-port=9222"
+      }
+    ]
+  }
+}
