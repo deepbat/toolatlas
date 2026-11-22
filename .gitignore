@@ -11,3 +11,6 @@ public/pdfjs.worker.min.js
 
 # generated at prebuild from tesseract.js packages
 public/tesseract/
+
+# generated at prebuild from @neslinesli93/qpdf-wasm
+public/qpdf/
