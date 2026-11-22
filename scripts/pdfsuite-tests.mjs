@@ -154,7 +154,8 @@ try {
   ws1['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }];
   ws1['!cols'] = [{ wpx: 140 }, { wpx: 80 }, { wpx: 80 }];
   XLSX.utils.book_append_sheet(wb, ws1, 'बिक्री Data');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([[]]), 'Empty');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Second', 'sheet']]), 'Second');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([[]]), 'Blank');
   const xlsxBuf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
   await page.goto(`${base}/tools/excel-to-pdf/`);
@@ -166,7 +167,7 @@ try {
   await dlx.saveAs('/tmp/suite-excel-to-pdf.pdf');
   assert.ok(dlx.suggestedFilename().endsWith('.pdf'), dlx.suggestedFilename());
   const xlsOut = await PDFDocument.load(await readFile('/tmp/suite-excel-to-pdf.pdf'));
-  assert.equal(xlsOut.getPageCount(), 2, 'one PDF page per sheet');
+  assert.equal(xlsOut.getPageCount(), 2, 'one PDF page per worksheet with cells; the blank worksheet adds none');
   console.log('PASS excel-to-pdf image PDF'); n++;
   {
     const popP = page.waitForEvent('popup', { timeout: 30000 });
@@ -175,7 +176,8 @@ try {
     const pop = await popP;
     await pop.waitForLoadState();
     const bodyText = await pop.locator('body').innerText();
-    for (const t of ['बिक्री Data', 'गणना', 'कुल', 'Empty', 'This sheet is empty.']) assert.ok(bodyText.includes(t), t);
+    for (const t of ['बिक्री Data', 'गणना', 'कुल', 'Second']) assert.ok(bodyText.includes(t), t);
+    for (const t of ['Blank', 'This sheet is empty.']) assert.ok(!bodyText.includes(t), 'empty worksheet adds no text: ' + t);
     await pop.pdf({ path: '/tmp/excel-to-pdf-print.pdf' });
     await pop.screenshot({ path: '/tmp/excel-to-pdf-print.png', fullPage: true });
     await pop.close();
