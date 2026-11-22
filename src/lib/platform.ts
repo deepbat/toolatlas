@@ -27,6 +27,7 @@ export const INPUTS: Record<FileKind, string[]> = {
     'pdf-crop',
     'pdf-header-footer',
     'pdf-watermark',
+    'pdf-sign',
     'pdf-bates',
     'pdf-nup',
     'pdf-booklet',
