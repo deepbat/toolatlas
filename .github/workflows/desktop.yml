@@ -167,16 +167,21 @@ jobs:
       - name: Install, launch under xvfb, screenshot
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb imagemagick x11-utils ./pkg/*.deb
+          sudo apt-get install -y xvfb imagemagick x11-utils xdotool openbox ./pkg/*.deb
           ls -la pkg
           export DISPLAY=:99
           Xvfb :99 -screen 0 1280x900x24 &
+          sleep 2
+          openbox &
           sleep 2
           WEBKIT_DISABLE_COMPOSITING_MODE=1 WEBKIT_DISABLE_DMABUF_RENDERER=1 deepaks-tool > app.log 2>&1 &
           APP=$!
           sleep 25
           if kill -0 $APP; then echo "app running"; else echo "app exited"; cat app.log; exit 1; fi
+          xwininfo -root -tree | head -30
+          xdotool search --name "Deepak" 2>/dev/null | head -3 || true
           import -window root linux-smoke.png
+          identify linux-smoke.png
           cat app.log | head -20
       - uses: actions/upload-artifact@v4
         if: always()
