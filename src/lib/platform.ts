@@ -36,6 +36,7 @@ export const INPUTS: Record<FileKind, string[]> = {
     'pdf-protect',
     'pdf-unlock',
     'pdf-repair',
+    'pdf-to-word',
   ],
   image: [
     'image-to-pdf',
@@ -216,4 +217,4 @@ export async function clearAllTransfers() {
     });
     d.close();
   } catch {}
-        }
+}
