@@ -91,13 +91,18 @@ try {
   docxZip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
   docxZip.file('word/_rels/document.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>');
   docxZip.file('word/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph" w:styleId="Normal"><w:name w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:pPr><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:sz w:val="32"/></w:rPr></w:style></w:styles>');
+  const longMixed = 'The quarter closed strongly across every region. नमस्ते दुनिया, यह एक लंबा अनुच्छेद है जो कई पंक्तियों में लिपटना चाहिए। '.repeat(3) + 'क्षत्रिय ज्ञान अंत तक पहुँचना चाहिए बिना कटे।';
+  const borders = '<w:tblPr><w:tblBorders><w:top w:val="single" w:sz="8" w:space="0" w:color="1F2937"/><w:left w:val="single" w:sz="8" w:space="0" w:color="1F2937"/><w:bottom w:val="single" w:sz="8" w:space="0" w:color="1F2937"/><w:right w:val="single" w:sz="8" w:space="0" w:color="1F2937"/><w:insideH w:val="single" w:sz="8" w:space="0" w:color="1F2937"/><w:insideV w:val="single" w:sz="8" w:space="0" w:color="1F2937"/></w:tblBorders></w:tblPr>';
   docxZip.file('word/document.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' +
     para('Quarterly Report', 'Heading1') +
     para('नमस्ते दुनिया क्षत्रिय ज्ञान') +
-    para('ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ') +
-    para('English body text.') +
-    `<w:tbl><w:tr><w:tc>${para('Item')}</w:tc><w:tc>${para('गणना')}</w:tc></w:tr><w:tr><w:tc>${para('Apples')}</w:tc><w:tc>${para('42')}</w:tc></w:tr></w:tbl>` +
-    '<w:sectPr/></w:body></w:document>');
+    para(longMixed) +
+    `<w:tbl>${borders}<w:tr><w:tc><w:tcPr><w:tcW w:w="4000" w:type="dxa"/></w:tcPr>${para('Item')}</w:tc><w:tc><w:tcPr><w:tcW w:w="4000" w:type="dxa"/></w:tcPr>${para('गणना')}</w:tc></w:tr><w:tr><w:tc><w:tcPr><w:tcW w:w="4000" w:type="dxa"/></w:tcPr>${para('Apples')}</w:tc><w:tc><w:tcPr><w:tcW w:w="4000" w:type="dxa"/></w:tcPr>${para('42')}</w:tc></w:tr></w:tbl>` +
+    '<w:p><w:r><w:br w:type="page"/></w:r></w:p>' +
+    para('Page two starts here') +
+    para('ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ — ਦੂਜੇ ਸਫ਼ੇ ਦੀ ਸਮਗਰੀ। ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ।') +
+    para('Closing notes in English after the break.') +
+    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134"/></w:sectPr></w:body></w:document>');
   const docxBuf = await docxZip.generateAsync({ type: 'nodebuffer' });
 
   await page.goto(`${base}/tools/word-to-pdf/`);
@@ -109,7 +114,7 @@ try {
   await dlw.saveAs('/tmp/suite-word-to-pdf.pdf');
   assert.ok(dlw.suggestedFilename().endsWith('.pdf'), dlw.suggestedFilename());
   const wordOut = await PDFDocument.load(await readFile('/tmp/suite-word-to-pdf.pdf'));
-  assert.ok(wordOut.getPageCount() >= 1);
+  assert.equal(wordOut.getPageCount(), 2, 'image PDF keeps the stored page break');
   assert.ok(wordOut.getPage(0).getWidth() > 100);
   console.log('PASS word-to-pdf image PDF'); n++;
   {
@@ -119,9 +124,13 @@ try {
     const pop = await popP;
     await pop.waitForLoadState();
     const bodyText = await pop.locator('body').innerText();
-    for (const t of ['नमस्ते दुनिया क्षत्रिय ज्ञान', 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ', 'Quarterly Report', 'गणना']) assert.ok(bodyText.includes(t), t);
+    for (const t of ['नमस्ते दुनिया', 'क्षत्रिय', 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ', 'Quarterly Report', 'गणना', 'Page two starts here']) assert.ok(bodyText.includes(t), t);
+    // What the browser's Save as PDF actually produces (headless Chromium print):
+    await pop.pdf({ path: '/tmp/word-to-pdf-print.pdf' });
     await pop.screenshot({ path: '/tmp/word-to-pdf-print.png', fullPage: true });
     await pop.close();
+    const printOut = await PDFDocument.load(await readFile('/tmp/word-to-pdf-print.pdf'));
+    assert.ok(printOut.getPageCount() >= 2, 'print PDF paginates across pages');
     console.log('PASS word-to-pdf print view'); n++;
   }
 
@@ -152,8 +161,11 @@ try {
     await pop.waitForLoadState();
     const bodyText = await pop.locator('body').innerText();
     for (const t of ['बिक्री Data', 'गणना', 'कुल', 'Empty', 'This sheet is empty.']) assert.ok(bodyText.includes(t), t);
+    await pop.pdf({ path: '/tmp/excel-to-pdf-print.pdf' });
     await pop.screenshot({ path: '/tmp/excel-to-pdf-print.png', fullPage: true });
     await pop.close();
+    const xlsPrint = await PDFDocument.load(await readFile('/tmp/excel-to-pdf-print.pdf'));
+    assert.ok(xlsPrint.getPageCount() >= 2, 'print PDF keeps sheets on separate pages');
     console.log('PASS excel-to-pdf print view'); n++;
   }
   assert.deepEqual(errors, []);
