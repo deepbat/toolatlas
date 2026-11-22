@@ -2,7 +2,7 @@ import type { CategoryId, ToolMeta } from './types';
 
 
 /**
- * ToolAtlas 4.0 — Unique pictorial glyphs for all 39 curated tools.
+ * ToolAtlas 4.0 — Unique pictorial glyphs for all 42 curated tools.
  * Drop this file into `src/lib/glyphs.ts`.
  */
 export const TOOL_GLYPHS: Record<string, string> = {
@@ -27,6 +27,9 @@ export const TOOL_GLYPHS: Record<string, string> = {
   'pdf-crop': '✂️',
   'pdf-header-footer': '🔖',
   'pdf-bates': '🔢',
+  'pdf-rotate': '🔄',
+  'pdf-watermark': '💧',
+  'pdf-page-organiser': '🔀',
   'pdf-nup': '🔲',
   'pdf-booklet': '📖',
   'pdf-flatten': '🧱',
@@ -92,4 +95,4 @@ export const SECTION_GLYPHS: Record<string, string> = {
 
 export function glyphFor(tool: ToolMeta): string {
   return TOOL_GLYPHS[tool.id] ?? CATEGORY_GLYPHS[tool.category] ?? '🧰';
-  }
+}
