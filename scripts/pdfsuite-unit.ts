@@ -1,7 +1,7 @@
 // Unit tests for the pure PDF suite operations.
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import assert from 'node:assert/strict';
-import { booklet, bookletOrder, cropPages, deletePages, flattenForms, nUp, parsePageRanges, reorderPages, rotatePages, signPdf, stampText, watermark } from '../src/tools/pdfsuite/ops';
+import { addTextLayer, booklet, bookletOrder, cropPages, deletePages, flattenForms, nUp, parsePageRanges, reorderPages, rotatePages, signPdf, stampText, toWinAnsi, watermark } from '../src/tools/pdfsuite/ops';
 
 async function make(n: number, size: [number, number] = [595, 842]) {
   const d = await PDFDocument.create();
@@ -104,5 +104,18 @@ console.log('PASS n-up');
   await assert.rejects(signPdf(input, { page: 9, png, width: 140, height: 60, x: 'left', y: 'top' }));
   await assert.rejects(signPdf(input, { page: 1, png, width: 4, height: 4, x: 'left', y: 'top' }));
   console.log('PASS sign pdf');
+}
+{
+  assert.equal(toWinAnsi('“Hello” — naïve 日本'), '"Hello" - nave');
+  const input = await make(2);
+  const out = await addTextLayer(input, [{ page: 1, imgWidth: 1190, imgHeight: 1684, words: [
+    { text: 'Hello', x0: 100, y0: 100, x1: 220, y1: 148 },
+    { text: 'wörld', x0: 230, y0: 100, x1: 350, y1: 148 },
+  ] }]);
+  assert.equal(await count(out), 2);
+  assert.ok(out.length > input.length);
+  await assert.rejects(addTextLayer(input, [{ page: 9, imgWidth: 100, imgHeight: 100, words: [] }]));
+  await assert.rejects(addTextLayer(input, [{ page: 1, imgWidth: 0, imgHeight: 100, words: [] }]));
+  console.log('PASS ocr text layer');
 }
 console.log('All PDF suite ops passed.');
