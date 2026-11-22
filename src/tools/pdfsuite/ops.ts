@@ -1,6 +1,6 @@
 // Pure, on-device PDF page operations built on pdf-lib. No DOM access, so
 // every function is covered by scripts/pdfsuite-unit.ts.
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib';
 
 /** "1-3,5,8-" style ranges to zero-based indexes. Blank means all pages. */
 export function parsePageRanges(spec: string, total: number): number[] {
@@ -142,9 +142,62 @@ export async function booklet(bytes: Uint8Array): Promise<Uint8Array> {
   return out.save();
 }
 
+/** Rotate the chosen pages by 90, 180 or 270 degrees, adding to any rotation the page already has. */
+export async function rotatePages(bytes: Uint8Array, angle: 90 | 180 | 270, spec = ''): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  const pages = doc.getPages();
+  for (const i of parsePageRanges(spec, pages.length)) {
+    const p = pages[i];
+    p.setRotation(degrees(((p.getRotation().angle + angle) % 360 + 360) % 360));
+  }
+  return doc.save();
+}
+
+export interface WatermarkOptions { text: string; size?: number; opacity?: number; pages?: string }
+
+/** Faint diagonal label across the centre of each chosen page, drawn over the content. */
+export async function watermark(bytes: Uint8Array, o: WatermarkOptions): Promise<Uint8Array> {
+  const text = o.text.trim();
+  if (!text) throw new Error('Enter the watermark text.');
+  const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  const font = await doc.embedFont(StandardFonts.HelveticaBold);
+  const theta = Math.PI / 4, cos = Math.cos(theta), sin = Math.sin(theta);
+  const pages = doc.getPages();
+  for (const i of parsePageRanges(o.pages ?? '', pages.length)) {
+    const p = pages[i];
+    const { width, height } = p.getSize();
+    let size = o.size ?? 48;
+    let tw = font.widthOfTextAtSize(text, size);
+    const maxTw = 0.95 * Math.hypot(width, height);
+    if (tw > maxTw) { size = Math.max(8, size * maxTw / tw); tw = font.widthOfTextAtSize(text, size); }
+    const x = width / 2 - (tw / 2) * cos + size * 0.35 * sin;
+    const y = height / 2 - (tw / 2) * sin - size * 0.35 * cos;
+    p.drawText(text, { x, y, size, font, color: rgb(0.45, 0.45, 0.45), opacity: o.opacity ?? 0.15, rotate: degrees(45) });
+  }
+  return doc.save();
+}
+
+/** Rebuild the document with the pages in the given 1-based order. Numbers may repeat; pages left out are dropped. */
+export async function reorderPages(bytes: Uint8Array, spec: string): Promise<Uint8Array> {
+  const src = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  const total = src.getPageCount();
+  if (!spec.trim()) throw new Error('Enter the new page order, for example 3,1,2.');
+  const order = spec.split(',').map((part) => {
+    const n = Number(part.trim());
+    if (!Number.isInteger(n) || n < 1 || n > total) throw new Error(`"${part.trim()}" is not a page number between 1 and ${total}.`);
+    return n - 1;
+  });
+  const out = await PDFDocument.create();
+  for (const p of await out.copyPages(src, order)) out.addPage(p);
+  const title = src.getTitle(); if (title) out.setTitle(title);
+  const author = src.getAuthor(); if (author) out.setAuthor(author);
+  const subject = src.getSubject(); if (subject) out.setSubject(subject);
+  return out.save();
+}
+
 /** Bake form fields into the page so they can no longer be edited. */
 export async function flattenForms(bytes: Uint8Array): Promise<Uint8Array> {
   const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
   doc.getForm().flatten();
   return doc.save();
-}
+    }
