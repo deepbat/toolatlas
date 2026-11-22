@@ -73,8 +73,14 @@ jobs:
     name: Windows smoke test (install, launch, screenshot)
     needs: windows
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
       - uses: actions/download-artifact@v4
         with:
           name: deepaks-tool-windows-unsigned
@@ -90,6 +96,7 @@ jobs:
           "Installer exit code: $($p.ExitCode)"
           $app = Get-ChildItem "$env:LOCALAPPDATA" -Recurse -Filter deepaks-tool.exe -ErrorAction SilentlyContinue | Select-Object -First 1
           "Installed exe: $($app.FullName)"
+          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222'
           $proc = Start-Process -FilePath $app.FullName -PassThru
           Start-Sleep -Seconds 25
           $proc.Refresh()
@@ -101,11 +108,18 @@ jobs:
           [System.Drawing.Graphics]::FromImage($bmp).CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
           $bmp.Save("$PWD\win-smoke.png")
           if ($proc.HasExited) { exit 1 }
+          node scripts/desktop-smoke.mjs
+          "node exit: $LASTEXITCODE"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: windows-smoke-screenshot
-          path: win-smoke.png
+          path: |
+            win-smoke.png
+            win-after.png
+            rotated.pdf
+            ocr.pdf
 
   smoke-linux:
     name: Linux smoke test (xvfb, screenshot)
