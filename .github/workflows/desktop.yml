@@ -38,7 +38,7 @@ jobs:
           path: src-tauri/target/release/bundle/nsis/*.exe
           if-no-files-found: error
       - name: Build test-only installer (remote debugging port on, for CI functional test)
-        run: npx --yes @tauri-apps/cli@2 build --bundles nsis --config src-tauri/tauri.test.conf.json
+        run: npx --yes @tauri-apps/cli@2 build --bundles nsis --config src-tauri/tauri.test.conf.json --features native-pdf
       - uses: actions/upload-artifact@v4
         with:
           name: deepaks-tool-windows-TESTONLY
@@ -205,6 +205,18 @@ jobs:
           "Downloads after:"
           Get-ChildItem "$env:USERPROFILE\Downloads" -ErrorAction SilentlyContinue | Select-Object Name, Length | Format-Table | Out-String
           Get-ChildItem "$env:USERPROFILE" -Recurse -Filter 'names-test*' -ErrorAction SilentlyContinue | Select-Object FullName | Format-Table | Out-String
+      - name: Native PDF save prototype (WebView2 PrintToPdf through a Rust command)
+        shell: pwsh
+        timeout-minutes: 5
+        continue-on-error: true
+        run: |
+          Get-Process deepaks-tool -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 3
+          $app = Get-ChildItem "$env:LOCALAPPDATA" -Recurse -Filter deepaks-tool.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          Start-Process -FilePath $app.FullName
+          Start-Sleep -Seconds 10
+          node scripts/desktop-nativesave.mjs
+          "nativesave exit: $LASTEXITCODE"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
