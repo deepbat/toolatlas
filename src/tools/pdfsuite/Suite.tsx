@@ -443,7 +443,7 @@ function OfficeToPdf({ kind }: { kind: 'word' | 'excel' }) {
           <Note>
             {word
               ? 'This app renders the document itself, so layout can differ from Word: fonts may be substituted and some features, such as text boxes or charts, may be missing. Page breaks stored in the file are honoured.'
-              : 'Every sheet becomes its own section with merged cells and column widths preserved. Charts and embedded images are not included.'}
+              : 'Every worksheet that has cells becomes its own section with merged cells and column widths preserved. A worksheet with no cells is skipped. Charts and embedded images are not included.'}
           </Note>
         </div>
       </Panel>
@@ -484,4 +484,4 @@ export default function PdfSuite() {
   const { toolId } = useParams();
   const Part = PARTS[toolId ?? ''];
   return Part ? <Part /> : null;
-      }
+}
