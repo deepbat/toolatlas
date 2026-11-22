@@ -50,7 +50,7 @@ export function itemsToParagraphs(items: TextItem[]): Para[] {
   return paras;
 }
 
-const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const esc = (s: string) => s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 function paraXml(p: Para): string {
   const style = p.level > 0 ? `<w:pPr><w:pStyle w:val="Heading${p.level}"/></w:pPr>` : '';
