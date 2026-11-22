@@ -33,6 +33,9 @@ export const INPUTS: Record<FileKind, string[]> = {
     'pdf-nup',
     'pdf-booklet',
     'pdf-flatten',
+    'pdf-protect',
+    'pdf-unlock',
+    'pdf-repair',
   ],
   image: [
     'image-to-pdf',
@@ -213,4 +216,4 @@ export async function clearAllTransfers() {
     });
     d.close();
   } catch {}
-}
+        }
