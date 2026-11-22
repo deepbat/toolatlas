@@ -39,6 +39,7 @@ const REGISTRY = {
   'pdf-watermark': PdfSuite,
   'pdf-page-organiser': PdfSuite,
   'pdf-sign': PdfSuite,
+  'pdf-ocr': PdfSuite,
   'pdf-nup': PdfSuite,
   'pdf-booklet': PdfSuite,
   'pdf-flatten': PdfSuite,
