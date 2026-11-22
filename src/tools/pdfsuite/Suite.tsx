@@ -4,7 +4,8 @@ import { Button, Dropzone, Field, FileRow, Grid, Input, Note, Panel, Select, Tog
 import { downloadBlob, formatBytes } from '../../lib/utils';
 import { checkPdfFile, friendlyPdfError, openPdfLib } from '../../lib/pdfio';
 import { Failure } from '../studio/kit';
-import { booklet, cropPages, deletePages, flattenForms, nUp, reorderPages, rotatePages, stampText, watermark, type StampPlace } from './ops';
+import { booklet, cropPages, deletePages, flattenForms, nUp, reorderPages, rotatePages, signPdf, stampText, watermark, type StampPlace } from './ops';
+import SignaturePad from '../pdf-editor/SignaturePad';
 
 /** Shared shell: pick one PDF, run an operation, download the result. */
 function Shell({ verb, help, outSuffix, run, children, ready = true }: {
@@ -207,6 +208,46 @@ function Organise() {
   );
 }
 
+const XSPOTS: [SignX, string][] = [['left', 'Left'], ['center', 'Centre'], ['right', 'Right']];
+const YSPOTS: [SignY, string][] = [['bottom', 'Bottom'], ['middle', 'Middle'], ['top', 'Top']];
+type SignX = 'left' | 'center' | 'right';
+type SignY = 'top' | 'middle' | 'bottom';
+
+function Sign() {
+  const [sig, setSig] = useState<{ url: string; w: number; h: number } | null>(null);
+  const [padOpen, setPadOpen] = useState(false);
+  const [pageSpec, setPageSpec] = useState('');
+  const [xSpot, setXSpot] = useState<SignX>('right');
+  const [ySpot, setYSpot] = useState<SignY>('bottom');
+  const [widthPt, setWidthPt] = useState('140');
+  const w = Number(widthPt) || 140;
+  return (
+    <Shell verb="Sign PDF" outSuffix="signed" ready={!!sig} help="Draw, type or upload a signature, pick a page and a corner, and the image is stamped onto that page."
+      run={async (b, total) => {
+        const page = pageSpec.trim() ? Number(pageSpec) : total;
+        const png = Uint8Array.from(atob(sig!.url.split(',')[1]), (c) => c.charCodeAt(0));
+        return signPdf(b, { page, png, width: w, height: Math.max(10, (w * sig!.h) / sig!.w), x: xSpot, y: ySpot });
+      }}>
+      {!sig ? (
+        <Button type="button" variant="secondary" onClick={() => setPadOpen(true)}>Create a signature</Button>
+      ) : (
+        <div className="flex flex-wrap items-center gap-4">
+          <img src={sig.url} alt="Your signature" className="h-16 border border-line bg-white p-1" />
+          <Button type="button" variant="ghost" onClick={() => setPadOpen(true)}>Make a new signature</Button>
+        </div>
+      )}
+      <div className="mt-3"><Grid cols={2}>
+        <Field label="Page" hint="Blank signs the last page."><Input type="number" min={1} value={pageSpec} onChange={(e) => setPageSpec(e.target.value)} placeholder="Last page" /></Field>
+        <Field label="Width (pt)"><Input type="number" min={40} max={300} value={widthPt} onChange={(e) => setWidthPt(e.target.value)} /></Field>
+        <Field label="Horizontal"><Select value={xSpot} onChange={(e) => setXSpot(e.target.value as SignX)}>{XSPOTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</Select></Field>
+        <Field label="Vertical"><Select value={ySpot} onChange={(e) => setYSpot(e.target.value as SignY)}>{YSPOTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</Select></Field>
+      </Grid></div>
+      <div className="mt-3"><Note>This places a visible image of your signature on the page. It is not a cryptographic digital signature and does not prove identity in a legal sense.</Note></div>
+      {padOpen && <SignaturePad onDone={(url, sw, sh) => { setSig({ url, w: sw, h: sh }); setPadOpen(false); }} onCancel={() => setPadOpen(false)} />}
+    </Shell>
+  );
+}
+
 function Flatten() {
   return (
     <Shell verb="Flatten forms" outSuffix="flattened" help="Turns fillable fields into plain page content so they can no longer be edited."
@@ -224,6 +265,7 @@ const PARTS: Record<string, () => JSX.Element> = {
   'pdf-rotate': Rotate,
   'pdf-watermark': Watermark,
   'pdf-page-organiser': Organise,
+  'pdf-sign': Sign,
   'pdf-nup': NUp,
   'pdf-booklet': Booklet,
   'pdf-flatten': Flatten,
@@ -233,4 +275,4 @@ export default function PdfSuite() {
   const { toolId } = useParams();
   const Part = PARTS[toolId ?? ''];
   return Part ? <Part /> : null;
-                                                                                                           }
+    }
