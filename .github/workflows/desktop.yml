@@ -142,6 +142,32 @@ jobs:
           [System.Drawing.Graphics]::FromImage($sbmp).CopyFromScreen($sb.Location, [System.Drawing.Point]::Empty, $sb.Size)
           $sbmp.Save("$PWD\win-print.png")
           if ($a -ne 0 -or $b -ne 0) { exit 1 }
+      - name: Native print dialog, Microsoft Print to PDF save (keyboard automation)
+        shell: pwsh
+        timeout-minutes: 4
+        continue-on-error: true
+        run: |
+          New-Item -ItemType Directory -Force out | Out-Null
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          function Snap($n) { $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; $m = New-Object System.Drawing.Bitmap $b.Width, $b.Height; [System.Drawing.Graphics]::FromImage($m).CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size); $m.Save("$PWD\out\$n.png") }
+          $sh = New-Object -ComObject WScript.Shell
+          $ok = $sh.AppActivate("Deepak's Tool")
+          "activate: $ok"
+          Start-Sleep -Seconds 2
+          Snap 'native-1-before-print'
+          [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+          Start-Sleep -Seconds 5
+          Snap 'native-2-after-enter'
+          Get-Process | Where-Object { $_.MainWindowTitle } | Select-Object Name, MainWindowTitle | Format-Table | Out-String
+          $target = "$PWD\out\native-print.pdf"
+          [System.Windows.Forms.SendKeys]::SendWait($target)
+          Start-Sleep -Seconds 1
+          Snap 'native-3-typed-path'
+          [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+          Start-Sleep -Seconds 6
+          Snap 'native-4-after-save'
+          "native-print.pdf exists: $(Test-Path $target)"
+          Get-ChildItem out, "$env:USERPROFILE\Documents", "$env:USERPROFILE\Downloads" -Filter *.pdf -ErrorAction SilentlyContinue | Select-Object FullName, Length | Format-Table | Out-String
       - uses: actions/setup-node@v4
         with:
           node-version: 22
