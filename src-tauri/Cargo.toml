@@ -13,3 +13,11 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+
+[features]
+# Prototype: WebView2 PrintToPdf save command. Off by default, so the shipped build is unchanged.
+native-pdf = ["dep:webview2-com", "dep:windows"]
+
+[target.'cfg(windows)'.dependencies]
+webview2-com = { version = "0.39", optional = true }
+windows = { version = "0.62", optional = true }
