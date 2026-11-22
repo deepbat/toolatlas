@@ -129,8 +129,12 @@ jobs:
           $proc = Start-Process -FilePath $app.FullName -PassThru
           Start-Sleep -Seconds 10
           node scripts/desktop-smoke.mjs
-          "node exit: $LASTEXITCODE"
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $a = $LASTEXITCODE
+          "smoke exit: $a"
+          node scripts/desktop-convert.mjs
+          $b = $LASTEXITCODE
+          "convert exit: $b"
+          if ($a -ne 0 -or $b -ne 0) { exit 1 }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -140,6 +144,7 @@ jobs:
             win-after.png
             rotated.pdf
             ocr.pdf
+            out/*
 
   smoke-linux:
     name: Linux smoke test (xvfb, screenshot)
@@ -159,7 +164,7 @@ jobs:
           export DISPLAY=:99
           Xvfb :99 -screen 0 1280x900x24 &
           sleep 2
-          deepaks-tool > app.log 2>&1 &
+          WEBKIT_DISABLE_COMPOSITING_MODE=1 WEBKIT_DISABLE_DMABUF_RENDERER=1 deepaks-tool > app.log 2>&1 &
           APP=$!
           sleep 25
           if kill -0 $APP; then echo "app running"; else echo "app exited"; cat app.log; exit 1; fi
