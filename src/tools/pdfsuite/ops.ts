@@ -195,9 +195,36 @@ export async function reorderPages(bytes: Uint8Array, spec: string): Promise<Uin
   return out.save();
 }
 
+export interface SignPlacement {
+  page: number; // 1-based
+  png: Uint8Array;
+  width: number; // points
+  height: number; // points
+  x: 'left' | 'center' | 'right';
+  y: 'top' | 'middle' | 'bottom';
+  margin?: number;
+}
+
+/** Draw a signature image on one page. This is a visible mark, not a cryptographic signature. */
+export async function signPdf(bytes: Uint8Array, p: SignPlacement): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  const pages = doc.getPages();
+  const idx = p.page - 1;
+  if (!Number.isInteger(p.page) || idx < 0 || idx >= pages.length) throw new Error(`Page ${p.page} is outside this ${pages.length}-page document.`);
+  if (p.width < 10 || p.height < 10) throw new Error('The signature would be smaller than 10 pt.');
+  const img = await doc.embedPng(p.png);
+  const page = pages[idx];
+  const { width, height } = page.getSize();
+  const margin = p.margin ?? 36;
+  const x = p.x === 'left' ? margin : p.x === 'right' ? width - margin - p.width : (width - p.width) / 2;
+  const y = p.y === 'bottom' ? margin : p.y === 'top' ? height - margin - p.height : (height - p.height) / 2;
+  page.drawImage(img, { x, y, width: p.width, height: p.height });
+  return doc.save();
+}
+
 /** Bake form fields into the page so they can no longer be edited. */
 export async function flattenForms(bytes: Uint8Array): Promise<Uint8Array> {
   const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
   doc.getForm().flatten();
   return doc.save();
-    }
+}
