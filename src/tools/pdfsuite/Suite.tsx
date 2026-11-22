@@ -9,6 +9,7 @@ import SignaturePad from '../pdf-editor/SignaturePad';
 import Ocr from './Ocr';
 import { protectPdf, repairPdf, unlockPdf } from './qpdf';
 import { buildDocx, itemsToParagraphs, type Para, type TextItem } from './docx';
+import { openPrintView, renderDocx, sectionsToPdf, tablesToSections, workbookToTables, SHEET_CSS } from './office2pdf';
 import { pdfjs } from '../pdf-editor/pdfjs';
 
 /** Shared shell: pick one PDF, run an operation, download the result. */
@@ -345,7 +346,108 @@ function Flatten() {
   );
 }
 
+/** Word/Excel to PDF: pick a .docx/.xlsx, choose image PDF or selectable-text print view, convert. */
+function OfficeToPdf({ kind }: { kind: 'word' | 'excel' }) {
+  const word = kind === 'word';
+  const accept = word
+    ? '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    : '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  const [file, setFile] = useState<File | null>(null);
+  const [mode, setMode] = useState<'image' | 'print'>('image');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState('');
+
+  const go = async () => {
+    if (!file) return;
+    setBusy(true); setError(''); setDone('');
+    const base = file.name.replace(/\.[^.]+$/, '');
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      let pages: HTMLElement[] = [];
+      let cssHtml = '';
+      let bodyHtml = '';
+      let dispose = () => {};
+      if (word) {
+        const rendered = await renderDocx(bytes);
+        pages = rendered.pages; cssHtml = rendered.cssHtml; bodyHtml = rendered.bodyHtml; dispose = rendered.dispose;
+      } else {
+        const XLSX = await import('xlsx');
+        const wb = XLSX.read(bytes, { type: 'array' });
+        const tables = workbookToTables(wb.SheetNames, wb.Sheets as never);
+        if (!tables.length) throw Error('This workbook has no sheets.');
+        const host = document.createElement('div');
+        host.style.cssText = 'position:fixed;left:-100000px;top:0;';
+        host.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(host);
+        pages = tablesToSections(tables, host);
+        cssHtml = `<style>${SHEET_CSS}</style>`;
+        bodyHtml = host.innerHTML;
+        dispose = () => host.remove();
+      }
+      try {
+        if (mode === 'image') {
+          const out = await sectionsToPdf(pages);
+          const blob = new Blob([out as unknown as BlobPart], { type: 'application/pdf' });
+          downloadBlob(`${base}-deepakstool.pdf`, blob);
+          setDone(`Saved ${formatBytes(blob.size)}. The download should have started.`);
+        } else {
+          openPrintView(file.name, cssHtml, bodyHtml);
+          setDone('The print view opened in a new tab. Choose "Save as PDF" in the browser dialog.');
+        }
+      } finally {
+        dispose();
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'The conversion failed.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Panel title={word ? '1. Choose a Word document' : '1. Choose an Excel workbook'} description="The file is opened on this device and is never uploaded.">
+        {!file ? (
+          <Dropzone accept={accept} multiple={false} onFiles={(f) => { setError(''); setDone(''); setFile(f[0] ?? null); }} title={word ? 'Drop a .docx or browse' : 'Drop an .xlsx or browse'} hint="Files up to 100 MB" />
+        ) : (
+          <FileRow name={file.name} meta={formatBytes(file.size)} onRemove={() => { setFile(null); setDone(''); }} />
+        )}
+      </Panel>
+      <Panel title="2. Choose the kind of PDF" description="This choice changes whether the text in the PDF can be selected.">
+        <div className="space-y-2 text-sm">
+          <label className="flex items-start gap-2">
+            <input type="radio" name="office2pdf-mode" className="mt-1" checked={mode === 'image'} onChange={() => setMode('image')} />
+            <span><strong>Image PDF (recommended).</strong> Pages look exactly as rendered on this device, including Indic scripts. Text in the PDF is not selectable.</span>
+          </label>
+          <label className="flex items-start gap-2">
+            <input type="radio" name="office2pdf-mode" className="mt-1" checked={mode === 'print'} onChange={() => setMode('print')} />
+            <span><strong>Selectable text.</strong> Opens a print view; pick "Save as PDF" in the browser dialog. Page breaks may shift compared with Word.</span>
+          </label>
+        </div>
+        <div className="mt-3">
+          <Note>
+            {word
+              ? 'Your document keeps its fonts, tables, images and headings as rendered here. Only Word itself reproduces Word pagination exactly; page breaks stored in the file are honoured.'
+              : 'Every sheet becomes its own section with merged cells and column widths preserved. Charts and embedded images are not included.'}
+          </Note>
+        </div>
+      </Panel>
+      <Panel title="3. Convert">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="button" onClick={go} disabled={!file || busy}>{busy ? 'Working…' : word ? 'Convert to PDF' : 'Convert to PDF'}</Button>
+        </div>
+        <div className="mt-3"><Failure error={error} /></div>
+        {done && <p className="mt-3 text-sm text-muted">{done}</p>}
+        <p className="mt-4 text-[11px] text-muted/80">100% local processing. Nothing leaves your device.</p>
+      </Panel>
+    </div>
+  );
+}
+
 const PARTS: Record<string, () => JSX.Element> = {
+  'word-to-pdf': () => <OfficeToPdf kind="word" />,
+  'excel-to-pdf': () => <OfficeToPdf kind="excel" />,
   'pdf-delete-pages': DeletePages,
   'pdf-crop': Crop,
   'pdf-header-footer': () => <Stamp mode="header-footer" />,
@@ -368,4 +470,4 @@ export default function PdfSuite() {
   const { toolId } = useParams();
   const Part = PARTS[toolId ?? ''];
   return Part ? <Part /> : null;
-                                                                                                           }
+    }
