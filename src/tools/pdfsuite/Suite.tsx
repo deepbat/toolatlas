@@ -6,6 +6,7 @@ import { checkPdfFile, friendlyPdfError, openPdfLib } from '../../lib/pdfio';
 import { Failure } from '../studio/kit';
 import { booklet, cropPages, deletePages, flattenForms, nUp, reorderPages, rotatePages, signPdf, stampText, watermark, type StampPlace } from './ops';
 import SignaturePad from '../pdf-editor/SignaturePad';
+import Ocr from './Ocr';
 
 /** Shared shell: pick one PDF, run an operation, download the result. */
 function Shell({ verb, help, outSuffix, run, children, ready = true }: {
@@ -266,6 +267,7 @@ const PARTS: Record<string, () => JSX.Element> = {
   'pdf-watermark': Watermark,
   'pdf-page-organiser': Organise,
   'pdf-sign': Sign,
+  'pdf-ocr': Ocr,
   'pdf-nup': NUp,
   'pdf-booklet': Booklet,
   'pdf-flatten': Flatten,
@@ -275,4 +277,4 @@ export default function PdfSuite() {
   const { toolId } = useParams();
   const Part = PARTS[toolId ?? ''];
   return Part ? <Part /> : null;
-    }
+        }
