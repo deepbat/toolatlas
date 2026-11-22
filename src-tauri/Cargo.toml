@@ -1,0 +1,15 @@
+[package]
+name = "deepaks-tool"
+version = "0.1.0"
+description = "Deepak's Tool desktop shell (wraps the static on-device site)"
+edition = "2021"
+
+[lib]
+name = "deepaks_tool_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
