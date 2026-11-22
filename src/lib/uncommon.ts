@@ -119,6 +119,17 @@ export const UNCOMMON_TOOLS: ToolMeta[] = [
     added: '2026-11-22',
   },
   {
+    id: 'pdf-sign',
+    name: 'Sign PDF',
+    description: 'Draw, type or upload your signature and stamp it on any page, on your device.',
+    category: 'pdf',
+    icon: 'PenLine',
+    keywords: ['sign pdf', 'signature', 'esign', 'sign document', 'stamp signature'],
+    version: '1.0.0',
+    status: 'stable',
+    added: '2026-11-22',
+  },
+  {
     id: 'pdf-nup',
     name: 'Multiple Pages per Sheet (N-up)',
     description: 'Print 2, 4, 6 or 9 PDF pages on one A4 sheet to save paper.',
