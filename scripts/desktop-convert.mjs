@@ -59,20 +59,6 @@ async function convert(tool, file, mime, buf, out) {
 }
 await step('word-to-pdf image PDF', () => convert('word-to-pdf', 'fixture.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', docxBuf, 'out/word-image.pdf'));
 await step('excel-to-pdf image PDF', () => convert('excel-to-pdf', 'book.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', xlsxBuf, 'out/excel-image.pdf'));
-await step('word-to-pdf selectable print view opens a window', async () => {
-  await page.goto(`${origin}/tools/word-to-pdf/`);
-  await page.locator('input[type=file]').first().setInputFiles({ name: 'fixture.docx', mimeType: 'application/octet-stream', buffer: docxBuf });
-  await page.getByText('fixture.docx').first().waitFor({ timeout: 20000 });
-  await page.locator('label', { hasText: 'Selectable text' }).click();
-  const before = browser.contexts().flatMap(c => c.pages()).length;
-  await page.getByRole('button', { name: 'Convert to PDF', exact: true }).click();
-  await new Promise(r => setTimeout(r, 8000));
-  const pages = browser.contexts().flatMap(c => c.pages());
-  await page.screenshot({ path: 'out/word-print-after.png' });
-  if (pages.length <= before) throw new Error('no new window opened (windows before ' + before + ', after ' + pages.length + ')');
-  const txt = await pages[pages.length - 1].locator('body').innerText();
-  return 'new window text has Devanagari: ' + txt.includes('नमस्ते');
-});
 await step('pdf-to-word downloads a docx', async () => {
   const d = await PDFDocument.create(); const f = await d.embedFont(StandardFonts.Helvetica);
   d.addPage([595, 842]).drawText('Hello desktop', { x: 60, y: 700, size: 24, font: f });
@@ -86,4 +72,18 @@ await step('pdf-to-word downloads a docx', async () => {
   if (b[0] !== 0x50 || b[1] !== 0x4b) throw new Error('not a zip');
   return dl.suggestedFilename() + ' ' + b.length + ' bytes';
 });
+await step('word-to-pdf selectable print view starts printing (hidden frame fallback)', async () => {
+  await page.goto(`${origin}/tools/word-to-pdf/`);
+  await page.locator('input[type=file]').first().setInputFiles({ name: 'fixture.docx', mimeType: 'application/octet-stream', buffer: docxBuf });
+  await page.getByText('fixture.docx').first().waitFor({ timeout: 20000 });
+  await page.locator('label', { hasText: 'Selectable text' }).click();
+  await page.getByRole('button', { name: 'Convert to PDF', exact: true }).click();
+  await new Promise(r => setTimeout(r, 4000));
+  const blocked = await page.getByText('blocked the print window').count();
+  const frame = await page.evaluate(() => { const f = document.querySelector('iframe[data-print-frame]'); return f ? f.contentDocument.body.innerText.includes('नमस्ते') : null; });
+  if (blocked) throw new Error('print window blocked message shown');
+  if (frame !== true) throw new Error('hidden print frame missing or without text: ' + frame);
+  return 'hidden print frame present with Devanagari text; screen capture follows';
+});
+console.log('done');
 process.exit(failed ? 1 : 0);
