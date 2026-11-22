@@ -387,7 +387,7 @@ function OfficeToPdf({ kind }: { kind: 'word' | 'excel' }) {
       }
       try {
         if (mode === 'image') {
-          const out = await sectionsToPdf(pages);
+          const out = await sectionsToPdf(pages, cssHtml);
           const blob = new Blob([out as unknown as BlobPart], { type: 'application/pdf' });
           downloadBlob(`${base}-deepakstool.pdf`, blob);
           setDone(`Saved ${formatBytes(blob.size)}. The download should have started.`);
@@ -470,4 +470,4 @@ export default function PdfSuite() {
   const { toolId } = useParams();
   const Part = PARTS[toolId ?? ''];
   return Part ? <Part /> : null;
-    }
+}
