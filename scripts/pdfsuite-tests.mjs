@@ -141,9 +141,21 @@ try {
   assert.ok(wordOut.getPage(0).getWidth() > 100);
   {
     // The image PDF carries an exact invisible text layer: Indic text must read back letter for letter.
-    const { execFileSync } = await import('node:child_process');
-    const txt = execFileSync('pdftotext', ['-layout', '/tmp/suite-word-to-pdf.pdf', '-'], { encoding: 'utf8' });
+    // pdf.js reads the saved file in a separate page (no system PDF tools needed).
+    const rp = await (await browser.newContext()).newPage();
+    await rp.route('**/__pdfjs/**', async (route) => { const f = route.request().url().split('/__pdfjs/')[1]; await route.fulfill({ body: await readFile('node_modules/pdfjs-dist/build/' + f), contentType: 'text/javascript' }); });
+    await rp.goto(base + '/');
+    const pages = await rp.evaluate(async ([u, b64]) => {
+      const m = await import(u + '/__pdfjs/pdf.min.mjs'); window.pdfjsWorker = await import(u + '/__pdfjs/pdf.worker.min.mjs');
+      const doc = await m.getDocument({ data: Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)) }).promise;
+      const out = [];
+      for (let n = 1; n <= doc.numPages; n++) { const c = await (await doc.getPage(n)).getTextContent(); out.push(c.items.map((i) => i.str).join(' ')); }
+      return out;
+    }, [base, (await readFile('/tmp/suite-word-to-pdf.pdf')).toString('base64')]);
+    await rp.close();
+    const txt = pages.join(' ').replace(/\s+/g, ' ');
     for (const t of ['Quarterly Report', 'नमस्ते दुनिया क्षत्रिय ज्ञान', 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ', 'गणना', 'Closing notes']) assert.ok(txt.includes(t), 'text layer has ' + t + ' got: ' + txt.slice(0, 400));
+    assert.ok(pages[1].includes('Page two starts here') && !pages[0].includes('Page two starts here'), 'text layer keeps the page split');
   }
   console.log('PASS word-to-pdf image PDF'); n++;
   {
@@ -220,4 +232,4 @@ try {
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-                                             }
+}
