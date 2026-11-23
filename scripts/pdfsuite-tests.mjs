@@ -3,7 +3,7 @@ import { chromium } from '@playwright/test';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { MERGED_TABLE_PDF_B64 } from './fixtures/merged-table.mjs';
 
 const base = process.env.E2E_BASE_URL || 'http://127.0.0.1:4173/toolatlas';
@@ -297,6 +297,10 @@ try {
     // so word spacing is checked as a floor of 2 of the 3 occurrences, not as exact text.
     const docXml = await z.file('word/document.xml').async('string');
     const cells = [...docXml.matchAll(/<w:tc>([\s\S]*?)<\/w:tc>/g)].map((m) => m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+    await mkdir('test-artifacts/pdfsuite', { recursive: true });
+    await writeFile('test-artifacts/pdfsuite/ocr-input-broken.pdf', broken);
+    await copyFile('/tmp/word-to-pdf-print.pdf', 'test-artifacts/pdfsuite/word-to-pdf-print.pdf');
+    await copyFile('/tmp/pdf-to-word-ocr.docx', 'test-artifacts/pdfsuite/pdf-to-word-ocr.docx');
     console.log('OCR docx tables=' + (docXml.match(/<w:tbl>/g) || []).length + ' cells=' + JSON.stringify(cells) + ' text=' + text);
     assert.deepEqual(cells, ['Item', 'गणना', 'Apples', '42'], 'OCR table cells: ' + JSON.stringify(cells));
     assert.ok(text.includes('ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ — ਦੂਜੇ ਸਫ਼ੇ ਦੀ ਸਮਗਰੀ'), 'Punjabi sentence exact: ' + text.slice(-200));
@@ -307,4 +311,4 @@ try {
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-}
+        }
