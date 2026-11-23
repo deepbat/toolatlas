@@ -4,7 +4,7 @@ import { renderPage } from '../../lib/pdfio';
 import type { TextItem } from './docx';
 
 const TESS = `${(import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/'}tesseract`;
-type W = { recognize: (c: unknown, o: unknown, out: unknown) => Promise<any>; terminate: () => Promise<unknown> };
+type W = { setParameters: (p: Record<string, string>) => Promise<unknown>; recognize: (c: unknown, o: unknown, out: unknown) => Promise<any>; terminate: () => Promise<unknown> };
 const workers = new Map<string, W>();
 
 async function workerFor(lang: string): Promise<W> {
@@ -12,6 +12,8 @@ async function workerFor(lang: string): Promise<W> {
   if (have) return have;
   const { createWorker, OEM } = await import('tesseract.js');
   const w = (await createWorker(lang.split('+'), OEM.LSTM_ONLY, { workerPath: `${TESS}/worker.min.js`, corePath: TESS, langPath: TESS })) as unknown as W;
+  // tesseract.js defaults to one-block page layout, which dropped the last row of a ruled table on a test page; ask for automatic layout.
+  await w.setParameters({ tessedit_pageseg_mode: '3' });
   workers.set(lang, w);
   return w;
 }
@@ -29,7 +31,7 @@ export async function readPage(canvas: HTMLCanvasElement, lang: string): Promise
 }
 
 export async function ocrPageItems(doc: any, pageNo: number, lang: string): Promise<TextItem[] | null> {
-  const scale = 2;
+  const scale = 3;
   const { canvas } = await renderPage(doc, pageNo, scale);
   const data = await readPage(canvas, lang);
   const hPt = canvas.height / scale;
@@ -52,4 +54,4 @@ export async function ocrPageItems(doc: any, pageNo: number, lang: string): Prom
 export async function ocrDone() {
   for (const w of workers.values()) await w.terminate();
   workers.clear();
-}
+                  }
