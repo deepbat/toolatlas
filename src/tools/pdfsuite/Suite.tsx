@@ -9,6 +9,7 @@ import SignaturePad from '../pdf-editor/SignaturePad';
 import Ocr from './Ocr';
 import { protectPdf, repairPdf, unlockPdf } from './qpdf';
 import { pageImages } from './pdfImages';
+import { ocrDone, ocrPageItems } from './ocrItems';
 import { buildDocx, itemsToParagraphs, type Para, type TextItem } from './docx';
 import { nativePdfSaveActive, openPrintView, renderDocx, sectionsToPdf, tablesToSections, workbookToTables, SHEET_CSS } from './office2pdf';
 import { pdfjs } from '../pdf-editor/pdfjs';
@@ -268,6 +269,7 @@ function Sign() {
 
 function ToWord() {
   const [pages, setPages] = useState('');
+  const [ocrLang, setOcrLang] = useState('');
   return (
     <Shell verb="Convert to Word" outSuffix="word" outExt="docx" mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
       help="Turns the text layer into an editable Word document with real paragraphs, headings and bold or italic runs."
@@ -286,11 +288,12 @@ function ToWord() {
           let fixed: string[] | null = null;
           try { if (lib) fixed = await applyActualText(pdfjs(), page, strItems.map((x) => x.str), pageActualTexts(lib, i)); } catch { fixed = null; }
           let si = 0;
+          let pageUnreadable = 0;
           for (const it of tc.items) {
             if (!('str' in it)) continue;
             const str: string = fixed ? fixed[si] : it.str; si++;
-            // pdf.js yields NUL for glyphs it cannot map back to text (seen with Devanagari and Gurmukhi conjuncts).
-            unreadable += (str.match(/\u0000/g) ?? []).length;
+            // pdf.js yields NUL (or other control characters) for glyphs it cannot map back to text (seen with Devanagari and Gurmukhi conjuncts, and fonts without a ToUnicode map).
+            pageUnreadable += (str.match(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g) ?? []).length;
             let bold = false, italic = false;
             try {
               const fname = String(page.commonObjs.get(it.fontName)?.name ?? '').toLowerCase();
@@ -299,6 +302,12 @@ function ToWord() {
             } catch { /* font style unknown */ }
             items.push({ text: str, size: Math.hypot(it.transform[2], it.transform[3]) || it.height || 12, bold, italic, y: it.transform[5], x: it.transform[4], w: typeof it.width === 'number' ? it.width : undefined });
           }
+          if (pageUnreadable && ocrLang) {
+            // Only a page whose text cannot be read back is read from its picture; pages with good text keep it.
+            const ocrItems = await ocrPageItems(doc, i + 1, ocrLang);
+            if (ocrItems) { items.length = 0; items.push(...ocrItems); pageUnreadable = 0; }
+          }
+          unreadable += pageUnreadable;
           const pageParas = itemsToParagraphs(items);
           try {
             // Pictures go in just before the first paragraph that sits lower on the page.
@@ -310,11 +319,19 @@ function ToWord() {
           paras.push(...pageParas);
           page.cleanup();
         }
-        if (unreadable) throw new Error(`${unreadable} characters in this PDF could not be read back as text (common with Indic scripts such as Devanagari and Gurmukhi). A Word file would be missing text, so none was written. Use PDF to Image or keep the PDF.`);
+        await ocrDone();
+        if (unreadable) throw new Error(`${unreadable} characters in this PDF could not be read back as text (common with Indic scripts such as Devanagari and Gurmukhi). A Word file would be missing text, so none was written. Use PDF to Image or keep the PDF, or choose an OCR language under "If a page's text cannot be read" to read those pages from their picture.`);
         if (!paras.some((q) => !q.image)) throw new Error('This PDF has no text layer, so it is probably a scan. Run it through OCR PDF first, then convert the result.');
         return buildDocx(paras);
       }}>
       <Field label="Pages" hint="Blank means every page."><Input value={pages} onChange={(e) => setPages(e.target.value)} placeholder="1-3,5" /></Field>
+      <div className="mt-3"><Field label="If a page's text cannot be read" hint="Only pages whose own text cannot be read back are read from their picture instead. Pages with readable text keep it. OCR is a guess: check those pages.">
+        <Select value={ocrLang} onChange={(e) => setOcrLang(e.target.value)}>
+          <option value="">Stop with a message</option>
+          <option value="hin+eng">Read them with OCR: Hindi + English</option>
+          <option value="pan+eng">Read them with OCR: Punjabi + English</option>
+          <option value="eng">Read them with OCR: English</option>
+        </Select></Field></div>
       <div className="mt-3"><Note>Fidelity is honest: text becomes editable paragraphs and headings. Simple tables whose columns line up in text rows are rebuilt as Word tables, including cells that wrap onto a second line in the layouts we tested. Pictures stored as images are copied into the document, placed by their height on the page and scaled to fit the text width; vector drawings and charts, page-sized scans, merged cells, ruling lines and exact fonts are not preserved, and column widths are not kept. Two-column pages are read left column first in tests on simple layouts; complex or mixed layouts, and tables the tool does not recognise, can come out in the wrong order. Check the result against the PDF.</Note></div>
     </Shell>
   );
@@ -505,4 +522,4 @@ export default function PdfSuite() {
   const { toolId } = useParams();
   const Part = PARTS[toolId ?? ''];
   return Part ? <Part /> : null;
-                                                                                                                                                                                 }
+}
