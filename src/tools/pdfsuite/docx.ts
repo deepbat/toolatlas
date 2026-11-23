@@ -66,7 +66,7 @@ function findTable(lines: TextItem[][], start: number): { rows: string[][]; end:
     }
     return out;
   };
-  type Grp = { cells: string[]; lastY: number; hasFirst: boolean; full: boolean };
+  type Grp = { cells: string[]; lastY: number; hasFirst: boolean; full: boolean; cont?: boolean };
   const groups: Grp[] = [];
   let end = start;
   for (; end < lines.length; end++) {
@@ -87,8 +87,18 @@ function findTable(lines: TextItem[][], start: number): { rows: string[][]; end:
       g.hasFirst = g.hasFirst || pl[0] !== undefined; g.lastY = ln[0].y;
     }
   }
+  // A first-column cell that spans two rows is usually vertically centred: its line sits between a row without a first cell
+  // and the next one. Put its text on the first of the two rows and keep the second as a continuation row.
+  for (let i = 1; i + 2 < groups.length + 1; i++) {
+    const a = groups[i], b = groups[i + 1], c = groups[i + 2];
+    if (!a || !b || !c) break;
+    if (!a.hasFirst && b.hasFirst && b.cells.slice(1).every((x) => !x) && !c.hasFirst && b.lastY < a.lastY && b.lastY > c.lastY) {
+      a.cells[0] = b.cells[0]; a.hasFirst = true; a.full = a.cells.every((x) => x); c.cont = true;
+      groups.splice(i + 1, 1);
+    }
+  }
   // Trailing rows that are not full-width are ordinary text after the table, not table rows.
-  while (groups.length > 2 && groups[groups.length - 1].cells.some((c) => !c)) { groups.pop(); end--; }
+  while (groups.length > 2 && groups[groups.length - 1].cells.some((c) => !c) && !groups[groups.length - 1].cont) { groups.pop(); end--; }
   const headerAligned = first.every((c, i) => Math.abs(c.x - colX[i]) <= tol);
   if (groups.length < (headerAligned ? 2 : 3) || !groups[0].full) return null; // an offset header needs two body rows to confirm the columns
   const rows = groups.map((g) => g.cells);
@@ -297,4 +307,4 @@ export function itemsToParagraphs(items: TextItem[]): Para[] {
   const body = sz[Math.floor(sz.length / 2)] || 12;
   for (const sg of merged) out.push(...layoutLines(sg.items, body));
   return out;
-}
+      }
