@@ -3,7 +3,7 @@ import { chromium } from '@playwright/test';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import JSZip from 'jszip';
 import { PNG } from 'pngjs';
-import { spawn, execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 
@@ -28,7 +28,15 @@ const go = async id => { await page.goto(`${base}/tools/${id}/`); await page.loc
 const up = async (buf, name = 'in.pdf', mime = 'application/pdf') => { await page.locator('input[type=file]').first().setInputFiles({ name, mimeType: mime, buffer: buf }); await page.getByText(name).first().waitFor(); };
 const dl = async (btn, ms = 60000) => { const p = page.waitForEvent('download', { timeout: ms }); await page.getByRole('button', { name: btn }).click(); const d = await p; const path = '/tmp/audit-' + Date.now() + '-' + d.suggestedFilename(); await d.saveAs(path); return { path, name: d.suggestedFilename(), buf: await readFile(path) }; };
 const dl2 = async (run, get, ms = 90000) => { await page.getByRole('button', { name: run }).click(); await page.getByRole('button', { name: get }).first().waitFor({ timeout: ms }); return dl(get); };
-const text = path => execFileSync('pdftotext', [path, '-']).toString();
+// Reader: the app's own pdf.js, loaded in a separate browser page, so the audit needs no system PDF tools.
+const rp = await browser.newPage();
+await rp.route('**/__pdfjs/**', async route => { const f = route.request().url().split('/__pdfjs/')[1]; await route.fulfill({ body: await readFile('node_modules/pdfjs-dist/build/' + f), contentType: 'text/javascript' }); });
+await rp.goto(base + '/404-reader-page/').catch(() => {});
+const readerReady = rp.evaluate(async u => { const m = await import(u + '/__pdfjs/pdf.min.mjs'); window.pdfjsWorker = await import(u + '/__pdfjs/pdf.worker.min.mjs'); window.__pdfjs = m; }, base);
+async function openPdf(path) { await readerReady; return rp.evaluate(async b64 => { const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); window.__doc = await window.__pdfjs.getDocument({ data: bin }).promise; return window.__doc.numPages; }, (await readFile(path)).toString('base64')); }
+const pageText = async (path, n) => { await openPdf(path); return rp.evaluate(async n => { const pg = await window.__doc.getPage(n); const c = await pg.getTextContent(); return c.items.map(i => i.str).join(' '); }, n); };
+const text = async path => { const k = await openPdf(path); let o = ''; for (let i = 1; i <= k; i++) o += (await pageText(path, i)) + '\n'; return o; };
+const colourStats = async (path, n, scale) => { await openPdf(path); return rp.evaluate(async ([n, scale]) => { const pg = await window.__doc.getPage(n); const vp = pg.getViewport({ scale }); const cv = document.createElement('canvas'); cv.width = Math.ceil(vp.width); cv.height = Math.ceil(vp.height); const ctx = cv.getContext('2d'); await pg.render({ canvasContext: ctx, viewport: vp }).promise; const d = ctx.getImageData(0, 0, cv.width, cv.height).data; let colour = 0, dark = 0; for (let i = 0; i < d.length; i += 4) { if (Math.abs(d[i] - d[i + 1]) > 12 || Math.abs(d[i + 1] - d[i + 2]) > 12) colour++; if (d[i] < 100 && d[i + 1] < 100 && d[i + 2] < 100) dark++; } return { colour, dark, w: cv.width, h: cv.height }; }, [n, scale]); };
 
 await t('pdf-merge joins two PDFs in order', async () => {
   await go('pdf-merge'); await up(A, 'a.pdf');
@@ -36,7 +44,7 @@ await t('pdf-merge joins two PDFs in order', async () => {
   await page.getByText('b.pdf').first().waitFor();
   const r = await dl(/^Merge \d+ files?$/i);
   const o = await PDFDocument.load(r.buf); assert.equal(o.getPageCount(), 7);
-  const tx = text(r.path); assert.ok(tx.indexOf('Alpha page 1') < tx.indexOf('Alpha page 4') && tx.indexOf('Alpha page 4') < tx.indexOf('Beta page 1'), 'order');
+  const tx = await text(r.path); assert.ok(tx.indexOf('Alpha page 1') < tx.indexOf('Alpha page 4') && tx.indexOf('Alpha page 4') < tx.indexOf('Beta page 1'), 'order');
 });
 await t('pdf-split every page gives one file per page', async () => {
   await go('pdf-split'); await up(A);
@@ -48,12 +56,12 @@ await t('pdf-compress keep text stays valid and selectable', async () => {
   await go('pdf-compress'); await up(A);
   await page.locator('main select').first().selectOption('tidy');
   const r = await dl2('Compress PDF', 'Download PDF'); const o = await PDFDocument.load(r.buf); assert.equal(o.getPageCount(), 4);
-  assert.ok(text(r.path).includes('Alpha page 3'));
+  assert.ok((await text(r.path)).includes('Alpha page 3'));
 });
 await t('pdf-compress smallest file gives image pages', async () => {
   await go('pdf-compress'); await up(A);
   const r = await dl2('Compress PDF', 'Download PDF'); const o = await PDFDocument.load(r.buf); assert.equal(o.getPageCount(), 4);
-  const px = execFileSync('pdftoppm', ['-r', '30', '-png', '-f', '1', '-l', '1', r.path, r.path + '-p']);
+  const st = await colourStats(r.path, 1, 0.5); assert.ok(st.dark > 30, 'rendered text pixels ' + st.dark);
 });
 await t('pdf-to-images makes a PNG per page', async () => {
   await go('pdf-to-images'); await up(A);
@@ -101,17 +109,16 @@ await t('pdf-form-filler fills text, checkbox and dropdown, then flattens', asyn
   await page.getByLabel('fullname').fill('Flat Text'); await page.getByText('Flatten after filling').click();
   await page.getByRole('button', { name: 'Save filled PDF' }).click();
   const r2 = await dl('Download filled PDF'); const o2 = await PDFDocument.load(r2.buf);
-  assert.equal(o2.getForm().getFields().length, 0, 'flattened'); assert.ok(text(r2.path).includes('Flat Text'));
+  assert.equal(o2.getForm().getFields().length, 0, 'flattened'); assert.ok((await text(r2.path)).includes('Flat Text'));
 });
 await t('pdf-background greyscale output has no colour', async () => {
   const cd = await PDFDocument.create(); const cp = cd.addPage([300, 300]); cp.drawRectangle({ x: 20, y: 20, width: 200, height: 200, color: (await import('pdf-lib')).rgb(0.9, 0.1, 0.1) });
-  await go('pdf-background'); await up(Buffer.from(await cd.save()));
+  const srcBytes = Buffer.from(await cd.save()); await writeFile('/tmp/audit-colour-src.pdf', srcBytes);
+  assert.ok((await colourStats('/tmp/audit-colour-src.pdf', 1, 0.6)).colour > 1000, 'control: source is coloured');
+  await go('pdf-background'); await up(srcBytes);
   await page.locator('main select').first().selectOption('gray');
   const r = await dl2(/Apply to all pages/i, 'Download PDF');
-  execFileSync('pdftoppm', ['-r', '40', '-png', r.path, r.path + '-g']);
-  const img = PNG.sync.read(await readFile(r.path + '-g-1.png')); let colour = 0;
-  for (let i = 0; i < img.data.length; i += 4) if (Math.abs(img.data[i] - img.data[i + 1]) > 12 || Math.abs(img.data[i + 1] - img.data[i + 2]) > 12) colour++;
-  assert.equal(colour, 0, colour + ' coloured pixels');
+  const st = await colourStats(r.path, 1, 0.6); assert.ok(st.w > 100); assert.equal(st.colour, 0, st.colour + ' coloured pixels');
 });
 await t('pdf-compress shrinks an image-heavy PDF and reports sizes', async () => {
   const W = 1400, H = 1400, png = new PNG({ width: W, height: H });
@@ -127,12 +134,12 @@ await t('page organiser extracts pages 3 and 1 in that order (the extract-pages 
   await go('pdf-page-organiser'); await up(A);
   await page.getByLabel(/New page order/i).fill('3,1'); const r = await dl('Reorder pages');
   assert.equal((await PDFDocument.load(r.buf)).getPageCount(), 2);
-  const tx = text(r.path); assert.ok(tx.indexOf('Alpha page 3') >= 0 && tx.indexOf('Alpha page 3') < tx.indexOf('Alpha page 1'), tx);
+  const tx = await text(r.path); assert.ok(tx.indexOf('Alpha page 3') >= 0 && tx.indexOf('Alpha page 3') < tx.indexOf('Alpha page 1'), tx);
 });
 await t('header and footer default stamps Page n of total on each page', async () => {
   await go('pdf-header-footer'); await up(A);
   const r = await dl('Add header or footer');
-  for (let i = 1; i <= 4; i++) { const one = execFileSync('pdftotext', ['-f', String(i), '-l', String(i), r.path, '-']).toString(); assert.ok(one.includes(`Page ${i} of 4`), 'page ' + i + ': ' + JSON.stringify(one)); }
+  for (let i = 1; i <= 4; i++) { const one = await pageText(r.path, i); assert.ok(one.includes(`Page ${i} of 4`), 'page ' + i + ': ' + JSON.stringify(one)); }
 });
 await t('pdf-split custom range gives only the requested pages', async () => {
   await go('pdf-split'); await up(A);
