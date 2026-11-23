@@ -74,7 +74,7 @@ for (const p of flagged) {
   else unresolved.push(`${p.name} ${p.version} (${p.license})`);
 }
 const out = [];
-out.push('DESKTOP APP: RUST DEPENDENCY LICENCES', `Target ${target}${features ? ', features ' + features : ''}. ${pkgs.length} crates linked via normal dependency edges.`, 'Generated from Cargo.lock by scripts/bundle-licences.mjs. Not a legal opinion.', '');
+out.push('DESKTOP APP: RUST DEPENDENCY LICENCES', `Target ${target}${features ? ', features ' + features : ''}. ${pkgs.length} crates reachable through normal dependency edges in the resolved graph. This can be a few more than the default-feature build links (scripts/check-licence-coverage.mjs reports the difference in CI).`, 'Generated from Cargo.lock by scripts/bundle-licences.mjs. Not a legal opinion.', '');
 out.push('== Crate index (name version | declared licence | licence files shipped) ==', ...index, '');
 if (mpl.length) out.push('== MPL-2.0 notice ==', 'These crates are covered by MPL-2.0 and are used unmodified: ' + mpl.map((p) => `${p.name} ${p.version}`).join(', ') + '. Source: https://crates.io/crates/<name>/<version> (download link) and the repository in each manifest. Licence text: included below and at https://www.mozilla.org/MPL/2.0/.', '');
 out.push('== Licence texts shipped inside each crate package ==');
