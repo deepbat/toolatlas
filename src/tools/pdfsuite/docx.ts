@@ -1,12 +1,13 @@
 // PDF text-layer to DOCX conversion, built on the in-house ZIP writer: no new
 // dependency. The output is honest about fidelity: real editable paragraphs,
-// headings and bold/italic runs and simple text-aligned tables, but no images, bordered or merged-cell tables, columns or exact fonts.
+// headings and bold/italic runs, simple text-aligned tables and pictures drawn as images, but no merged-cell tables, vector drawings or exact fonts.
 
 import { makeZip } from '../../lib/zip';
 
 export interface TextItem { text: string; size: number; bold: boolean; italic: boolean; y: number; x: number; w?: number }
 export interface ParaRun { text: string; bold: boolean; italic: boolean }
-export interface Para { runs: ParaRun[]; level: 0 | 1 | 2 | 3; table?: string[][] } // 0 = body, 1-3 = heading; table = rebuilt from aligned text columns
+export interface DocImage { png: Uint8Array; w: number; h: number } // size in points
+export interface Para { runs: ParaRun[]; level: 0 | 1 | 2 | 3; table?: string[][]; y?: number; image?: DocImage } // 0 = body, 1-3 = heading; table = rebuilt from aligned text columns
 
 /** Split one line into cells where a wide gap separates the fragments. */
 function lineCells(line: TextItem[]): { x: number; text: string }[] {
@@ -197,7 +198,7 @@ function layoutLines(items: TextItem[], bodyOverride?: number): Para[] {
   for (let li = 0; li < lines.length; li++) {
     const line = lines[li];
     const tbl = findTable(lines, li);
-    if (tbl) { paras.push({ runs: [], level: 0, table: tbl.rows }); li = tbl.end - 1; continue; }
+    if (tbl) { paras.push({ runs: [], level: 0, table: tbl.rows, y: line[0].y }); li = tbl.end - 1; continue; }
     const size = line[0].size;
     const level = size >= body * 1.8 ? 1 : size >= body * 1.4 ? 2 : size >= body * 1.18 ? 3 : 0;
     const runs: ParaRun[] = line.map((i) => ({ text: i.text, bold: i.bold || level > 0, italic: i.italic }));
@@ -225,7 +226,7 @@ function layoutLines(items: TextItem[], bodyOverride?: number): Para[] {
       else prev.runs.push({ ...merged[0], text: ' ' + merged[0].text });
       for (const r of merged.slice(1)) prev.runs.push(r);
     } else {
-      paras.push({ runs: merged, level });
+      paras.push({ runs: merged, level, y: line[0].y });
     }
   }
   return paras;
@@ -244,6 +245,14 @@ function tableXml(rows: string[][]): string {
   return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders>${b}</w:tblBorders></w:tblPr><w:tblGrid>${grid}</w:tblGrid>${trs}</w:tbl><w:p/>`;
 }
 
+function imageXml(img: DocImage, n: number): string {
+  // Fit the text width (6 inches) and keep the shape; EMU = points x 12700.
+  const maxW = 432;
+  const k = Math.min(1, maxW / img.w);
+  const cx = Math.round(img.w * k * 12700), cy = Math.round(img.h * k * 12700);
+  return `<w:p><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${n}" name="Picture ${n}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${n}" name="image${n}.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdImg${n}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;
+}
+
 function paraXml(p: Para): string {
   if (p.table) return tableXml(p.table);
   const style = p.level > 0 ? `<w:pPr><w:pStyle w:val="Heading${p.level}"/></w:pPr>` : '';
@@ -258,6 +267,7 @@ const CONTENT_TYPES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
 <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
 <Default Extension="xml" ContentType="application/xml"/>
+<Default Extension="png" ContentType="image/png"/>
 <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
 <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
 </Types>`;
@@ -282,16 +292,19 @@ const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 
 /** Build a valid .docx from paragraphs. */
 export function buildDocx(paras: Para[]): Uint8Array {
-  const body = paras.map(paraXml).join('');
+  const images = paras.filter((p) => p.image);
+  let imgNo = 0;
+  const body = paras.map((p) => (p.image ? imageXml(p.image, ++imgNo) : paraXml(p))).join('');
   const document = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>`;
   const enc = new TextEncoder();
   return makeZip([
     { name: '[Content_Types].xml', data: enc.encode(CONTENT_TYPES) },
     { name: '_rels/.rels', data: enc.encode(RELS) },
-    { name: 'word/_rels/document.xml.rels', data: enc.encode(DOC_RELS) },
+    { name: 'word/_rels/document.xml.rels', data: enc.encode(DOC_RELS.replace('</Relationships>', images.map((_, i) => `<Relationship Id="rIdImg${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image${i + 1}.png"/>`).join('') + '</Relationships>')) },
     { name: 'word/document.xml', data: enc.encode(document) },
     { name: 'word/styles.xml', data: enc.encode(STYLES) },
+    ...images.map((p, i) => ({ name: `word/media/image${i + 1}.png`, data: (p.image as DocImage).png })),
   ]);
     }
 
@@ -307,4 +320,4 @@ export function itemsToParagraphs(items: TextItem[]): Para[] {
   const body = sz[Math.floor(sz.length / 2)] || 12;
   for (const sg of merged) out.push(...layoutLines(sg.items, body));
   return out;
-      }
+    }
