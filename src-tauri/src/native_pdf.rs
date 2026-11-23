@@ -93,11 +93,16 @@ fn test_hooks(name: &str) -> Result<(), String> {
 #[cfg(not(feature = "native-pdf-test"))]
 fn test_hooks(_name: &str) -> Result<(), String> { Ok(()) }
 
+/// The in-code authorization rule: only the main window may call save_print_pdf.
+fn window_allowed(label: &str) -> bool {
+    label == "main"
+}
+
 #[tauri::command]
 pub async fn save_print_pdf(app: AppHandle, window: tauri::WebviewWindow, html: String, name: String) -> Result<String, String> {
     test_marker(&name, window.label());
     // Authorization in code, independent of the CSP and of the capability file: only the main window may call this.
-    if window.label() != "main" {
+    if !window_allowed(window.label()) {
         return Err("save_print_pdf is not available from this window".to_string());
     }
     let dir = app.path().download_dir().map_err(|e| e.to_string())?;
@@ -173,4 +178,17 @@ pub async fn save_print_pdf(app: AppHandle, window: tauri::WebviewWindow, html: 
     .map_err(|e| e.to_string())?;
     result?;
     Ok(out.to_string_lossy().to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::window_allowed;
+
+    #[test]
+    fn only_the_main_window_is_allowed() {
+        assert!(window_allowed("main"));
+        for label in ["", "Main", "main ", "main2", "printview-1795410688708", "printview-main"] {
+            assert!(!window_allowed(label), "label {label:?} must be refused");
+        }
+    }
   }
