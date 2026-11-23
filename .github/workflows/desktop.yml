@@ -267,6 +267,13 @@ jobs:
         run: |
           node scripts/desktop-indic-p2w.mjs
           "indic p2w exit: $LASTEXITCODE"
+      - name: Newer conversion paths in the installed app (Unicode layer, Hindi/Punjabi OCR, merged cells)
+        shell: pwsh
+        timeout-minutes: 9
+        run: |
+          node scripts/desktop-newpaths.mjs *>&1 | Tee-Object -FilePath out/newpaths-log.txt
+          "newpaths exit: $LASTEXITCODE"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
       - name: Real download file name (raw CDP, no Playwright)
         shell: pwsh
         timeout-minutes: 8
