@@ -33,10 +33,10 @@ const rp = await browser.newPage();
 await rp.route('**/__pdfjs/**', async route => { const f = route.request().url().split('/__pdfjs/')[1]; await route.fulfill({ body: await readFile('node_modules/pdfjs-dist/build/' + f), contentType: 'text/javascript' }); });
 await rp.goto(base + '/404-reader-page/').catch(() => {});
 const readerReady = rp.evaluate(async u => { const m = await import(u + '/__pdfjs/pdf.min.mjs'); window.pdfjsWorker = await import(u + '/__pdfjs/pdf.worker.min.mjs'); window.__pdfjs = m; }, base);
-async function openPdf(path) { await readerReady; return rp.evaluate(async b64 => { const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); window.__doc = await window.__pdfjs.getDocument({ data: bin }).promise; return window.__doc.numPages; }, (await readFile(path)).toString('base64')); }
-const pageText = async (path, n) => { await openPdf(path); return rp.evaluate(async n => { const pg = await window.__doc.getPage(n); const c = await pg.getTextContent(); return c.items.map(i => i.str).join(' '); }, n); };
-const text = async path => { const k = await openPdf(path); let o = ''; for (let i = 1; i <= k; i++) o += (await pageText(path, i)) + '\n'; return o; };
-const colourStats = async (path, n, scale) => { await openPdf(path); return rp.evaluate(async ([n, scale]) => { const pg = await window.__doc.getPage(n); const vp = pg.getViewport({ scale }); const cv = document.createElement('canvas'); cv.width = Math.ceil(vp.width); cv.height = Math.ceil(vp.height); const ctx = cv.getContext('2d'); await pg.render({ canvasContext: ctx, viewport: vp }).promise; const d = ctx.getImageData(0, 0, cv.width, cv.height).data; let colour = 0, dark = 0; for (let i = 0; i < d.length; i += 4) { if (Math.abs(d[i] - d[i + 1]) > 12 || Math.abs(d[i + 1] - d[i + 2]) > 12) colour++; if (d[i] < 100 && d[i + 1] < 100 && d[i + 2] < 100) dark++; } return { colour, dark, w: cv.width, h: cv.height }; }, [n, scale]); };
+async function openPdf(path, password) { await readerReady; return rp.evaluate(async ([b64, pw]) => { const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); window.__doc = await window.__pdfjs.getDocument({ data: bin, password: pw }).promise; return window.__doc.numPages; }, [(await readFile(path)).toString('base64'), password]); }
+const pageText = async (path, n, pw) => { await openPdf(path, pw); return rp.evaluate(async n => { const pg = await window.__doc.getPage(n); const c = await pg.getTextContent(); return c.items.map(i => i.str).join(' '); }, n); };
+const text = async (path, pw) => { const k = await openPdf(path, pw); let o = ''; for (let i = 1; i <= k; i++) o += (await pageText(path, i, pw)) + '\n'; return o; };
+const colourStats = async (path, n, scale) => { await openPdf(path); return rp.evaluate(async ([n, scale]) => { const pg = await window.__doc.getPage(n); const vp = pg.getViewport({ scale }); const cv = document.createElement('canvas'); cv.width = Math.ceil(vp.width); cv.height = Math.ceil(vp.height); const ctx = cv.getContext('2d'); await pg.render({ canvasContext: ctx, viewport: vp }).promise; const d = ctx.getImageData(0, 0, cv.width, cv.height).data; let colour = 0, dark = 0, ink = 0; for (let i = 0; i < d.length; i += 4) { if (Math.abs(d[i] - d[i + 1]) > 12 || Math.abs(d[i + 1] - d[i + 2]) > 12) colour++; if (d[i] < 100 && d[i + 1] < 100 && d[i + 2] < 100) dark++; if (d[i] < 200 || d[i + 1] < 200 || d[i + 2] < 200) ink++; } return { colour, dark, ink, w: cv.width, h: cv.height }; }, [n, scale]); };
 
 await t('pdf-merge joins two PDFs in order', async () => {
   await go('pdf-merge'); await up(A, 'a.pdf');
@@ -158,6 +158,58 @@ await t('every tool link on the guides, home and PDF pages (footer included) ope
   assert.ok(seen.size >= 15, 'links ' + seen.size);
   for (const h of seen) { await page.goto(base.replace(/\/toolatlas$/, '') + h); await page.locator('h1, main').first().waitFor(); if (await page.getByText('uncharted').count()) dead.push(h); }
   console.log('  checked ' + seen.size + ' tool links; dead: ' + (dead.join(' ') || 'none')); assert.deepEqual(dead, []);
+});
+const six = await mk(6, 'Six');
+const VERB = { 'pdf-delete-pages': 'Delete pages', 'pdf-crop': 'Crop PDF', 'pdf-bates': 'Add Bates numbers', 'pdf-nup': 'Combine pages', 'pdf-booklet': 'Make booklet', 'pdf-rotate': 'Rotate pages', 'pdf-watermark': 'Add watermark', 'pdf-protect': 'Protect PDF', 'pdf-unlock': 'Unlock PDF', 'pdf-repair': 'Repair PDF', 'pdf-sign': 'Sign PDF' };
+const suite = async (id, data, setup) => { await go(id); await up(data); if (setup) await setup(); return dl(VERB[id]); };
+const pagesText = async path => { const k = await openPdf(path); const o = []; for (let i = 1; i <= k; i++) o.push(await pageText(path, i)); return o; };
+await t('delete pages 2,4-6 keeps exactly pages 1 and 3', async () => {
+  const r = await suite('pdf-delete-pages', six, () => page.getByPlaceholder('2,4-6').fill('2,4-6'));
+  const pt = await pagesText(r.path); assert.equal(pt.length, 2); assert.ok(pt[0].includes('Six page 1') && pt[1].includes('Six page 3'), JSON.stringify(pt));
+});
+await t('bates numbers are stamped sequentially on every page', async () => {
+  const r = await suite('pdf-bates', six, null); const pt = await pagesText(r.path);
+  assert.equal(pt.length, 6); const nums = pt.map(x => (x.match(/(\d{4,})\s*$/) || x.match(/(\d{4,})/) || [])[1]);
+  assert.ok(nums.every(Boolean), JSON.stringify(pt)); for (let i = 1; i < nums.length; i++) assert.equal(Number(nums[i]), Number(nums[i - 1]) + 1, JSON.stringify(nums));
+});
+await t('n-up puts two source pages on each sheet', async () => {
+  const r = await suite('pdf-nup', six, null); const pt = await pagesText(r.path); assert.equal(pt.length, 3);
+  assert.ok(pt[0].includes('Six page 1') && pt[0].includes('Six page 2') && pt[2].includes('Six page 5') && pt[2].includes('Six page 6'), JSON.stringify(pt));
+});
+await t('booklet imposes every source page exactly once', async () => {
+  const r = await suite('pdf-booklet', six, null); const pt = await pagesText(r.path); const all = pt.join(' ');
+  for (let i = 1; i <= 6; i++) assert.equal((all.match(new RegExp('Six page ' + i + '(?!\\d)', 'g')) || []).length, 1, 'page ' + i + ' ' + JSON.stringify(pt));
+  assert.ok(pt[0].includes('Six page 1'), JSON.stringify(pt[0]));
+});
+await t('watermark adds text on every page and keeps the original', async () => {
+  const r = await suite('pdf-watermark', A, null); const pt = await pagesText(r.path); assert.equal(pt.length, 4);
+  for (let i = 0; i < 4; i++) { assert.ok(pt[i].includes('Alpha page ' + (i + 1)), pt[i]); assert.ok(pt[i].replace('Alpha page ' + (i + 1), '').trim().length > 2, 'no extra text on page ' + (i + 1)); }
+});
+await t('rotate turns every page, text stays', async () => {
+  const r = await suite('pdf-rotate', A, null); const o = await PDFDocument.load(r.buf);
+  for (const pg of o.getPages()) assert.equal(pg.getRotation().angle, 90); assert.ok((await text(r.path)).includes('Alpha page 4'));
+});
+await t('crop shrinks the page and keeps the text', async () => {
+  const r = await suite('pdf-crop', A, async () => { await page.locator('input[type=number]').nth(0).fill('10'); });
+  const o = await PDFDocument.load(r.buf); assert.ok(o.getPage(0).getHeight() < 842 - 20 && o.getPageCount() === 4); assert.ok((await text(r.path)).includes('Alpha page 2'));
+});
+await t('protect needs the password, unlock removes it, text survives', async () => {
+  const pr = await suite('pdf-protect', A, async () => { await page.getByPlaceholder('Password', { exact: true }).fill('s3cret'); await page.getByPlaceholder('Repeat password').fill('s3cret'); });
+  await assert.rejects(openPdf(pr.path), /password/i);
+  assert.ok((await text(pr.path, 's3cret')).includes('Alpha page 2'));
+  const un = await suite('pdf-unlock', pr.buf, () => page.getByPlaceholder('Password (if any)').fill('s3cret'));
+  assert.ok((await text(un.path)).includes('Alpha page 4'));
+});
+await t('repair returns a readable PDF with the same text', async () => {
+  const r = await suite('pdf-repair', A, null); assert.ok((await text(r.path)).includes('Alpha page 3'));
+});
+await t('sign stamps something visible on the page', async () => {
+  await writeFile('/tmp/audit-before-sign.pdf', A); const b0 = await colourStats('/tmp/audit-before-sign.pdf', 4, 0.6);
+  const r = await suite('pdf-sign', A, async () => {
+    await page.getByRole('button', { name: 'Create a signature' }).click(); await page.getByRole('button', { name: 'Type', exact: true }).click();
+    await page.getByLabel('Type your signature').fill('Deepak'); await page.getByRole('button', { name: 'Use signature' }).click();
+  });
+  const b1 = await colourStats(r.path, 4, 0.6); const p1a = await colourStats('/tmp/audit-before-sign.pdf', 1, 0.6), p1b = await colourStats(r.path, 1, 0.6); assert.equal(p1a.ink, p1b.ink, 'other pages unchanged'); assert.ok(b1.ink > b0.ink * 1.05 || (await text(r.path)).includes('Deepak'), `ink ${b0.ink} -> ${b1.ink}`);
 });
 console.log(`${n} passed, ${fails.length} failed`, errors.length ? 'pageerrors: ' + errors.join(' | ') : '');
 await browser.close(); server?.kill();
