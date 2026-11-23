@@ -24,7 +24,7 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1200, height: 900 }, acceptDownloads: true });
 const errors = []; page.on('pageerror', e => errors.push(e.message));
 let n = 0; const fails = [];
-async function t(name, fn) { try { await fn(); console.log('PASS ' + name); n++; } catch (e) { fails.push(name); console.log('FAIL ' + name + ': ' + String(e.message).slice(0, 300)); } }
+async function t(name, fn) { if (process.env.AUDIT_ONLY && !new RegExp(process.env.AUDIT_ONLY).test(name)) return; try { await fn(); console.log('PASS ' + name); n++; } catch (e) { fails.push(name); console.log('FAIL ' + name + ': ' + String(e.message).slice(0, 300)); } }
 const go = async id => { await page.goto(`${base}/tools/${id}/`); await page.locator('input[type=file]').first().waitFor({ state: 'attached' }); };
 const up = async (buf, name = 'in.pdf', mime = 'application/pdf') => { await page.locator('input[type=file]').first().setInputFiles({ name, mimeType: mime, buffer: buf }); await page.getByText(name).first().waitFor(); };
 const dl = async (btn, ms = 60000) => { const p = page.waitForEvent('download', { timeout: ms }); await page.getByRole('button', { name: btn }).click(); const d = await p; const path = '/tmp/audit-' + Date.now() + '-' + d.suggestedFilename(); await d.saveAs(path); return { path, name: d.suggestedFilename(), buf: await readFile(path) }; };
@@ -238,20 +238,24 @@ await t('OCR adds a searchable text layer that matches the scanned words and kee
 for (const [label, lang, b64, wants, size] of [
   ['Hindi', 'hin+eng', HIN_SCAN, ['Quarterly Report', 'नमस्ते दुनिया क्षत्रिय ज्ञान'], [620, 112]],
   ['Punjabi', 'pan+eng', PAN_SCAN, ['Page two starts here', 'ਅਕਾਲ', 'ਦੂਜੇ ਸਫ਼ੇ ਦੀ ਸਮਗਰੀ'], [946, 160]],
+  // Per-page script choice: each scan must be read with its own script, never with the other one's letters.
+  ['Hindi (auto)', 'auto', HIN_SCAN, ['Quarterly Report', 'नमस्ते दुनिया क्षत्रिय ज्ञान'], [620, 112]],
+  ['Punjabi (auto)', 'auto', PAN_SCAN, ['Page two starts here', 'ਅਕਾਲ', 'ਦੂਜੇ ਸਫ਼ੇ ਦੀ ਸਮਗਰੀ'], [946, 160]],
 ]) {
+  const fileTag = `${lang}-${label.split(' ')[0]}`;
   await t(`OCR reads ${label} script, writes exact Unicode text, and keeps the picture`, async () => {
     await go('pdf-ocr');
     const sd = await PDFDocument.create(); const im = await sd.embedPng(Buffer.from(b64, 'base64'));
     sd.addPage([595, 842]).drawImage(im, { x: 0, y: 600, width: 595, height: 595 * size[1] / size[0] });
-    const src = Buffer.from(await sd.save()); await writeFile(`/tmp/audit-scan-${lang}.pdf`, src);
-    assert.equal((await text(`/tmp/audit-scan-${lang}.pdf`)).trim(), '', 'control: source has no text layer');
+    const src = Buffer.from(await sd.save()); await writeFile(`/tmp/audit-scan-${fileTag}.pdf`, src);
+    assert.equal((await text(`/tmp/audit-scan-${fileTag}.pdf`)).trim(), '', 'control: source has no text layer');
     await up(src);
-    await page.locator('select').filter({ hasText: label }).selectOption(lang);
+    await page.locator('select').filter({ hasText: label.split(' ')[0] }).selectOption(lang);
     const p = page.waitForEvent('download', { timeout: 240000 }); await page.getByRole('button', { name: 'Make searchable' }).click(); const d = await p;
-    const path = `/tmp/audit-ocr-${lang}.pdf`; await d.saveAs(path);
+    const path = `/tmp/audit-ocr-${fileTag}.pdf`; await d.saveAs(path);
     const tx = (await text(path)).normalize('NFC').replace(/\s+/g, ' ');
     for (const w of wants) assert.ok(tx.includes(w.normalize('NFC')), `${label} text layer missing "${w}": ` + JSON.stringify(tx));
-    const same = await diffBox(`/tmp/audit-scan-${lang}.pdf`, path, 1, 1); assert.equal(same.cnt, 0, 'page picture changed: ' + same.cnt + ' px');
+    const same = await diffBox(`/tmp/audit-scan-${fileTag}.pdf`, path, 1, 1); assert.equal(same.cnt, 0, 'page picture changed: ' + same.cnt + ' px');
   });
 }
 console.log(`${n} passed, ${fails.length} failed`, errors.length ? 'pageerrors: ' + errors.join(' | ') : '');
