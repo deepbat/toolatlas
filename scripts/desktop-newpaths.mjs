@@ -1,3 +1,4 @@
+import { NUMERIC_TABLES } from './fixtures/borderless-numeric-table.mjs';
 import { HORIZONTAL_TABLES } from './fixtures/horizontal-border-table.mjs';
 // Desktop check of the newer conversion paths in the installed app's WebView2 (CDP): Word to PDF image output with its
 // invisible Unicode text layer, Hindi/Punjabi per-page OCR fallback in PDF to Word, and merged-cell output in PDF to Word.
@@ -210,5 +211,24 @@ for (const {label,bottom,pdf} of HORIZONTAL_TABLES) {
  });
 }
 
+for(const {label,pdf}of NUMERIC_TABLES){
+ await step(`pdf-to-word borderless numeric table ${label}`,async()=>{
+  await openTool('pdf-to-word','numeric.pdf','application/pdf',Buffer.from(pdf,'base64'));
+  const pending=page.waitForEvent('download',{timeout:90000});await page.getByRole('button',{name:'Convert to Word',exact:true}).click();
+  const path=`out/${evidencePrefix}-numeric-${label}-pdf-to-word.docx`;await(await pending).saveAs(path);
+  const z=await JSZip.loadAsync(await readFile(path));const xml=await z.file('word/document.xml').async('string');
+
+    const result=await page.evaluate(xml=>{
+      const d=new DOMParser().parseFromString(xml,'application/xml');const ns='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+      const direct=(el,name)=>Array.from(el?.children??[]).filter(e=>e.namespaceURI===ns&&e.localName===name);
+      const roots=direct(d.getElementsByTagNameNS(ns,'body')[0],'tbl');
+      return {tables:roots.length,rows:direct(roots[0],'tr').map(r=>direct(r,'tc').map(c=>c.textContent))};
+    },xml);
+    const expected={tables:1,rows:[['Product','Units','Amount'],['Apples','7','12.50'],['Oranges','125','1234.00'],['Pears','23','85.75']]};
+    if(JSON.stringify(result)!==JSON.stringify(expected))throw new Error(JSON.stringify(result));
+    for(const text of ['Before sales table','After sales table','Apples','Oranges','Pears'])if(xml.split(text).length!==2)throw new Error('text duplication '+text);
+    if(!(xml.indexOf('Before sales table')<xml.indexOf('<w:tbl>')&&xml.indexOf('After sales table')>xml.lastIndexOf('</w:tbl>')))throw new Error('borderless outside text order');
+ });
+}
 console.log(failed ? 'FAILED ' + failed : 'ALL PASS');
 process.exit(failed ? 1 : 0);

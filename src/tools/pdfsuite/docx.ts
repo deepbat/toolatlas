@@ -11,7 +11,7 @@ export interface DocImage { png: Uint8Array; w: number; h: number } // size in p
 export interface Para { pageBreak?: boolean; runs: ParaRun[]; level: 0 | 1 | 2 | 3; table?: string[][]; y?: number; image?: DocImage; grid?: { widths: number[]; rows: GridCell[][] } } // 0 = body, 1-3 = heading; table = rebuilt from aligned text columns
 
 /** Split one line into cells where a wide gap separates the fragments. */
-function lineCells(line: TextItem[]): { x: number; text: string }[] {
+function lineCells(line: TextItem[]): { x: number; end: number; text: string }[] {
   const items = [...line].sort((a, b) => a.x - b.x);
   const cells: { x: number; text: string; end: number }[] = [];
   for (const it of items) {
@@ -20,7 +20,7 @@ function lineCells(line: TextItem[]): { x: number; text: string }[] {
     if (last && it.x - last.end <= it.size * 0.6) { last.text += (it.x - last.end > it.size * 0.18 && !last.text.endsWith(' ') ? ' ' : '') + it.text; last.end = end; }
     else cells.push({ x: it.x, text: it.text, end });
   }
-  return cells.map((c) => ({ x: c.x, text: c.text.trim() })).filter((c) => c.text);
+  return cells.map((c) => ({ x: c.x, end: c.end, text: c.text.trim() })).filter((c) => c.text);
 }
 
 /** True when the rows read as running prose cut into lines (each cell continues in the cell below) rather than independent cells. */
@@ -35,6 +35,30 @@ function flowsLikeProse(rows: string[][]): boolean {
     }
   }
   return pairs > 0 && flows * 2 >= pairs;
+}
+
+/** A narrow borderless numeric table: left-aligned labels, right-aligned numeric body columns.
+ * Two complete body rows must independently agree on both edge sets. Header text is kept as-is.
+ */
+function rightAlignedTable(lines: TextItem[][], start: number): { rows: string[][]; end: number } | null {
+  const header = lineCells(lines[start]);
+  if (header.length < 2 || header.length > 8) return null;
+  const size = lines[start][0].size, tol = Math.max(3, size * 0.5);
+  const numeric = (s: string) => /^[($€£₹+-]?\s*\d[\d,.]*(?:\s*%|\))?$/.test(s);
+  if (header.slice(1).some(c => numeric(c.text))) return null; // header must be labels, not an arbitrary data row
+  const rows: string[][] = [header.map(c => c.text)];
+  let edges: ReturnType<typeof lineCells> | undefined, previousY = lines[start][0].y, end = start + 1;
+  for (; end < lines.length; end++) {
+    const line = lines[end], cells = lineCells(line), gap = previousY - line[0].y;
+    if (Math.abs(line[0].size - size) > 1.5 || gap <= 0 || gap > size * 3 || cells.length !== header.length || !cells.slice(1).every(c => numeric(c.text)) || numeric(cells[0].text)) break;
+    if (!edges) {
+      if (Math.abs(cells[0].x - header[0].x) > tol || cells.some((c,i) => i > 0 && (header[i].x < cells[i-1].end + size || header[i].end > c.end + tol))) break;
+      edges = cells;
+    } else if (Math.abs(cells[0].x - edges[0].x) > tol || cells.some((c,i) => i > 0 && Math.abs(c.end - edges![i].end) > tol)) break;
+    if (cells.some((c,i) => i > 0 && c.x - cells[i-1].end < size)) break;
+    rows.push(cells.map(c => c.text)); previousY = line[0].y;
+  }
+  return rows.length >= 3 ? { rows, end } : null;
 }
 
 /**
@@ -100,7 +124,7 @@ function findTable(lines: TextItem[][], start: number): { rows: string[][]; end:
     }
   }
   // Trailing rows that are not full-width are ordinary text after the table, not table rows.
-  while (groups.length > 2 && groups[groups.length - 1].cells.some((c) => !c) && !groups[groups.length - 1].cont) { groups.pop(); end--; }
+  while (groups.length > 1 && groups[groups.length - 1].cells.some((c) => !c) && !groups[groups.length - 1].cont) { groups.pop(); end--; }
   const headerAligned = first.every((c, i) => Math.abs(c.x - colX[i]) <= tol);
   if (groups.length < (headerAligned ? 2 : 3) || !groups[0].full) return null; // an offset header needs two body rows to confirm the columns
   const rows = groups.map((g) => g.cells);
@@ -200,7 +224,7 @@ function layoutLines(items: TextItem[], bodyOverride?: number): Para[] {
     const line = lines[li];
     // OCR word boxes are not typographic fragments. Wide spacing in a sentence is not evidence of table columns.
     // Ruled OCR tables are reconstructed separately from the actual page borders.
-    const tbl = line.every((i) => i.ocr) ? null : findTable(lines, li);
+    const tbl = line.every((i) => i.ocr) ? null : (rightAlignedTable(lines, li) ?? findTable(lines, li));
     if (tbl) { paras.push({ runs: [], level: 0, table: tbl.rows, y: line[0].y }); li = tbl.end - 1; continue; }
     const size = line[0].size;
     const level = size >= body * 1.8 ? 1 : size >= body * 1.4 ? 2 : size >= body * 1.18 ? 3 : 0;
