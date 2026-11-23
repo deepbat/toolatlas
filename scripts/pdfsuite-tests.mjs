@@ -7,6 +7,7 @@ import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { CI_OCR_TABLE } from './fixtures/ci-ocr-table.mjs';
 import { MERGED_TABLE_PDF_B64 } from './fixtures/merged-table.mjs';
 import { NESTED_TABLE_PDF_B64 } from './fixtures/nested-table.mjs';
+import { HEADLESS_SPACING_PDF_B64 } from './fixtures/headless-spacing.mjs';
 
 const base = process.env.E2E_BASE_URL || 'http://127.0.0.1:4173/toolatlas';
 let server;
@@ -74,6 +75,19 @@ try {
   const scanBytes = Buffer.from(await scan.save());
   await run('pdf-ocr', scanBytes, null, o => assert.equal(o.getPageCount(), 1), 180000);
   await page.getByText(/words read/).waitFor({ timeout: 10000 });
+  // Preserve the exact external-attach source that lost one Hindi word boundary on raw Chromium.
+  await run('pdf-to-word', Buffer.from(HEADLESS_SPACING_PDF_B64, 'base64'), () => page.getByLabel(/text cannot be read/).selectOption('auto'), async path => {
+    const z = await (await import('jszip')).default.loadAsync(await readFile(path));
+    const xml = await z.file('word/document.xml').async('string');
+    const text = xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    assert.equal((text.match(/अनुच्छेद है जो/g) || []).length, 3, 'all3 source word boundaries');
+    assert.ok(!text.includes('हैजो'), 'not a merged OCR word');
+    assert.equal((xml.match(/<w:br w:type="page"\/>/g) || []).length, 1);
+    const cells = [...xml.matchAll(/<w:tc>([\s\S]*?)<\/w:tc>/g)].map(m => m[1].replace(/<[^>]+>/g, '').trim());
+    assert.deepEqual(cells, ['Item', 'गणना', 'Apples', '42']);
+    await mkdir('test-artifacts/pdfsuite', { recursive: true });
+    await copyFile(path, 'test-artifacts/pdfsuite/headless-spacing-output.docx');
+  }, 180000, true, '.docx');
   // PDF to Word: a real LibreOffice table with a column-spanning title and a row-spanning cell keeps its merges.
   await run('pdf-to-word', Buffer.from(MERGED_TABLE_PDF_B64, 'base64'), null, async (path) => {
     const z = await (await import('jszip')).default.loadAsync(await readFile(path));
@@ -370,4 +384,4 @@ try {
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-               }
+      }
