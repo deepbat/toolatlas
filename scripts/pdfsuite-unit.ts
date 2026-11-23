@@ -226,6 +226,27 @@ console.log('PASS n-up');
   console.log('PASS pdf to word columns and lists');
 }
 {
+  // Real LibreOffice output: a table whose first-column cell "East" spans two rows and sits between them, plus a ruled-only table.
+  const mk = (t: string, x: number, y: number, w: number) => ({ text: t, size: 11, bold: false, italic: false, x, y, w });
+  const items = [
+    mk('Quarterly summary', 59.8, 760, 90),
+    mk('Region', 59.8, 733.7, 33), mk('Sales', 102.1, 733.7, 24), mk('Target', 136.9, 733.7, 30),
+    mk('North', 59.8, 717.3, 27), mk('120', 102.1, 717.3, 18), mk('100', 136.9, 717.3, 18),
+    mk('South', 59.8, 700.9, 28.7), mk('95', 102.1, 700.9, 12.2), mk('110', 136.9, 700.9, 18.3),
+    mk('70', 102.1, 668.1, 12.2), mk('60', 136.9, 668.1, 12.2),
+    mk('East', 59.8, 651.7, 22),
+    mk('80', 102.1, 635.2, 12.2), mk('75', 136.9, 635.2, 12.2),
+    mk('Text after the table to check it is not swallowed.', 56.8, 604.7, 230),
+  ];
+  const ps = itemsToParagraphs(items);
+  const tb = ps.filter((p) => p.table);
+  assert.equal(tb.length, 1, 'one table');
+  const rows = tb[0].table!;
+  assert.deepEqual(rows.map((r) => r.join('|')), ['Region|Sales|Target', 'North|120|100', 'South|95|110', 'East|70|60', '|80|75'], 'rowspan text stays with its rows, in order');
+  assert.ok(ps[ps.length - 1].runs.map((r) => r.text).join('').startsWith('Text after'), 'text after the table is a paragraph');
+  console.log('PASS pdf to word row-spanning first-column cell');
+}
+{
   assert.deepEqual(parseRange('B2:D4'), { s: { r: 1, c: 1 }, e: { r: 3, c: 3 } });
   assert.equal(indexToCol(0), 'A');
   assert.equal(indexToCol(27), 'AB');
