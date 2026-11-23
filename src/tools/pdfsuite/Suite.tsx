@@ -9,7 +9,7 @@ import SignaturePad from '../pdf-editor/SignaturePad';
 import Ocr from './Ocr';
 import { protectPdf, repairPdf, unlockPdf } from './qpdf';
 import { buildDocx, itemsToParagraphs, type Para, type TextItem } from './docx';
-import { openPrintView, renderDocx, sectionsToPdf, tablesToSections, workbookToTables, SHEET_CSS } from './office2pdf';
+import { nativePdfSaveActive, openPrintView, renderDocx, sectionsToPdf, tablesToSections, workbookToTables, SHEET_CSS } from './office2pdf';
 import { pdfjs } from '../pdf-editor/pdfjs';
 import { PDFDocument } from 'pdf-lib';
 import { applyActualText, pageActualTexts } from './actualtext';
@@ -438,7 +438,7 @@ function OfficeToPdf({ kind }: { kind: 'word' | 'excel' }) {
           </label>
           <label className="flex items-start gap-2">
             <input type="radio" name="office2pdf-mode" className="mt-1" checked={mode === 'print'} onChange={() => setMode('print')} />
-            <span><strong>Selectable text.</strong> Opens a print view; pick "Save as PDF" in the print dialog. Page breaks may shift compared with {word ? 'Word' : 'the original spreadsheet'}.</span>
+            <span><strong>Selectable text.</strong> {nativePdfSaveActive() ? 'Saves a PDF straight to your Downloads folder, with no print dialog.' : 'Opens a print view; pick "Save as PDF" in the print dialog.'} Page breaks may shift compared with {word ? 'Word' : 'the original spreadsheet'}.</span>
           </label>
         </div>
         <div className="mt-3">
@@ -486,4 +486,4 @@ export default function PdfSuite() {
   const { toolId } = useParams();
   const Part = PARTS[toolId ?? ''];
   return Part ? <Part /> : null;
-}
+        }
