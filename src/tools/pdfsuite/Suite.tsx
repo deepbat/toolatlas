@@ -9,6 +9,7 @@ import SignaturePad from '../pdf-editor/SignaturePad';
 import Ocr from './Ocr';
 import { protectPdf, repairPdf, unlockPdf } from './qpdf';
 import { pageImages } from './pdfImages';
+import { gridsFromLines, pageLines } from './rulings';
 import { ocrDone, ocrPageItems } from './ocrItems';
 import { buildDocx, itemsToParagraphs, type Para, type TextItem } from './docx';
 import { nativePdfSaveActive, openPrintView, renderDocx, sectionsToPdf, tablesToSections, workbookToTables, SHEET_CSS } from './office2pdf';
@@ -308,7 +309,18 @@ function ToWord() {
             if (ocrItems) { items.length = 0; items.push(...ocrItems); pageUnreadable = 0; }
           }
           unreadable += pageUnreadable;
-          const pageParas = itemsToParagraphs(items);
+          // Bordered tables (with merged cells) come from the ruling lines; the text outside them is laid out as before.
+          let tableParas: Para[] = [];
+          let textItems = items;
+          try {
+            const g = gridsFromLines(await pageLines(pdfjs(), page), items);
+            if (g.grids.length) { tableParas = g.grids.map((t) => ({ runs: [], level: 0 as const, y: t.top, grid: { widths: t.widths, rows: t.rows } })); textItems = g.rest; }
+          } catch { /* fall back to the text-based table finder */ }
+          const pageParas = itemsToParagraphs(textItems);
+          for (const tp of tableParas) {
+            const at = pageParas.findIndex((q) => q.y !== undefined && q.y < (tp.y as number) - 2);
+            pageParas.splice(at < 0 ? pageParas.length : at, 0, tp);
+          }
           try {
             // Pictures go in just before the first paragraph that sits lower on the page.
             for (const im of await pageImages(pdfjs(), page)) {
@@ -333,7 +345,7 @@ function ToWord() {
           <option value="pan+eng">Read them with OCR: Punjabi + English</option>
           <option value="eng">Read them with OCR: English</option>
         </Select></Field></div>
-      <div className="mt-3"><Note>Fidelity is honest: text becomes editable paragraphs and headings. Simple tables whose columns line up in text rows are rebuilt as Word tables, including cells that wrap onto a second line in the layouts we tested. Pictures stored as images are copied into the document, placed by their height on the page and scaled to fit the text width; vector drawings and charts, page-sized scans, merged cells, ruling lines and exact fonts are not preserved, and column widths are not kept. Two-column pages are read left column first in tests on simple layouts; complex or mixed layouts, and tables the tool does not recognise, can come out in the wrong order. Check the result against the PDF.</Note></div>
+      <div className="mt-3"><Note>Fidelity is honest: text becomes editable paragraphs and headings. Simple tables whose columns line up in text rows are rebuilt as Word tables, including cells that wrap onto a second line in the layouts we tested. Pictures stored as images are copied into the document, placed by their height on the page and scaled to fit the text width; vector drawings and charts, page-sized scans, shading, border styles and exact fonts are not preserved. Bordered tables drawn with ruling lines keep their column and row merges and widths in the LibreOffice PDF we tested; a table with missing or partial borders, or merges that are not rectangles, falls back to the text-based finder. Two-column pages are read left column first in tests on simple layouts; complex or mixed layouts, and tables the tool does not recognise, can come out in the wrong order. Check the result against the PDF.</Note></div>
     </Shell>
   );
 }
@@ -523,4 +535,4 @@ export default function PdfSuite() {
   const { toolId } = useParams();
   const Part = PARTS[toolId ?? ''];
   return Part ? <Part /> : null;
-}
+                                       }
