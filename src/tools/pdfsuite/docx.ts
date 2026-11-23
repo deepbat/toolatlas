@@ -21,30 +21,79 @@ function lineCells(line: TextItem[]): { x: number; text: string }[] {
   return cells.map((c) => ({ x: c.x, text: c.text.trim() })).filter((c) => c.text);
 }
 
+/** True when the rows read as running prose cut into lines (each cell continues in the cell below) rather than independent cells. */
+function flowsLikeProse(rows: string[][]): boolean {
+  let pairs = 0, flows = 0;
+  for (let r = 0; r + 1 < rows.length; r++) {
+    for (let c = 0; c < rows[r].length; c++) {
+      const a = rows[r][c], b = rows[r + 1][c] ?? '';
+      if (a.split(/\s+/).length < 4) continue;
+      pairs++;
+      if (!/[.!?:;]$/.test(a) && /^[a-z]/.test(b)) flows++;
+    }
+  }
+  return pairs > 0 && flows * 2 >= pairs;
+}
+
 /**
- * Find a table starting at lines[start]: consecutive lines that each split into the same number (2 or more) of cells
- * whose left edges line up with the first row. Only simple, text-aligned tables are found; ruling lines, merged cells and
- * cells that wrap onto a second line are not recovered.
+ * Find a table starting at lines[start]. The first line gives the column positions. Following lines are assigned to the
+ * nearest column on the left; a line that fills only some columns and sits close above or below the previous one is
+ * treated as another line of the same row (wrapped or vertically offset cell text). Ruling lines, merged cells and
+ * images are not recovered.
  */
 function findTable(lines: TextItem[][], start: number): { rows: string[][]; end: number } | null {
   const first = lineCells(lines[start]);
   if (first.length < 2) return null;
-  const tol = Math.max(3, lines[start][0].size * 0.8);
-  const rows: string[][] = [first.map((c) => c.text)];
-  let end = start + 1;
-  const bodySize = lines[start][0].size;
-  while (end < lines.length) {
-    const cells = lineCells(lines[end]);
-    if (cells.length !== first.length || Math.abs(lines[end][0].size - bodySize) > 1.5) break;
-    if (cells.some((c, i) => Math.abs(c.x - first[i].x) > tol)) break;
-    rows.push(cells.map((c) => c.text));
-    end++;
+  const size = lines[start][0].size;
+  const tol = Math.max(3, size * 0.8);
+  // Column edges come from the body lines (headers are often centred or right-aligned); fall back to the first line.
+  let colX = first.map((c) => c.x);
+  for (const K of [6, 4, 3, 2]) {
+    const xs: number[] = [];
+    for (let k = start + 1; k < Math.min(lines.length, start + 1 + K); k++) { if (Math.abs(lines[k][0].size - size) > 1.5) break; for (const c of lineCells(lines[k])) xs.push(c.x); }
+    xs.sort((a, b) => a - b);
+    const cl: number[] = [];
+    for (const x of xs) { if (cl.length && x - cl[cl.length - 1] <= tol) continue; cl.push(x); }
+    if (cl.length === first.length) { colX = cl; break; }
   }
-  if (rows.length < 2) return null;
-  // Not tables: a list (every first cell is only a bullet or number) and columns of running text (long cells).
-  if (rows.every((r) => /^([•\-–—·*▪◦●]|\(?[0-9a-zA-Z]{1,3}[.)])$/.test(r[0]))) return null;
-  const all = rows.flat();
-  if (all.filter((c) => c.split(/\s+/).length >= 6).length * 2 >= all.length || all.some((c) => c.length > 80)) return null;
+  const place = (cells: { x: number; text: string }[]): (string | undefined)[] | null => {
+    const out: (string | undefined)[] = new Array(colX.length).fill(undefined);
+    for (const c of cells) {
+      let k = -1;
+      for (let i = 0; i < colX.length; i++) if (c.x >= colX[i] - tol) k = i;
+      if (k < 0 || Math.abs(c.x - colX[k]) > tol) return null; // does not start at a column edge
+      out[k] = out[k] === undefined ? c.text : out[k] + ' ' + c.text;
+    }
+    return out;
+  };
+  type Grp = { cells: string[]; lastY: number; hasFirst: boolean; full: boolean };
+  const groups: Grp[] = [];
+  let end = start;
+  for (; end < lines.length; end++) {
+    const ln = lines[end];
+    if (Math.abs(ln[0].size - size) > 1.5) break;
+    const cells = end === start ? first : lineCells(ln);
+    if (cells.length < 1) break;
+    const pl = end === start ? first.map((c) => c.text) as (string | undefined)[] : place(cells);
+    if (!pl) break;
+    const filled = pl.filter((x) => x !== undefined).length;
+    const g = groups[groups.length - 1];
+    const close = g && Math.abs(g.lastY - ln[0].y) < size * 1.3;
+    const startsNew = !g || !close || (filled === colX.length && g.hasFirst) || (pl[0] !== undefined && g.hasFirst);
+    if (end === start || startsNew) {
+      groups.push({ cells: pl.map((x) => x ?? ''), lastY: ln[0].y, hasFirst: pl[0] !== undefined, full: filled === colX.length });
+    } else {
+      pl.forEach((x, i) => { if (x !== undefined) g.cells[i] = g.cells[i] ? g.cells[i] + ' ' + x : x; });
+      g.hasFirst = g.hasFirst || pl[0] !== undefined; g.lastY = ln[0].y;
+    }
+  }
+  // Trailing rows that are not full-width are ordinary text after the table, not table rows.
+  while (groups.length > 2 && groups[groups.length - 1].cells.some((c) => !c)) { groups.pop(); end--; }
+  const headerAligned = first.every((c, i) => Math.abs(c.x - colX[i]) <= tol);
+  if (groups.length < (headerAligned ? 2 : 3) || !groups[0].full) return null; // an offset header needs two body rows to confirm the columns
+  const rows = groups.map((g) => g.cells);
+  if (rows.every((r) => /^([•\-–—·*▪◦●]|\(?[0-9a-zA-Z]{1,3}[.)])$/.test(r[0]))) return null; // a list
+  if (flowsLikeProse(rows) || rows.flat().some((c) => c.length > 200)) return null;
   return { rows, end };
 }
 
@@ -55,7 +104,7 @@ function findTable(lines: TextItem[][], start: number): { rows: string[][]; end:
  */
 function splitColumns(items: TextItem[]): { items: TextItem[]; cols: number | null }[] | null {
   const real = items.filter((i) => i.text.trim() && i.w !== undefined && i.w > 0);
-  if (real.length < 8) return null;
+  if (real.length < 6) return null;
   const sizes = real.map((i) => i.size).sort((a, b) => a - b);
   const body = sizes[Math.floor(sizes.length / 2)] || 12;
   const rows: TextItem[][] = [];
@@ -95,8 +144,10 @@ function splitColumns(items: TextItem[]): { items: TextItem[]; cols: number | nu
     const ks = run.map(kind) as { l: number; r: number }[];
     const first = ks.findIndex((k) => k.r > 0), last = ks.length - 1 - [...ks].reverse().findIndex((k) => k.r > 0);
     const band = run.slice(Math.max(first, 0), last + 1), bk = ks.slice(Math.max(first, 0), last + 1);
-    const prose = (side: 'l' | 'r') => bk.filter((k) => k[side] >= 6).length;
-    if (first >= 0 && prose('l') >= 4 && prose('r') >= 4) {
+    const prose = (side: 'l' | 'r') => bk.filter((k) => k[side] >= 4).length;
+    const sideText = (rowsIn: TextItem[][], left: boolean) => rowsIn.map((r) => r.filter((i) => (i.x < gx) === left).map((i) => i.text).join(' ').trim()).filter(Boolean);
+    const flowing = (txt: string[]) => { let n = 0, f = 0; for (let i = 0; i + 1 < txt.length; i++) { n++; if (!/[.!?:;]$/.test(txt[i]) && /^[a-z]/.test(txt[i + 1])) f++; } return n > 0 && f * 2 >= n; };
+    if (first >= 0 && prose('l') >= 3 && prose('r') >= 3 && flowing(sideText(band, true)) && flowing(sideText(band, false))) {
       const flat = band.flat();
       const before = run.slice(0, first).flat(), after = run.slice(last + 1).flat();
       if (before.length) segs.push({ items: before, cols: null });
@@ -233,4 +284,4 @@ export function itemsToParagraphs(items: TextItem[]): Para[] {
   const body = sz[Math.floor(sz.length / 2)] || 12;
   for (const sg of segs) out.push(...layoutLines(sg.items, body));
   return out;
-                                                                                 }
+                                               }
