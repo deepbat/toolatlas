@@ -292,6 +292,14 @@ try {
     const z = await (await import('jszip')).default.loadAsync(await readFile('/tmp/pdf-to-word-ocr.docx'));
     const text = (await z.file('word/document.xml').async('string')).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
     for (const t of ['Quarterly', 'Report', 'नमस्ते दुनिया', 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ', 'ਸਮਗਰੀ', 'Closing notes']) assert.ok(text.includes(t), 'OCR fallback text has ' + t + ': ' + text.slice(0, 300));
+    // Every table cell, exactly and in order (an earlier build dropped the last row and read a Hindi cell as Latin), and the
+    // Punjabi sentence exactly. Recognition is still a guess: the Hindi paragraph can merge two words ("है जो" read as one),
+    // so word spacing is checked as a floor of 2 of the 3 occurrences, not as exact text.
+    const docXml = await z.file('word/document.xml').async('string');
+    const cells = [...docXml.matchAll(/<w:tc>([\s\S]*?)<\/w:tc>/g)].map((m) => m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+    assert.deepEqual(cells, ['Item', 'गणना', 'Apples', '42'], 'OCR table cells: ' + JSON.stringify(cells));
+    assert.ok(text.includes('ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ — ਦੂਜੇ ਸਫ਼ੇ ਦੀ ਸਮਗਰੀ'), 'Punjabi sentence exact: ' + text.slice(-200));
+    assert.ok((text.match(/अनुच्छेद है जो/g) || []).length >= 2, 'word spaces kept in at least 2 of 3 Hindi lines: ' + text.slice(0, 400));
     console.log('PASS pdf-to-word Indic OCR fallback'); n++;
   }
   assert.deepEqual(errors, []);
