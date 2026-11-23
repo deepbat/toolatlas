@@ -149,12 +149,15 @@ await t('pdf-split custom range gives only the requested pages', async () => {
   const pdf = r.name.endsWith('.zip') ? await (async () => { const z = await JSZip.loadAsync(r.buf); const k = Object.keys(z.files).filter(x => x.endsWith('.pdf')); assert.equal(k.length, 1); return z.files[k[0]].async('nodebuffer'); })() : r.buf;
   const o = await PDFDocument.load(pdf); assert.equal(o.getPageCount(), 2);
 });
-await t('every tool linked from the guides page opens a real tool', async () => {
-  await page.goto(`${base}/guides/`); await page.locator('main a[href*="/tools/"]').first().waitFor();
-  const hrefs = await page.$$eval('main a[href*="/tools/"]', a => [...new Set(a.map(x => x.getAttribute('href')))]);
-  assert.ok(hrefs.length >= 5, 'links ' + hrefs.length); const dead = [];
-  for (const h of hrefs) { await page.goto(new URL(h, page.url()).href); await page.locator('h1, main').first().waitFor(); if (await page.getByText('uncharted').count()) dead.push(h); }
-  console.log('DEAD', dead.join(' ')); assert.deepEqual(dead, []);
+await t('every tool link on the guides, home and PDF pages (footer included) opens a real tool', async () => {
+  const seen = new Set(); const dead = [];
+  for (const src of ['/guides/', '/', '/pdf/']) {
+    await page.goto(base + src); await page.locator('a[href*="/tools/"]').first().waitFor();
+    for (const h of await page.$$eval('a[href*="/tools/"]', a => a.map(x => x.getAttribute('href')))) seen.add(new URL(h, page.url()).pathname);
+  }
+  assert.ok(seen.size >= 15, 'links ' + seen.size);
+  for (const h of seen) { await page.goto(base.replace(/\/toolatlas$/, '') + h); await page.locator('h1, main').first().waitFor(); if (await page.getByText('uncharted').count()) dead.push(h); }
+  console.log('  checked ' + seen.size + ' tool links; dead: ' + (dead.join(' ') || 'none')); assert.deepEqual(dead, []);
 });
 console.log(`${n} passed, ${fails.length} failed`, errors.length ? 'pageerrors: ' + errors.join(' | ') : '');
 await browser.close(); server?.kill();
