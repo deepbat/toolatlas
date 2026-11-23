@@ -340,7 +340,7 @@ function ToWord() {
       <div className="mt-3"><Field label="If a page's text cannot be read" hint="Only pages whose own text cannot be read back are read from their picture instead. Pages with readable text keep it. OCR is a guess: check those pages.">
         <Select value={ocrLang} onChange={(e) => setOcrLang(e.target.value)}>
           <option value="">Stop with a message</option>
-          <option value="hin+pan+eng">Read them with OCR: Hindi + Punjabi + English (mixed documents)</option>
+          <option value="auto">Read them with OCR: Hindi or Punjabi, chosen per page</option>
           <option value="hin+eng">Read them with OCR: Hindi + English</option>
           <option value="pan+eng">Read them with OCR: Punjabi + English</option>
           <option value="eng">Read them with OCR: English</option>
@@ -535,4 +535,4 @@ export default function PdfSuite() {
   const { toolId } = useParams();
   const Part = PARTS[toolId ?? ''];
   return Part ? <Part /> : null;
-                                       }
+}
