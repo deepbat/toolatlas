@@ -1,3 +1,5 @@
+import { indicWordSpacing } from '../src/tools/pdfsuite/ocrSpacing';
+import joined from './fixtures/ocr-joined-word.json';
 // Unit tests for the pure PDF suite operations.
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import assert from 'node:assert/strict';
@@ -333,4 +335,18 @@ console.log('All PDF suite ops passed.');
   const crossing = rectangleGrid([80, 120, 160], [240, 200, 160]);
   assert.equal(gridsFromLines({ h: [...outer.h, ...crossing.h], v: [...outer.v, ...crossing.v] }, [], true).grids.length, 0);
   console.log('PASS nested table containment, order, unique text and sibling distinction');
-                                                 }
+}
+
+{
+  const word = joined.word, line = joined.line;
+  const pixels = Array.from({ length: word.bbox.x1-word.bbox.x0 }, (_,i) => i >= 24 && i < 34);
+  assert.equal(indicWordSpacing(word, line, pixels), 'है जो', 'space follows independent pixel gap and grapheme boundary');
+  assert.equal(indicWordSpacing(word, line, pixels.map(() => false)), 'हैजो', 'no split without white strip');
+  assert.equal(indicWordSpacing(word, line.slice(-2), pixels), 'हैजो', 'no split without independent gap samples');
+  assert.equal(indicWordSpacing({ ...word, symbols: [] }, line, pixels), 'हैजो', 'no split without matching symbols');
+  assert.equal(indicWordSpacing({ ...word, text: 'क्ष', symbols: [{ text: 'क्ष', bbox: word.bbox }] }, line, pixels), 'क्ष', 'never split a conjunct grapheme');
+  assert.equal(indicWordSpacing({ ...word, text: 'hello' }, line, pixels), 'hello', 'no Latin word changes');
+  assert.equal(indicWordSpacing({ ...word, text: 'है।' }, line, pixels), 'है।', 'no punctuation changes');
+  assert.equal(indicWordSpacing(word, line, pixels.map((_,i) => i >=24 && i<27)), 'हैजो', 'small within-word gap is not a word space');
+  console.log('PASS pixel-backed Indic OCR word spacing without text substitution');
+    }
