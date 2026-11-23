@@ -1,5 +1,6 @@
 // Functional audit: upload, run, download and verify output for the PDF tools not covered elsewhere.
 import { chromium } from '@playwright/test';
+import { HIN_SCAN, PAN_SCAN } from './fixtures/indic-scans.mjs';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import JSZip from 'jszip';
 import { PNG } from 'pngjs';
@@ -234,6 +235,25 @@ await t('OCR adds a searchable text layer that matches the scanned words and kee
   const tx = (await text(path)).toUpperCase(); assert.ok(tx.includes('HELLO') && tx.includes('SCAN'), 'text layer: ' + JSON.stringify(tx));
   const same = await diffBox('/tmp/audit-scan-src.pdf', path, 1, 1); assert.equal(same.cnt, 0, 'page picture changed: ' + same.cnt + ' px');
 });
+for (const [label, lang, b64, wants, size] of [
+  ['Hindi', 'hin+eng', HIN_SCAN, ['Quarterly Report', 'नमस्ते दुनिया क्षत्रिय ज्ञान'], [620, 112]],
+  ['Punjabi', 'pan+eng', PAN_SCAN, ['Page two starts here', 'ਅਕਾਲ', 'ਦੂਜੇ ਸਫ਼ੇ ਦੀ ਸਮਗਰੀ'], [946, 160]],
+]) {
+  await t(`OCR reads ${label} script, writes exact Unicode text, and keeps the picture`, async () => {
+    await go('pdf-ocr');
+    const sd = await PDFDocument.create(); const im = await sd.embedPng(Buffer.from(b64, 'base64'));
+    sd.addPage([595, 842]).drawImage(im, { x: 0, y: 600, width: 595, height: 595 * size[1] / size[0] });
+    const src = Buffer.from(await sd.save()); await writeFile(`/tmp/audit-scan-${lang}.pdf`, src);
+    assert.equal((await text(`/tmp/audit-scan-${lang}.pdf`)).trim(), '', 'control: source has no text layer');
+    await up(src);
+    await page.locator('select').filter({ hasText: label }).selectOption(lang);
+    const p = page.waitForEvent('download', { timeout: 240000 }); await page.getByRole('button', { name: 'Make searchable' }).click(); const d = await p;
+    const path = `/tmp/audit-ocr-${lang}.pdf`; await d.saveAs(path);
+    const tx = (await text(path)).normalize('NFC').replace(/\s+/g, ' ');
+    for (const w of wants) assert.ok(tx.includes(w.normalize('NFC')), `${label} text layer missing "${w}": ` + JSON.stringify(tx));
+    const same = await diffBox(`/tmp/audit-scan-${lang}.pdf`, path, 1, 1); assert.equal(same.cnt, 0, 'page picture changed: ' + same.cnt + ' px');
+  });
+}
 console.log(`${n} passed, ${fails.length} failed`, errors.length ? 'pageerrors: ' + errors.join(' | ') : '');
 await browser.close(); server?.kill();
 process.exit(fails.length ? 1 : 0);
