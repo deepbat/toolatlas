@@ -1074,3 +1074,18 @@ Generated from the CI artifact rust-crate-licences (desktop.yml run 45091279922)
 
 [Zlib OR Apache-2.0 OR MIT]
   tinyvec 1.13.3
+
+## Tesseract language models (English, Hindi, Punjabi)
+
+The OCR tools ship the tessdata_best models (integer-quantised) for English, Hindi (Devanagari) and Punjabi
+(Gurmukhi). The data comes from https://github.com/tesseract-ocr/tessdata_best, where all data is licensed under
+the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0). The files are taken unchanged from
+the @tesseract.js-data/eng, @tesseract.js-data/hin and @tesseract.js-data/pan npm packages (MIT, repository
+https://github.com/naptha/tessdata). The Hindi and Punjabi files are downloaded at build time and checked
+against pinned SHA-512 integrity values in scripts/prebuild.mjs.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use these files except in
+compliance with the License. Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+express or implied. See the License for the specific language governing permissions and limitations under the
+License.
