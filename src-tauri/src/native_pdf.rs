@@ -1,5 +1,5 @@
-// Prototype: save an HTML print view as a PDF with the WebView2 PrintToPdf call (selectable text).
-// Compiled only with `--features native-pdf` on Windows. Not used by the shipped flow yet.
+// Save an HTML print view as a PDF in Downloads with the WebView2 PrintToPdf call (selectable text).
+// Windows only (default feature `native-pdf`). Saves the desktop "Selectable text" Word/Excel print view as a PDF in Downloads.
 use std::sync::{mpsc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
@@ -63,12 +63,34 @@ pub fn sweep_stale() {
     }
 }
 
+// Test-only instrumentation. Compiled in only with the native-pdf-test feature (used by the CI test build); the shipped
+// build has none of these strings or code paths.
+#[cfg(feature = "native-pdf-test")]
+fn test_marker(name: &str, label: &str) {
+    // Records which window label reached the command body.
+    if name.starts_with("from-print-window") {
+        let _ = std::fs::write(std::env::temp_dir().join(format!("deepaks-tool-callmarker-{label}.txt")), b"entered");
+    }
+}
+#[cfg(not(feature = "native-pdf-test"))]
+fn test_marker(_name: &str, _label: &str) {}
+
+#[cfg(feature = "native-pdf-test")]
+fn test_hooks(name: &str) -> Result<(), String> {
+    if name.starts_with("__test_hold__") {
+        std::thread::sleep(Duration::from_millis(9000));
+    }
+    if name.starts_with("__test_fail__") {
+        return Err("forced failure for cleanup test".to_string());
+    }
+    Ok(())
+}
+#[cfg(not(feature = "native-pdf-test"))]
+fn test_hooks(_name: &str) -> Result<(), String> { Ok(()) }
+
 #[tauri::command]
 pub async fn save_print_pdf(app: AppHandle, window: tauri::WebviewWindow, html: String, name: String) -> Result<String, String> {
-    // Test-only trace (this module is behind the native-pdf feature): records which window label reached the command.
-    if name.starts_with("from-print-window") {
-        let _ = std::fs::write(std::env::temp_dir().join(format!("deepaks-tool-callmarker-{}.txt", window.label())), b"entered");
-    }
+    test_marker(&name, window.label());
     // Authorization in code, independent of the CSP and of the capability file: only the main window may call this.
     if window.label() != "main" {
         return Err("save_print_pdf is not available from this window".to_string());
@@ -116,13 +138,7 @@ pub async fn save_print_pdf(app: AppHandle, window: tauri::WebviewWindow, html: 
         let win = WinGuard(win);
         let win = &win.0;
         load_rx.recv_timeout(Duration::from_secs(30)).map_err(|_| "The print view did not finish loading".to_string())?;
-        // Test-only hooks (this whole module is behind the native-pdf feature): hold the window open, or fail on purpose.
-        if test_name.starts_with("__test_hold__") {
-            std::thread::sleep(Duration::from_millis(9000));
-        }
-        if test_name.starts_with("__test_fail__") {
-            return Err("forced failure for cleanup test".to_string());
-        }
+        test_hooks(&test_name)?;
         std::thread::sleep(Duration::from_millis(800));
         let (dtx, drx) = mpsc::channel::<Result<(), String>>();
         let path_h = HSTRING::from(out_path.to_string_lossy().as_ref());
