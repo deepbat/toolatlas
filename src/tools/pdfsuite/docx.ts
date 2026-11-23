@@ -8,7 +8,7 @@ import type { GridCell } from './rulings';
 export interface TextItem { text: string; size: number; bold: boolean; italic: boolean; y: number; x: number; w?: number; ocr?: boolean }
 export interface ParaRun { text: string; bold: boolean; italic: boolean }
 export interface DocImage { png: Uint8Array; w: number; h: number } // size in points
-export interface Para { pageBreak?: boolean; runs: ParaRun[]; level: 0 | 1 | 2 | 3; table?: string[][]; y?: number; image?: DocImage; grid?: { widths: number[]; rows: GridCell[][] } } // 0 = body, 1-3 = heading; table = rebuilt from aligned text columns
+export interface Para { pageBreak?: boolean; runs: ParaRun[]; level: 0 | 1 | 2 | 3; table?: string[][]; tableStyle?: { rightColumns: boolean[]; borderless: boolean }; y?: number; image?: DocImage; grid?: { widths: number[]; rows: GridCell[][] } } // 0 = body, 1-3 = heading; table = rebuilt from aligned text columns
 
 /** Split one line into cells where a wide gap separates the fragments. */
 function lineCells(line: TextItem[]): { x: number; end: number; text: string }[] {
@@ -41,6 +41,7 @@ function flowsLikeProse(rows: string[][]): boolean {
  * Two complete body rows must independently agree on both edge sets. Header text is kept as-is.
  */
 function rightAlignedTable(lines: TextItem[][], start: number): { rows: string[][]; end: number } | null {
+  if (lines[start].some(i => i.w === undefined)) return null;
   const header = lineCells(lines[start]);
   if (header.length < 2 || header.length > 8) return null;
   const size = lines[start][0].size, tol = Math.max(3, size * 0.5);
@@ -50,6 +51,7 @@ function rightAlignedTable(lines: TextItem[][], start: number): { rows: string[]
   let edges: ReturnType<typeof lineCells> | undefined, previousY = lines[start][0].y, end = start + 1;
   for (; end < lines.length; end++) {
     const line = lines[end], cells = lineCells(line), gap = previousY - line[0].y;
+    if (line.some(i => i.w === undefined)) break;
     if (Math.abs(line[0].size - size) > 1.5 || gap <= 0 || gap > size * 3 || cells.length !== header.length || !cells.slice(1).every(c => numeric(c.text)) || numeric(cells[0].text)) break;
     if (!edges) {
       if (Math.abs(cells[0].x - header[0].x) > tol || cells.some((c,i) => i > 0 && (header[i].x < cells[i-1].end + size || header[i].end > c.end + tol))) break;
@@ -207,7 +209,7 @@ function splitColumns(items: TextItem[]): { items: TextItem[]; cols: number | nu
 }
 
 /** Group raw pdf.js text items (one page, reading order) into paragraphs. */
-function layoutLines(items: TextItem[], bodyOverride?: number): Para[] {
+function layoutLines(items: TextItem[], bodyOverride?: number, noRules = false): Para[] {
   const sorted = [...items].sort((a, b) => b.y - a.y || a.x - b.x);
   if (!sorted.length) return [];
   const sizes = sorted.map((i) => i.size).sort((a, b) => a - b);
@@ -224,8 +226,13 @@ function layoutLines(items: TextItem[], bodyOverride?: number): Para[] {
     const line = lines[li];
     // OCR word boxes are not typographic fragments. Wide spacing in a sentence is not evidence of table columns.
     // Ruled OCR tables are reconstructed separately from the actual page borders.
-    const tbl = line.every((i) => i.ocr) ? null : (rightAlignedTable(lines, li) ?? findTable(lines, li));
-    if (tbl) { paras.push({ runs: [], level: 0, table: tbl.rows, y: line[0].y }); li = tbl.end - 1; continue; }
+    const numeric = line.every((i) => i.ocr) ? null : rightAlignedTable(lines, li);
+    const tbl = numeric ?? (line.every((i) => i.ocr) ? null : findTable(lines, li));
+    if (tbl) {
+      paras.push({ runs: [], level: 0, table: tbl.rows, y: line[0].y,
+        ...(numeric ? { tableStyle: { rightColumns: tbl.rows[0].map((_, i) => i > 0), borderless: noRules } } : {}) });
+      li = tbl.end - 1; continue;
+    }
     const size = line[0].size;
     const level = size >= body * 1.8 ? 1 : size >= body * 1.4 ? 2 : size >= body * 1.18 ? 3 : 0;
     const runs: ParaRun[] = line.map((i) => ({ text: i.text, bold: i.bold || level > 0, italic: i.italic }));
@@ -261,15 +268,16 @@ function layoutLines(items: TextItem[], bodyOverride?: number): Para[] {
 
 const esc = (s: string) => s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-function tableXml(rows: string[][]): string {
+function tableXml(rows: string[][], style?: Para['tableStyle']): string {
   const b = '<w:top w:val="single" w:sz="4" w:color="BFBFBF"/><w:left w:val="single" w:sz="4" w:color="BFBFBF"/><w:bottom w:val="single" w:sz="4" w:color="BFBFBF"/><w:right w:val="single" w:sz="4" w:color="BFBFBF"/><w:insideH w:val="single" w:sz="4" w:color="BFBFBF"/><w:insideV w:val="single" w:sz="4" w:color="BFBFBF"/>';
   // Column widths follow the longest text in each column (capped), over the 9000-twip text width; the PDF's own widths are not read.
   const weights = rows[0].map((_, c) => Math.min(60, Math.max(6, ...rows.map((r) => (r[c] ?? '').length))));
   const wsum = weights.reduce((a, b) => a + b, 0);
   const widths = weights.map((w) => Math.round((w / wsum) * 9000));
+  const borders = style?.borderless ? ['top','left','bottom','right','insideH','insideV'].map(edge => `<w:${edge} w:val="nil"/>`).join('') : b;
   const grid = widths.map((w) => `<w:gridCol w:w="${w}"/>`).join('');
-  const trs = rows.map((r) => `<w:tr>${r.map((c, ci) => `<w:tc><w:tcPr><w:tcW w:w="${widths[ci]}" w:type="dxa"/></w:tcPr><w:p><w:r><w:t xml:space="preserve">${esc(c)}</w:t></w:r></w:p></w:tc>`).join('')}</w:tr>`).join('');
-  return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders>${b}</w:tblBorders></w:tblPr><w:tblGrid>${grid}</w:tblGrid>${trs}</w:tbl><w:p/>`;
+  const trs = rows.map((r) => `<w:tr>${r.map((c, ci) => `<w:tc><w:tcPr><w:tcW w:w="${widths[ci]}" w:type="dxa"/></w:tcPr><w:p>${style?.rightColumns[ci] ? '<w:pPr><w:jc w:val="right"/></w:pPr>' : ''}<w:r><w:t xml:space="preserve">${esc(c)}</w:t></w:r></w:p></w:tc>`).join('')}</w:tr>`).join('');
+  return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders>${borders}</w:tblBorders></w:tblPr><w:tblGrid>${grid}</w:tblGrid>${trs}</w:tbl><w:p/>`;
 }
 
 /** A bordered table with merged cells: widths follow the ruling lines in the PDF. */
@@ -309,7 +317,7 @@ function imageXml(img: DocImage, n: number): string {
 function paraXml(p: Para): string {
   if (p.pageBreak) return '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
   if (p.grid) return gridXml(p.grid);
-  if (p.table) return tableXml(p.table);
+  if (p.table) return tableXml(p.table, p.tableStyle);
   const style = p.level > 0 ? `<w:pPr><w:pStyle w:val="Heading${p.level}"/></w:pPr>` : '';
   const runs = p.runs
     .filter((r) => r.text.trim())
@@ -364,15 +372,15 @@ export function buildDocx(paras: Para[]): Uint8Array {
     }
 
 /** Group raw pdf.js text items (one page) into paragraphs; two-column pages are read left column first, then right. */
-export function itemsToParagraphs(items: TextItem[]): Para[] {
+export function itemsToParagraphs(items: TextItem[], noRules = false): Para[] {
   const segs = splitColumns(items);
-  if (!segs) return layoutLines(items);
+  if (!segs) return layoutLines(items, undefined, noRules);
   // Neighbouring full-width segments are laid out together so tables spanning several rows are still found.
   const merged: typeof segs = [];
   for (const sg of segs) { const l = merged[merged.length - 1]; if (l && l.cols === null && sg.cols === null) l.items = [...l.items, ...sg.items]; else merged.push({ ...sg }); }
   const out: Para[] = [];
   const sz = items.filter((i) => i.text.trim()).map((i) => i.size).sort((a, b) => a - b);
   const body = sz[Math.floor(sz.length / 2)] || 12;
-  for (const sg of merged) out.push(...layoutLines(sg.items, body));
+  for (const sg of merged) out.push(...layoutLines(sg.items, body, noRules));
   return out;
-}
+                                       }
