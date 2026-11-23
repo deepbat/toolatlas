@@ -306,7 +306,7 @@ function ToWord() {
         return buildDocx(paras);
       }}>
       <Field label="Pages" hint="Blank means every page."><Input value={pages} onChange={(e) => setPages(e.target.value)} placeholder="1-3,5" /></Field>
-      <div className="mt-3"><Note>Fidelity is honest: text becomes editable paragraphs and headings, but images, tables, multi-column layouts and exact fonts are not preserved. Complex layouts read better in the original PDF.</Note></div>
+      <div className="mt-3"><Note>Fidelity is honest: text becomes editable paragraphs and headings. Simple tables whose columns line up in text rows are rebuilt as Word tables; tables with borders, merged cells or wrapped cells, images, multi-column layouts and exact fonts are not preserved. Check the result against the PDF.</Note></div>
     </Shell>
   );
 }
@@ -493,4 +493,4 @@ export default function PdfSuite() {
   const { toolId } = useParams();
   const Part = PARTS[toolId ?? ''];
   return Part ? <Part /> : null;
-}
+    }
