@@ -409,7 +409,7 @@ function OfficeToPdf({ kind }: { kind: 'word' | 'excel' }) {
           const savedPath = await openPrintView(file.name, cssHtml, bodyHtml);
           // Indic and other complex scripts (U+0900 to U+0DFF): the text layer of a selectable-text PDF can be wrong, so say so at the end.
           const indic = /[\u0900-\u0DFF]/.test(bodyHtml.replace(/<[^>]*>/g, ' '));
-          const warn = indic ? ' This document has Indic text. Copying or searching it from this PDF can give wrong letters or split words; in our tests this happened in several PDF readers, although the pages look right. Check any copied text against the page. The Image PDF option has no selectable text at all, so nothing can be copied from it.' : '';
+          const warn = indic ? ' This document has Indic text. Copying or searching it from this PDF can give wrong letters or split words; in our tests this happened in several PDF readers, although the pages look right. Check any copied text against the page.' : '';
           setDone((savedPath
             ? `Saved to ${savedPath}. The desktop app writes into your Downloads folder without asking where; a file with the same name is kept and this one gets a number.`
             : 'The print view opened in a new tab. Choose "Save as PDF" in the browser dialog.') + warn);
@@ -437,7 +437,7 @@ function OfficeToPdf({ kind }: { kind: 'word' | 'excel' }) {
         <div className="space-y-2 text-sm">
           <label className="flex items-start gap-2">
             <input type="radio" name="office2pdf-mode" className="mt-1" checked={mode === 'image'} onChange={() => setMode('image')} />
-            <span><strong>Image PDF (recommended).</strong> Each page is drawn as an image from this app's own rendering, with Indic scripts shown when the fonts are available. Text in the PDF is not selectable.</span>
+            <span><strong>Image PDF (recommended).</strong> Each page is drawn as an image from this app's own rendering, with Indic scripts shown when the fonts are available. An invisible text layer is added so you can search and copy; in our tests with Hindi and Punjabi text, poppler, MuPDF and pdf.js read it back letter for letter. Other readers are untested.</span>
           </label>
           <label className="flex items-start gap-2">
             <input type="radio" name="office2pdf-mode" className="mt-1" checked={mode === 'print'} onChange={() => setMode('print')} />
