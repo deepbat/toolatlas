@@ -69,10 +69,13 @@ jobs:
           $exe = 'src-tauri/target/release/deepaks-tool.exe'
           "binary: $((Get-Item $exe).Length) bytes"
           $fail = 0
-          foreach ($t in @('__test_hold__','__test_fail__','callmarker','forced failure for cleanup test')) {
+          foreach ($t in @('__test_hold__','__test_fail__','callmarker','forced failure for cleanup test','test-print','printview-*')) {
             if (Select-String -Path $exe -Pattern $t -SimpleMatch -Quiet) { "FAIL: production binary contains '$t'"; $fail = 1 } else { "ok: production binary has no '$t'" }
           }
           if (Select-String -Path $exe -Pattern 'save_print_pdf' -SimpleMatch -Quiet) { "ok: save_print_pdf command is present" } else { "FAIL: save_print_pdf missing"; $fail = 1 }
+          $cfg = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
+          "production config capabilities: $($cfg.app.security.capabilities -join ',')"
+          if (($cfg.app.security.capabilities -join ',') -ne 'default') { "FAIL: production config enables more than the default capability"; $fail = 1 }
           if ($fail) { exit 1 }
       - name: Build test-only installer (remote debugging port on, for CI functional test)
         run: npx --yes @tauri-apps/cli@2 build --bundles nsis --config src-tauri/tauri.test.conf.json --features native-pdf-test -- --locked
@@ -86,6 +89,7 @@ jobs:
         run: |
           $exe = 'src-tauri/target/release/deepaks-tool.exe'
           if (Select-String -Path $exe -Pattern '__test_hold__' -SimpleMatch -Quiet) { "ok: test build contains the hook string, the scan method works" } else { "FAIL: control string not found in the test build"; exit 1 }
+          if (Select-String -Path $exe -Pattern 'printview-*' -SimpleMatch -Quiet) { "info: test build embeds the test-print window grant as plain text, so the production scan for it is meaningful" } else { "info: test-print grant is NOT found as plain text in the test build, so the production string scan for it proves nothing; the production config check above is the evidence" }
 
   linux:
     name: Linux build (secondary)
