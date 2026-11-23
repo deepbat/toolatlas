@@ -89,7 +89,12 @@ await step('pdf-to-word Hindi/Punjabi per-page OCR', async () => {
   const cells = [...dx.matchAll(/<w:tc>([\s\S]*?)<\/w:tc>/g)].map(m => m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
   console.log('OCR table cells: ' + JSON.stringify(cells));
   if (JSON.stringify(cells) !== JSON.stringify(['Item', 'गणना', 'Apples', '42'])) throw new Error('table cells ' + JSON.stringify(cells));
-  console.log('OCR spaced phrase count (3 in source): ' + (text.match(/अनुच्छेद है जो/g) || []).length);
+  const sourceSpacing = JSON.parse(await readFile('out/ocr-source-expectations.json', 'utf8'));
+  if (sourceSpacing.expected !== 3 || sourceSpacing.printViewCount !== 3 || sourceSpacing.phrase !== 'अनुच्छेद है जो') throw new Error('source spacing evidence invalid');
+  const spacedCount = (text.match(/अनुच्छेद है जो/g) || []).length;
+  await writeFile(`out/${evidencePrefix}-ocr-spacing-result.json`, JSON.stringify({ ...sourceSpacing, outputCount: spacedCount }));
+  console.log('OCR spaced phrase count (3 in source): ' + spacedCount);
+  if (spacedCount !== 3) throw new Error('OCR word spacing: expected all 3 source occurrences, got ' + spacedCount);
   if (/<w:t[^>]*>\s*[|¦]+\s*<\/w:t>/.test(dx)) throw new Error('standalone border artifact in this fixture');
   const miss = want.filter(t => !text.includes(t));
   console.log('OCR docx text: ' + text.slice(0, 400));
