@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createWorker, OEM, type Worker } from 'tesseract.js';
+import { ocrDone, readPage } from './ocrItems';
 import { Button, Dropzone, Field, FileRow, Input, Note, Panel, ProgressBar, Select } from '../../components/ui';
 import { downloadBlob, formatBytes } from '../../lib/utils';
 import { checkPdfFile, friendlyPdfError, openPdfjs, openPdfLib, renderPage } from '../../lib/pdfio';
@@ -57,7 +58,7 @@ export default function Ocr() {
         await workerRef.current.terminate();
         workerRef.current = null;
       }
-      if (!workerRef.current) {
+      if (!workerRef.current && lang !== 'auto') {
         setStatus('Preparing the OCR engine…');
         workerLang.current = lang;
         workerRef.current = await createWorker(lang.split('+'), OEM.LSTM_ONLY, {
@@ -79,7 +80,7 @@ export default function Ocr() {
         if (chars > 20) { skipped++; continue; }
         setStatus(`Reading page ${pageNo} of ${pageCount}…`);
         const { canvas } = await renderPage(doc, pageNo, Number(scale));
-        const { data } = await worker.recognize(canvas, {}, { blocks: true });
+        const data: Awaited<ReturnType<Worker['recognize']>>['data'] = lang === 'auto' ? await readPage(canvas, 'auto') : (await (worker as Worker).recognize(canvas, {}, { blocks: true })).data;
         const words: OcrWord[] = (data.blocks ?? []).flatMap((b) =>
           b.paragraphs.flatMap((p) =>
             p.lines.flatMap((l) =>
@@ -105,6 +106,7 @@ export default function Ocr() {
       void workerRef.current?.terminate();
       workerRef.current = null;
     } finally {
+      void ocrDone();
       setBusy(false); setStatus(''); setProgress(0);
     }
   };
@@ -125,7 +127,7 @@ export default function Ocr() {
             <Select value={lang} onChange={(e) => setLang(e.target.value)}>
               <option value="eng">English</option>
               <option value="hin+eng">Hindi (Devanagari) and English</option>
-              <option value="hin+pan+eng">Hindi, Punjabi and English (mixed documents)</option>
+              <option value="auto">Hindi or Punjabi, chosen for each page</option>
               <option value="pan+eng">Punjabi (Gurmukhi) and English</option>
             </Select>
           </Field>
