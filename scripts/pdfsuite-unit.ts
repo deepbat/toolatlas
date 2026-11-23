@@ -372,3 +372,39 @@ console.log('All PDF suite ops passed.');
   assert.ok(xml.includes('Item') && xml.includes('Apples'));
   console.log('PASS desktop shared fixture extraction without external imports');
       }
+
+{
+  const outer = { h: [300,100,0].map(at => ({at,a:0,b:250})), v: [0,100,250].map(at=>({at,a:0,b:300})) };
+  const inner = { h: [240,200,160].map(at=>({at,a:115,b:250})), v: [{at:115,a:160,b:240},{at:180,a:200,b:240}] };
+  const txt = (text: string,x: number,y: number) => ({text,x,y,w:15,size:10,bold:false,italic:false});
+  const items = [txt('A',10,270),txt('Before',120,270),txt('in1',125,220),txt('in2',200,220),txt('span',125,180),txt('After',120,120),txt('C',10,50),txt('D',120,50)];
+  for (const mirror of [false,true]) {
+    const lines = {h:[...outer.h,...inner.h],v:[...outer.v,...inner.v]};
+    const l = mirror ? {h:lines.h.map(s=>({at:s.at,a:250-s.b,b:250-s.a})),v:lines.v.map(s=>({...s,at:250-s.at}))} : lines;
+    const t = mirror ? items.map(it=>({...it,x:250-it.x-it.w})) : items;
+    const r = gridsFromLines(l,t);
+    assert.equal(r.grids.length,1,'shared-side outer grid retained');
+    const cell = r.grids[0].rows[0][mirror?0:1];
+    assert.equal(cell.text,'Before After');
+    const child = cell.blocks?.find(b=>'grid' in b);
+    assert.ok(child && 'grid' in child);
+    if (child && 'grid' in child) { assert.equal(child.grid.rows.length,2);assert.equal(child.grid.rows[1][0].colspan,2); }
+    const xml=new TextDecoder().decode((await readZip(buildDocx([{runs:[],level:0,grid:r.grids[0]}]))).get('word/document.xml'));
+    assert.equal((xml.match(/<w:tbl>/g)||[]).length,2);
+    for(const text of ['Before','After','in1','in2','span']) assert.equal((xml.match(new RegExp('>'+text+'<','g'))||[]).length,1);
+  }
+  const partial = {h:[...outer.h,...inner.h.filter(s=>s.at!==160)],v:[...outer.v,...inner.v]};
+  assert.equal(gridsFromLines(partial,[],true).grids.length,0,'missing child bottom remains unsupported');
+  const crossing = {h:[...outer.h,...inner.h.map(s=>({...s,a:80}))],v:[...outer.v,{at:80,a:160,b:240},{at:180,a:200,b:240}]};
+  assert.equal(gridsFromLines(crossing,[],true).grids.length,0,'grid crossing parent cells is not nested');
+  const fragmented = {h:[...outer.h,...inner.h].flatMap(s=>[{...s,b:(s.a+s.b)/2},{...s,a:(s.a+s.b)/2}]).reverse(), v:[...outer.v,...inner.v].flatMap(s=>[{...s,b:(s.a+s.b)/2},{...s,a:(s.a+s.b)/2}]).reverse()};
+  assert.equal(gridsFromLines(fragmented,items).grids[0].rows[0][1].blocks?.filter(b=>'grid' in b).length,1,'fragmented shuffled rules retain nesting');
+  const bothSides = {h:[...outer.h,...inner.h.map(s=>({...s,a:100}))],v:[...outer.v,{at:180,a:200,b:240}]};
+  const bothResult = gridsFromLines(bothSides,[],true);
+  assert.equal(bothResult.grids.length,1,'both-side rules still form a valid flat grid');
+  assert.ok(bothResult.grids[0].rows.every(r=>r.every(c=>!c.blocks)),'ambiguous both-side grid must not invent nesting');
+  const ordinary = gridsFromLines(outer,items,true);
+  assert.equal(ordinary.grids.length,1);
+  assert.ok(ordinary.grids[0].rows.every(r=>r.every(c=>!c.blocks)),'ordinary grids never become nested');
+  console.log('PASS closed one-side-shared nested grid and partial/crossing negatives');
+}
