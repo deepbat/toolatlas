@@ -17,6 +17,7 @@ const send = (method, params = {}) => new Promise(r => { const i = ++id; pend.se
 const ev = async (expression) => { const r = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }); return r.result?.result?.value ?? r.result?.exceptionDetails?.text; };
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const origin = new URL(tg.url).origin;
+await ev("localStorage.setItem('toolatlas.nativePdfSave','0')"); // this script tests the print-dialog fallback path
 await mkdir('out', { recursive: true });
 let failed = 0;
 setTimeout(() => { console.log('FAIL watchdog'); process.exit(2); }, 200000);
