@@ -59,6 +59,10 @@ await step('word-to-pdf image PDF text layer', async () => {
   const txt = pages.join(' ').replace(/\s+/g, ' ');
   for (const t of ['Quarterly Report', 'नमस्ते दुनिया क्षत्रिय ज्ञान', 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ', 'Closing notes']) if (!txt.includes(t)) throw new Error('missing ' + t + ' in ' + txt.slice(0, 200));
   if (pages.length !== 2) throw new Error('pages ' + pages.length);
+  // The layer must equal the visible content of the fixture built above, page by page, not just contain expected strings.
+  const norm = (x) => x.replace(/\s+/g, ' ').trim();
+  if (norm(pages[0]) !== 'Quarterly Report नमस्ते दुनिया क्षत्रिय ज्ञान') throw new Error('page 1 layer: ' + norm(pages[0]));
+  if (norm(pages[1]) !== 'Page two starts here ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ Closing notes in English after the break.') throw new Error('page 2 layer: ' + norm(pages[1]));
   return 'pages=' + pages.length;
 });
 
@@ -78,6 +82,11 @@ await step('pdf-to-word Hindi/Punjabi per-page OCR', async () => {
   const z = await JSZip.loadAsync(await readFile('out/final-ocr-pdf-to-word.docx'));
   const text = (await z.file('word/document.xml').async('string')).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
   const want = ['Quarterly', 'नमस्ते दुनिया', 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ', 'Closing notes'];
+  const dx = await z.file('word/document.xml').async('string');
+  const cells = [...dx.matchAll(/<w:tc>([\s\S]*?)<\/w:tc>/g)].map(m => m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+  console.log('OCR table cells: ' + JSON.stringify(cells));
+  if (JSON.stringify(cells) !== JSON.stringify(['Item', 'गणना', 'Apples', '42'])) throw new Error('table cells ' + JSON.stringify(cells));
+  console.log('OCR spaced phrase count (3 in source): ' + (text.match(/अनुच्छेद है जो/g) || []).length);
   const miss = want.filter(t => !text.includes(t));
   console.log('OCR docx text: ' + text.slice(0, 400));
   if (miss.length) throw new Error('missing ' + miss.join(' | '));
@@ -102,7 +111,9 @@ await step('pdf-to-word merged cells from WebView2-printed table', async () => {
   console.log(`merged docx: gridSpan3=${span} vMerge=${vm} text=` + xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 200));
   if (!span) throw new Error('no column span for the title row');
   if (!vm) throw new Error('no row span for North');
-  for (const t of ['Quarterly sales', 'North', 'South', '130']) if (!xml.includes(t)) throw new Error('missing ' + t);
+  const mc = [...xml.matchAll(/<w:tc>([\s\S]*?)<\/w:tc>/g)].map(m => m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+  console.log('merged cells: ' + JSON.stringify(mc));
+  if (JSON.stringify(mc) !== JSON.stringify(['Quarterly sales', 'Region', 'Q1', 'Q2', 'North', '100', '110', '', '120', '130', 'South', '90', '95'])) throw new Error('cells ' + JSON.stringify(mc));
 });
 
 console.log(failed ? 'FAILED ' + failed : 'ALL PASS');
