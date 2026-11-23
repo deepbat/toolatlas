@@ -41,6 +41,8 @@ jobs:
           if-no-files-found: error
       - name: Bundle Rust licence texts for the installer
         run: node scripts/bundle-licences.mjs x86_64-pc-windows-msvc
+      - name: Reconcile the licence bundle with cargo tree (linked crates vs bundled index)
+        run: node scripts/check-licence-coverage.mjs x86_64-pc-windows-msvc
       - uses: actions/upload-artifact@v4
         with:
           name: rust-licence-bundle
