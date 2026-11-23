@@ -53,7 +53,7 @@ check(hits.length === 1, `no request from hostile HTML reached the local listene
 check(tmpLeft().length === 0, `temp print files after success: ${JSON.stringify(tmpLeft())}`);
 
 // 2. Authorization: call the command from the hidden print window while it is held open.
-const holdP = ev(`(()=>{ window.__hold = window.__TAURI_INTERNALS__.invoke('save_print_pdf',{html:'<p>held</p>',name:'__test_hold__a'}).then(p=>({ok:true,p}),e=>({ok:false,e:String(e)})); return 'started'; })()`, false);
+const holdP = ev(`(()=>{ window.__hold = window.__TAURI_INTERNALS__.invoke('save_print_pdf',{html:'<!--test-nocsp--><p>held</p>',name:'__test_hold__a'}).then(p=>({ok:true,p}),e=>({ok:false,e:String(e)})); return 'started'; })()`, false);
 console.log('hold started:', await holdP);
 let pt;
 for (let i = 0; i < 16 && !pt; i++) { pt = (await targetsList()).find(x => x.type === 'page' && x.url.startsWith('file:')); if (!pt) await sleep(500); }
