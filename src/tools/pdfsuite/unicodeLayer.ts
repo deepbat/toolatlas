@@ -70,7 +70,17 @@ export function drawInvisibleWords(page: PDFPage, font: InvisibleUnicodeFont, wo
   const ops: PDFOperator[] = [pushGraphicsState(), PDFOperator.of('BT' as never)];
   const op = (n: string, args: (PDFNumber | PDFName | PDFHexString)[] = []) => ops.push(PDFOperator.of(n as never, args));
   op('Tr', [PDFNumber.of(3)]);
-  for (const w of words) {
+  // Real space characters between words on one line: some readers (MuPDF) join Indic words that have only a gap between them.
+  const withSpaces: PlacedWord[] = [];
+  words.forEach((w, i) => {
+    withSpaces.push(w);
+    const nx = words[i + 1];
+    if (!nx) return;
+    const end = w.x + w.w;
+    const gap = nx.x - end;
+    if (Math.abs(nx.y - w.y) < Math.max(1, w.h) * 0.5 && gap > 0.3) withSpaces.push({ text: ' ', x: end, y: w.y, w: gap, h: w.h });
+  });
+  for (const w of withSpaces) {
     const { hex, count } = font.encode(w.text);
     if (!count) continue;
     const size = Math.max(1, w.h);
