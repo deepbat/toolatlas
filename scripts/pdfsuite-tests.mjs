@@ -258,8 +258,31 @@ try {
     assert.ok(xlsPrint.getPageCount() >= 2, 'print PDF keeps sheets on separate pages');
     console.log('PASS excel-to-pdf print view'); n++;
   }
+  {
+    // A PDF whose Indic text cannot be read back (Chromium print output): refused by default, and with OCR chosen only that
+    // page is read from its picture. Pages are mixed here: page one is Latin plus Hindi, page two is Punjabi.
+    // Strip the ToUnicode maps from the real Chromium print PDF: the glyphs stay, but pdf.js can no longer map them to text.
+    const { PDFName, PDFDict } = await import('pdf-lib');
+    const bd = await PDFDocument.load(await readFile('/tmp/word-to-pdf-print.pdf'));
+    for (const [, o] of bd.context.enumerateIndirectObjects()) if (o instanceof PDFDict && o.has(PDFName.of('ToUnicode'))) o.delete(PDFName.of('ToUnicode'));
+    const broken = Buffer.from(await bd.save());
+    await page.goto(`${base}/tools/pdf-to-word/`);
+    await page.locator('input[type=file]').first().setInputFiles({ name: 'in.pdf', mimeType: 'application/pdf', buffer: broken });
+    await page.getByText('in.pdf').first().waitFor();
+    await page.getByRole('button', { name: 'Convert to Word', exact: true }).click();
+    await page.getByText(/could not be read back as text/).waitFor({ timeout: 30000 });
+    await page.getByLabel(/text cannot be read/).selectOption('hin+eng');
+    const dlP = page.waitForEvent('download', { timeout: 150000 });
+    await page.getByRole('button', { name: 'Convert to Word', exact: true }).click();
+    const dl = await dlP;
+    await dl.saveAs('/tmp/pdf-to-word-ocr.docx');
+    const z = await (await import('jszip')).default.loadAsync(await readFile('/tmp/pdf-to-word-ocr.docx'));
+    const text = (await z.file('word/document.xml').async('string')).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    for (const t of ['Quarterly', 'Report', 'नमस्ते', 'दुनिया']) assert.ok(text.includes(t), 'OCR fallback text has ' + t + ': ' + text.slice(0, 300));
+    console.log('PASS pdf-to-word Indic OCR fallback'); n++;
+  }
   assert.deepEqual(errors, []);
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-                }
+}
