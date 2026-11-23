@@ -35,6 +35,9 @@ await rp.goto(base + '/404-reader-page/').catch(() => {});
 const readerReady = rp.evaluate(async u => { const m = await import(u + '/__pdfjs/pdf.min.mjs'); window.pdfjsWorker = await import(u + '/__pdfjs/pdf.worker.min.mjs'); window.__pdfjs = m; }, base);
 async function openPdf(path, password) { await readerReady; return rp.evaluate(async ([b64, pw]) => { const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); window.__doc = await window.__pdfjs.getDocument({ data: bin, password: pw }).promise; return window.__doc.numPages; }, [(await readFile(path)).toString('base64'), password]); }
 const pageText = async (path, n, pw) => { await openPdf(path, pw); return rp.evaluate(async n => { const pg = await window.__doc.getPage(n); const c = await pg.getTextContent(); return c.items.map(i => i.str).join(' '); }, n); };
+const halves = async (path, n) => { await openPdf(path); return rp.evaluate(async n => { const pg = await window.__doc.getPage(n); const w = pg.view[2]; const c = await pg.getTextContent(); const L = [], R = []; for (const i of c.items) (i.transform[4] < w / 2 ? L : R).push(i.str); return [L.join(' ').replace(/Six page /g, 'p').trim(), R.join(' ').replace(/Six page /g, 'p').trim()]; }, n); };
+const renderData = async (path, n, scale) => { await openPdf(path); return rp.evaluate(async ([n, scale]) => { const pg = await window.__doc.getPage(n); const vp = pg.getViewport({ scale }); const cv = document.createElement('canvas'); cv.width = Math.ceil(vp.width); cv.height = Math.ceil(vp.height); const ctx = cv.getContext('2d'); await pg.render({ canvasContext: ctx, viewport: vp }).promise; return { w: cv.width, h: cv.height, d: Array.from(ctx.getImageData(0, 0, cv.width, cv.height).data) }; }, [n, scale]); };
+const diffBox = async (pa, pb, n, scale) => { const A0 = await renderData(pa, n, scale), B0 = await renderData(pb, n, scale); let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1, cnt = 0; for (let i = 0; i < A0.d.length; i += 4) { if (Math.abs(A0.d[i] - B0.d[i]) + Math.abs(A0.d[i + 1] - B0.d[i + 1]) + Math.abs(A0.d[i + 2] - B0.d[i + 2]) > 60) { const px = (i / 4) % A0.w, py = Math.floor(i / 4 / A0.w); x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py); cnt++; } } return { x0, y0, x1, y1, cnt, w: A0.w, h: A0.h }; };
 const text = async (path, pw) => { const k = await openPdf(path, pw); let o = ''; for (let i = 1; i <= k; i++) o += (await pageText(path, i, pw)) + '\n'; return o; };
 const colourStats = async (path, n, scale) => { await openPdf(path); return rp.evaluate(async ([n, scale]) => { const pg = await window.__doc.getPage(n); const vp = pg.getViewport({ scale }); const cv = document.createElement('canvas'); cv.width = Math.ceil(vp.width); cv.height = Math.ceil(vp.height); const ctx = cv.getContext('2d'); await pg.render({ canvasContext: ctx, viewport: vp }).promise; const d = ctx.getImageData(0, 0, cv.width, cv.height).data; let colour = 0, dark = 0, ink = 0; for (let i = 0; i < d.length; i += 4) { if (Math.abs(d[i] - d[i + 1]) > 12 || Math.abs(d[i + 1] - d[i + 2]) > 12) colour++; if (d[i] < 100 && d[i + 1] < 100 && d[i + 2] < 100) dark++; if (d[i] < 200 || d[i + 1] < 200 || d[i + 2] < 200) ink++; } return { colour, dark, ink, w: cv.width, h: cv.height }; }, [n, scale]); };
 
@@ -176,10 +179,11 @@ await t('n-up puts two source pages on each sheet', async () => {
   const r = await suite('pdf-nup', six, null); const pt = await pagesText(r.path); assert.equal(pt.length, 3);
   assert.ok(pt[0].includes('Six page 1') && pt[0].includes('Six page 2') && pt[2].includes('Six page 5') && pt[2].includes('Six page 6'), JSON.stringify(pt));
 });
-await t('booklet imposes every source page exactly once', async () => {
+await t('booklet imposes the exact saddle-stitch order, left and right of each sheet', async () => {
   const r = await suite('pdf-booklet', six, null); const pt = await pagesText(r.path); const all = pt.join(' ');
   for (let i = 1; i <= 6; i++) assert.equal((all.match(new RegExp('Six page ' + i + '(?!\\d)', 'g')) || []).length, 1, 'page ' + i + ' ' + JSON.stringify(pt));
-  assert.ok(pt[0].includes('Six page 1'), JSON.stringify(pt[0]));
+  const sheets = []; for (let i = 1; i <= pt.length; i++) sheets.push(await halves(r.path, i));
+  assert.deepEqual(sheets, [['', 'p1'], ['p2', ''], ['p6', 'p3'], ['p4', 'p5']], 'imposed order (left|right) ' + JSON.stringify(sheets));
 });
 await t('watermark adds text on every page and keeps the original', async () => {
   const r = await suite('pdf-watermark', A, null); const pt = await pagesText(r.path); assert.equal(pt.length, 4);
@@ -203,13 +207,22 @@ await t('protect needs the password, unlock removes it, text survives', async ()
 await t('repair returns a readable PDF with the same text', async () => {
   const r = await suite('pdf-repair', A, null); assert.ok((await text(r.path)).includes('Alpha page 3'));
 });
-await t('sign stamps something visible on the page', async () => {
-  await writeFile('/tmp/audit-before-sign.pdf', A); const b0 = await colourStats('/tmp/audit-before-sign.pdf', 4, 0.6);
+await t('sign places the signature image at bottom right of the last page with the right shape', async () => {
+  await writeFile('/tmp/audit-before-sign.pdf', A);
   const r = await suite('pdf-sign', A, async () => {
     await page.getByRole('button', { name: 'Create a signature' }).click(); await page.getByRole('button', { name: 'Type', exact: true }).click();
     await page.getByLabel('Type your signature').fill('Deepak'); await page.getByRole('button', { name: 'Use signature' }).click();
+    await page.getByAltText('Your signature').waitFor();
   });
-  const b1 = await colourStats(r.path, 4, 0.6); const p1a = await colourStats('/tmp/audit-before-sign.pdf', 1, 0.6), p1b = await colourStats(r.path, 1, 0.6); assert.equal(p1a.ink, p1b.ink, 'other pages unchanged'); assert.ok(b1.ink > b0.ink * 1.05 || (await text(r.path)).includes('Deepak'), `ink ${b0.ink} -> ${b1.ink}`);
+  const sigPx = await page.evaluate(async () => { const im = document.querySelector('img[alt="Your signature"]'); await im.decode(); const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const x = c.getContext('2d'); x.drawImage(im, 0, 0); const d = x.getImageData(0, 0, c.width, c.height).data; let a = 1e9, b = 1e9, e = -1, f = -1; for (let i = 0; i < d.length; i += 4) { if (d[i + 3] > 40 && (d[i] < 200 || d[i + 1] < 200 || d[i + 2] < 200)) { const px = (i / 4) % c.width, py = Math.floor(i / 4 / c.width); a = Math.min(a, px); e = Math.max(e, px); b = Math.min(b, py); f = Math.max(f, py); } } return { w: e - a + 1, h: f - b + 1, nw: c.width, nh: c.height }; });
+  const bx = await diffBox('/tmp/audit-before-sign.pdf', r.path, 4, 1); assert.ok(bx.cnt > 200, 'no stamp found on last page');
+  const bw = bx.x1 - bx.x0 + 1, bh = bx.y1 - bx.y0 + 1;
+  assert.ok(bx.x0 > bx.w / 2 && bx.y0 > bx.h / 2, 'not in the bottom-right quadrant: ' + JSON.stringify(bx));
+  assert.ok(bx.x1 < bx.w && bx.y1 < bx.h, 'runs off the page');
+  const wantW = 140 * sigPx.w / sigPx.nw; assert.ok(Math.abs(bw - wantW) / wantW < 0.2, `stamp ink width ${bw}pt vs expected ${wantW.toFixed(0)}pt (140pt image, ink ${sigPx.w}/${sigPx.nw}px)`);
+  const want = sigPx.w / sigPx.h, got = bw / bh; assert.ok(Math.abs(got - want) / want < 0.2, `aspect ${got.toFixed(2)} vs signature ${want.toFixed(2)}`);
+  const other = await diffBox('/tmp/audit-before-sign.pdf', r.path, 1, 1); assert.equal(other.cnt, 0, 'page 1 changed');
+  console.log(`  sign stamp box ${bw}x${bh}pt at (${bx.x0},${bx.y0}) on ${bx.w}x${bx.h}; signature aspect ${want.toFixed(2)}, stamp ${got.toFixed(2)}`);
 });
 console.log(`${n} passed, ${fails.length} failed`, errors.length ? 'pageerrors: ' + errors.join(' | ') : '');
 await browser.close(); server?.kill();
