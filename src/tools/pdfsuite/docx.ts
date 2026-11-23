@@ -120,17 +120,22 @@ function splitColumns(items: TextItem[]): { items: TextItem[]; cols: number | nu
     for (const i of r) for (let x = Math.floor((i.x - minX) / 2); x <= Math.floor((i.x + (i.w as number) - minX) / 2) && x < bins; x++) hit.add(x);
     hit.forEach((x) => cover[x]++);
   }
-  const lo = Math.floor(bins * 0.25), hi = Math.ceil(bins * 0.75);
-  let best = -1, bestLen = 0;
+  const lo = Math.floor(bins * 0.2), hi = Math.ceil(bins * 0.8);
+  const cands: { best: number; len: number }[] = [];
   for (let x = lo; x < hi; ) {
-    if (cover[x] <= rows.length * 0.25) {
-      let e = x; while (e < hi && cover[e] <= rows.length * 0.25) e++;
-      if (e - x > bestLen) { best = x; bestLen = e - x; }
+    if (cover[x] <= rows.length * 0.5) {
+      let e = x; while (e < hi && cover[e] <= rows.length * 0.5) e++;
+      if (e - x >= (body * 1.2) / 2) cands.push({ best: x, len: e - x });
       x = e;
     } else x++;
   }
-  if (best < 0 || bestLen * 2 < body * 1.2) return null;
-  const gx = minX + (best + bestLen / 2) * 2;
+  cands.sort((a, b) => b.len - a.len);
+  for (const cand of cands.slice(0, 4)) {
+    const segs = trySplit(minX + (cand.best + cand.len / 2) * 2);
+    if (segs) return segs;
+  }
+  return null;
+  function trySplit(gx: number): { items: TextItem[]; cols: number | null }[] | null {
   const kind = (r: TextItem[]) => {
     const l = r.filter((i) => i.x + (i.w as number) <= gx + 1), rt = r.filter((i) => i.x >= gx - 1);
     if (l.length + rt.length < r.length) return 'cross';
@@ -162,6 +167,7 @@ function splitColumns(items: TextItem[]): { items: TextItem[]; cols: number | nu
   }
   flush();
   return segs.some((x) => x.cols) ? segs : null;
+  }
 }
 
 /** Group raw pdf.js text items (one page, reading order) into paragraphs. */
@@ -279,9 +285,12 @@ export function buildDocx(paras: Para[]): Uint8Array {
 export function itemsToParagraphs(items: TextItem[]): Para[] {
   const segs = splitColumns(items);
   if (!segs) return layoutLines(items);
+  // Neighbouring full-width segments are laid out together so tables spanning several rows are still found.
+  const merged: typeof segs = [];
+  for (const sg of segs) { const l = merged[merged.length - 1]; if (l && l.cols === null && sg.cols === null) l.items = [...l.items, ...sg.items]; else merged.push({ ...sg }); }
   const out: Para[] = [];
   const sz = items.filter((i) => i.text.trim()).map((i) => i.size).sort((a, b) => a - b);
   const body = sz[Math.floor(sz.length / 2)] || 12;
-  for (const sg of segs) out.push(...layoutLines(sg.items, body));
+  for (const sg of merged) out.push(...layoutLines(sg.items, body));
   return out;
-                                               }
+}
