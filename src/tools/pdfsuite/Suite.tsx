@@ -293,7 +293,7 @@ function ToWord() {
             if (!('str' in it)) continue;
             const str: string = fixed ? fixed[si] : it.str; si++;
             // pdf.js yields NUL (or other control characters) for glyphs it cannot map back to text (seen with Devanagari and Gurmukhi conjuncts, and fonts without a ToUnicode map).
-            pageUnreadable += (str.match(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g) ?? []).length;
+            pageUnreadable += (str.match(/[\u0000-\u0008\u000E-\u001F]/g) ?? []).length;
             let bold = false, italic = false;
             try {
               const fname = String(page.commonObjs.get(it.fontName)?.name ?? '').toLowerCase();
@@ -328,6 +328,7 @@ function ToWord() {
       <div className="mt-3"><Field label="If a page's text cannot be read" hint="Only pages whose own text cannot be read back are read from their picture instead. Pages with readable text keep it. OCR is a guess: check those pages.">
         <Select value={ocrLang} onChange={(e) => setOcrLang(e.target.value)}>
           <option value="">Stop with a message</option>
+          <option value="hin+pan+eng">Read them with OCR: Hindi + Punjabi + English (mixed documents)</option>
           <option value="hin+eng">Read them with OCR: Hindi + English</option>
           <option value="pan+eng">Read them with OCR: Punjabi + English</option>
           <option value="eng">Read them with OCR: English</option>
