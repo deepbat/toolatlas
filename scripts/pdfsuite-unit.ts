@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { addTextLayer, booklet, bookletOrder, cropPages, deletePages, flattenForms, nUp, parsePageRanges, reorderPages, rotatePages, signPdf, stampText, toWinAnsi, watermark } from '../src/tools/pdfsuite/ops';
 import { protectPdf, repairPdf, unlockPdf } from '../src/tools/pdfsuite/qpdf';
 import { buildDocx, itemsToParagraphs } from '../src/tools/pdfsuite/docx';
-import { isOcrRuleBar } from '../src/tools/pdfsuite/rulings';
+import { gridsFromLines, isOcrRuleBar } from '../src/tools/pdfsuite/rulings';
 import { readZip } from '../src/lib/zip';
 import { indexToCol, parseRange, sheetToTable, workbookToTables } from '../src/tools/pdfsuite/office2pdf';
 
@@ -296,3 +296,41 @@ console.log('All PDF suite ops passed.');
   assert.equal(isOcrRuleBar('।', { x0: 455.8, x1: 456.3, y0: 580, y1: 600 }, rule), false, 'do not replace punctuation');
   console.log('PASS geometric OCR border-bar rejection preserves real text');
     }
+
+{
+  const rectangleGrid = (xs: number[], ys: number[]) => ({
+    h: ys.map(at => ({ at, a: xs[0], b: xs[xs.length - 1] })),
+    v: xs.map(at => ({ at, a: ys[ys.length - 1], b: ys[0] })),
+  });
+  const outer = rectangleGrid([0, 100, 250], [300, 100, 0]);
+  const inner = rectangleGrid([115, 170, 235], [240, 200, 160]);
+  const lines = { h: [...outer.h, ...inner.h], v: [...outer.v, ...inner.v] };
+  const text = (text: string, x: number, y: number) => ({ text, x, y, w: 20, size: 10, bold: false, italic: false });
+  const items = [text('A', 10, 270), text('Before', 120, 270), text('in1', 125, 220), text('in2', 185, 220), text('in3', 125, 180), text('in4', 185, 180), text('After', 120, 120), text('C', 10, 50), text('D', 120, 50), text('outside', 10, -20)];
+  for (const l of [lines, { h: [...lines.h].reverse(), v: [...lines.v].reverse() }]) {
+    const result = gridsFromLines(l, items);
+    assert.equal(result.grids.length, 1, 'inner table is not a sibling');
+    assert.deepEqual(result.rest.map(x => x.text), ['outside']);
+    const cell = result.grids[0].rows[0][1];
+    assert.equal(cell.text, 'Before After');
+    assert.ok(cell.blocks && cell.blocks.length === 3);
+    assert.deepEqual(cell.blocks!.filter(b => 'text' in b).map(b => 'text' in b && b.text), ['Before', 'After']);
+    const child = cell.blocks!.find(b => 'grid' in b)!;
+    assert.ok('grid' in child);
+    if ('grid' in child) assert.deepEqual(child.grid.rows.map(r => r.map(c => c.text)), [['in1','in2'],['in3','in4']]);
+    const xml = new TextDecoder().decode((await readZip(buildDocx([{ runs: [], level: 0, grid: result.grids[0] }]))).get('word/document.xml'));
+    assert.equal((xml.match(/<w:tbl>/g) || []).length, 2);
+    assert.equal((xml.match(/in1/g) || []).length, 1);
+    assert.ok(xml.indexOf('Before') < xml.lastIndexOf('<w:tbl>') && xml.lastIndexOf('</w:tbl>') > xml.indexOf('After'));
+    assert.ok(xml.indexOf('in4') < xml.indexOf('After') && xml.indexOf('After') < xml.indexOf('>C</w:t>'));
+  }
+  const sibling = rectangleGrid([300, 350, 400], [240, 200, 160]);
+  assert.equal(gridsFromLines({ h: [...outer.h, ...sibling.h], v: [...outer.v, ...sibling.v] }, [], true).grids.length, 2, 'separate tables remain siblings');
+  const emptyParent = gridsFromLines(lines, items.filter(it => it.text.startsWith('in')));
+  assert.equal(emptyParent.grids.length, 1, 'parent with text only inside child is retained');
+  assert.equal(emptyParent.grids[0].rows[0][1].blocks?.length, 1);
+  // Intersecting rules that form nonrectangular merged regions must not invent a nested table.
+  const crossing = rectangleGrid([80, 120, 160], [240, 200, 160]);
+  assert.equal(gridsFromLines({ h: [...outer.h, ...crossing.h], v: [...outer.v, ...crossing.v] }, [], true).grids.length, 0);
+  console.log('PASS nested table containment, order, unique text and sibling distinction');
+                                                 }
