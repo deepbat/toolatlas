@@ -407,9 +407,12 @@ function OfficeToPdf({ kind }: { kind: 'word' | 'excel' }) {
           setDone(`Saved ${formatBytes(blob.size)}. The download should have started.`);
         } else {
           const savedPath = await openPrintView(file.name, cssHtml, bodyHtml);
-          setDone(savedPath
+          // Indic and other complex scripts (U+0900 to U+0DFF): the text layer of a selectable-text PDF can be wrong, so say so at the end.
+          const indic = /[\u0900-\u0DFF]/.test(bodyHtml.replace(/<[^>]*>/g, ' '));
+          const warn = indic ? ' This document has Indic text. Copying or searching it from this PDF can give wrong letters or split words; in our tests this happened in several PDF readers, although the pages look right. Check any copied text against the page. The Image PDF option has no selectable text at all, so nothing can be copied from it.' : '';
+          setDone((savedPath
             ? `Saved to ${savedPath}. The desktop app writes into your Downloads folder without asking where; a file with the same name is kept and this one gets a number.`
-            : 'The print view opened in a new tab. Choose "Save as PDF" in the browser dialog.');
+            : 'The print view opened in a new tab. Choose "Save as PDF" in the browser dialog.') + warn);
         }
       } finally {
         dispose();
