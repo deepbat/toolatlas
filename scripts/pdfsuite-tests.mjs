@@ -4,6 +4,7 @@ import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
+import { CI_OCR_TABLE } from './fixtures/ci-ocr-table.mjs';
 import { MERGED_TABLE_PDF_B64 } from './fixtures/merged-table.mjs';
 
 const base = process.env.E2E_BASE_URL || 'http://127.0.0.1:4173/toolatlas';
@@ -294,7 +295,7 @@ try {
     for (const t of ['Quarterly', 'Report', 'नमस्ते दुनिया', 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ', 'ਸਮਗਰੀ', 'Closing notes']) assert.ok(text.includes(t), 'OCR fallback text has ' + t + ': ' + text.slice(0, 300));
     // Every table cell, exactly and in order (an earlier build dropped the last row and read a Hindi cell as Latin), and the
     // Punjabi sentence exactly. Recognition is still a guess: the Hindi paragraph can merge two words ("है जो" read as one),
-    // so word spacing is checked as a floor of 2 of the 3 occurrences, not as exact text.
+    // so this regression checks the spaces in all 3 occurrences.
     const docXml = await z.file('word/document.xml').async('string');
     const cells = [...docXml.matchAll(/<w:tc>([\s\S]*?)<\/w:tc>/g)].map((m) => m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
     await mkdir('test-artifacts/pdfsuite', { recursive: true });
@@ -304,11 +305,27 @@ try {
     console.log('OCR docx tables=' + (docXml.match(/<w:tbl>/g) || []).length + ' cells=' + JSON.stringify(cells) + ' text=' + text);
     assert.deepEqual(cells, ['Item', 'गणना', 'Apples', '42'], 'OCR table cells: ' + JSON.stringify(cells));
     assert.ok(text.includes('ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ — ਦੂਜੇ ਸਫ਼ੇ ਦੀ ਸਮਗਰੀ'), 'Punjabi sentence exact: ' + text.slice(-200));
-    assert.ok((text.match(/अनुच्छेद है जो/g) || []).length >= 2, 'word spaces kept in at least 2 of 3 Hindi lines: ' + text.slice(0, 400));
+    assert.ok((text.match(/अनुच्छेद है जो/g) || []).length === 3, 'word spaces kept in all 3 Hindi lines: ' + text.slice(0, 400));
+    // Keep the exact failing CI input, not only a regenerated local fixture. The source table is visible on page 1;
+    // page 2 is prose and must not be turned into a false table from wide OCR word gaps.
+    await page.goto(`${base}/tools/pdf-to-word/`);
+    await page.locator('input[type=file]').first().setInputFiles({ name: 'ci.pdf', mimeType: 'application/pdf', buffer: Buffer.from(CI_OCR_TABLE, 'base64') });
+    await page.getByText('ci.pdf').first().waitFor();
+    await page.getByLabel(/text cannot be read/).selectOption('auto');
+    const ciDlP = page.waitForEvent('download', { timeout: 150000 });
+    await page.getByRole('button', { name: 'Convert to Word', exact: true }).click();
+    await (await ciDlP).saveAs('/tmp/ci-ocr-regression.docx');
+    const ciZ = await (await import('jszip')).default.loadAsync(await readFile('/tmp/ci-ocr-regression.docx'));
+    const ciXml = await ciZ.file('word/document.xml').async('string');
+    const ciCells = [...ciXml.matchAll(/<w:tc>([\s\S]*?)<\/w:tc>/g)].map(m => m[1].replace(/<[^>]+>/g, '').trim());
+    assert.deepEqual(ciCells, ['Item', 'गणना', 'Apples', '42']);
+    assert.equal((ciXml.match(/<w:tbl>/g) || []).length, 1, 'only the actual ruled table, not Punjabi prose');
+    const ciText = ciXml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    assert.equal((ciText.match(/अनुच्छेद है जो/g) || []).length, 3, 'all 3 source spaces survive on the preserved CI input');
     console.log('PASS pdf-to-word Indic OCR fallback'); n++;
   }
   assert.deepEqual(errors, []);
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-        }
+                                                         }
