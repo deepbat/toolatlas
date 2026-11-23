@@ -167,6 +167,30 @@ console.log('PASS n-up');
   console.log('PASS pdf to word Indic scripts');
 }
 {
+  // Simple text-aligned tables become real Word tables; ragged lines and plain prose do not.
+  const it = (text: string, x: number, y: number, w = 60) => ({ text, size: 12, bold: false, italic: false, y, x, w });
+  const paras = itemsToParagraphs([
+    it('Intro paragraph before the table', 50, 200, 200),
+    it('Item', 50, 170), it('Qty', 200, 170), it('Price', 350, 170),
+    it('Pen', 50, 156), it('4', 200, 156), it('12.50', 350, 156),
+    it('बिक्री', 50, 142), it('10', 200, 142), it('99.00', 351, 142),
+    it('Closing note after the table', 50, 100, 200),
+  ]);
+  const tbl = paras.filter((p) => p.table);
+  assert.equal(tbl.length, 1, 'one table found');
+  assert.deepEqual(tbl[0].table, [['Item', 'Qty', 'Price'], ['Pen', '4', '12.50'], ['बिक्री', '10', '99.00']]);
+  assert.equal(paras.filter((p) => !p.table).length, 2, 'text before and after stay paragraphs');
+  const xml = new TextDecoder().decode((await readZip(buildDocx(paras))).get('word/document.xml'));
+  assert.ok(xml.includes('<w:tbl>') && xml.includes('बिक्री') && (xml.match(/<w:tr>/g) || []).length === 3);
+  // Misaligned columns: not a table.
+  const ragged = itemsToParagraphs([it('A', 50, 170), it('B', 200, 170), it('C', 50, 156), it('D', 330, 156)]);
+  assert.equal(ragged.filter((p) => p.table).length, 0, 'misaligned lines are not a table');
+  // A line with one gap and no second aligned row stays text.
+  const one = itemsToParagraphs([it('Left', 50, 170), it('Right', 400, 170)]);
+  assert.equal(one.filter((p) => p.table).length, 0, 'single row is not a table');
+  console.log('PASS pdf to word simple tables');
+}
+{
   assert.deepEqual(parseRange('B2:D4'), { s: { r: 1, c: 1 }, e: { r: 3, c: 3 } });
   assert.equal(indexToCol(0), 'A');
   assert.equal(indexToCol(27), 'AB');
