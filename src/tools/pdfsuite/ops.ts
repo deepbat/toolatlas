@@ -1,6 +1,7 @@
 // Pure, on-device PDF page operations built on pdf-lib. No DOM access, so
 // every function is covered by scripts/pdfsuite-unit.ts.
 import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib';
+import { InvisibleUnicodeFont, drawInvisibleWords, needsUnicode } from './unicodeLayer';
 
 /** "1-3,5,8-" style ranges to zero-based indexes. Blank means all pages. */
 export function parsePageRanges(spec: string, total: number): number[] {
@@ -240,6 +241,20 @@ export async function addTextLayer(bytes: Uint8Array, layers: OcrPageLayer[]): P
   const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const pages = doc.getPages();
+  // Hindi, Punjabi and other scripts Helvetica cannot carry go through the Unicode-exact invisible layer.
+  if (layers.some((l) => needsUnicode(l.words))) {
+    const uf = new InvisibleUnicodeFont(doc);
+    for (const layer of layers) {
+      const page = pages[layer.page - 1];
+      if (!page) throw new Error(`Page ${layer.page} is outside this ${pages.length}-page document.`);
+      if (layer.imgWidth < 1 || layer.imgHeight < 1) throw new Error('The scan image has no size.');
+      const { width, height } = page.getSize();
+      const sx = width / layer.imgWidth, sy = height / layer.imgHeight;
+      drawInvisibleWords(page, uf, layer.words.map((w) => ({ text: w.text, x: w.x0 * sx, y: height - w.y1 * sy, w: Math.max(1, (w.x1 - w.x0) * sx), h: Math.max(1, (w.y1 - w.y0) * sy) })));
+    }
+    uf.finish();
+    return doc.save();
+  }
   for (const layer of layers) {
     const page = pages[layer.page - 1];
     if (!page) throw new Error(`Page ${layer.page} is outside this ${pages.length}-page document.`);
