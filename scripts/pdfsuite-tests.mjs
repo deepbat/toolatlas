@@ -139,6 +139,12 @@ try {
   const wordOut = await PDFDocument.load(await readFile('/tmp/suite-word-to-pdf.pdf'));
   assert.equal(wordOut.getPageCount(), 2, 'image PDF keeps the stored page break');
   assert.ok(wordOut.getPage(0).getWidth() > 100);
+  {
+    // The image PDF carries an exact invisible text layer: Indic text must read back letter for letter.
+    const { execFileSync } = await import('node:child_process');
+    const txt = execFileSync('pdftotext', ['-layout', '/tmp/suite-word-to-pdf.pdf', '-'], { encoding: 'utf8' });
+    for (const t of ['Quarterly Report', 'नमस्ते दुनिया क्षत्रिय ज्ञान', 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ', 'गणना', 'Closing notes']) assert.ok(txt.includes(t), 'text layer has ' + t + ' got: ' + txt.slice(0, 400));
+  }
   console.log('PASS word-to-pdf image PDF'); n++;
   {
     const popP = page.waitForEvent('popup', { timeout: 30000 });
@@ -214,4 +220,4 @@ try {
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-}
+                                             }
