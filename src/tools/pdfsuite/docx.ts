@@ -1,12 +1,47 @@
 // PDF text-layer to DOCX conversion, built on the in-house ZIP writer: no new
 // dependency. The output is honest about fidelity: real editable paragraphs,
-// headings and bold/italic runs, but no images, tables, columns or exact fonts.
+// headings and bold/italic runs and simple text-aligned tables, but no images, bordered or merged-cell tables, columns or exact fonts.
 
 import { makeZip } from '../../lib/zip';
 
 export interface TextItem { text: string; size: number; bold: boolean; italic: boolean; y: number; x: number; w?: number }
 export interface ParaRun { text: string; bold: boolean; italic: boolean }
-export interface Para { runs: ParaRun[]; level: 0 | 1 | 2 | 3 } // 0 = body, 1-3 = heading
+export interface Para { runs: ParaRun[]; level: 0 | 1 | 2 | 3; table?: string[][] } // 0 = body, 1-3 = heading; table = rebuilt from aligned text columns
+
+/** Split one line into cells where a wide gap separates the fragments. */
+function lineCells(line: TextItem[]): { x: number; text: string }[] {
+  const items = [...line].sort((a, b) => a.x - b.x);
+  const cells: { x: number; text: string; end: number }[] = [];
+  for (const it of items) {
+    const end = it.x + (it.w ?? it.text.length * it.size * 0.5);
+    const last = cells[cells.length - 1];
+    if (last && it.x - last.end <= it.size * 1.5) { last.text += (it.x - last.end > it.size * 0.18 && !last.text.endsWith(' ') ? ' ' : '') + it.text; last.end = end; }
+    else cells.push({ x: it.x, text: it.text, end });
+  }
+  return cells.map((c) => ({ x: c.x, text: c.text.trim() })).filter((c) => c.text);
+}
+
+/**
+ * Find a table starting at lines[start]: consecutive lines that each split into the same number (2 or more) of cells
+ * whose left edges line up with the first row. Only simple, text-aligned tables are found; ruling lines, merged cells and
+ * cells that wrap onto a second line are not recovered.
+ */
+function findTable(lines: TextItem[][], start: number): { rows: string[][]; end: number } | null {
+  const first = lineCells(lines[start]);
+  if (first.length < 2) return null;
+  const tol = Math.max(3, lines[start][0].size * 0.8);
+  const rows: string[][] = [first.map((c) => c.text)];
+  let end = start + 1;
+  const bodySize = lines[start][0].size;
+  while (end < lines.length) {
+    const cells = lineCells(lines[end]);
+    if (cells.length !== first.length || Math.abs(lines[end][0].size - bodySize) > 1.5) break;
+    if (cells.some((c, i) => Math.abs(c.x - first[i].x) > tol)) break;
+    rows.push(cells.map((c) => c.text));
+    end++;
+  }
+  return rows.length >= 2 ? { rows, end } : null;
+}
 
 /** Group raw pdf.js text items (one page, reading order) into paragraphs. */
 export function itemsToParagraphs(items: TextItem[]): Para[] {
@@ -22,7 +57,10 @@ export function itemsToParagraphs(items: TextItem[]): Para[] {
     else lines.push([item]);
   }
   const paras: Para[] = [];
-  for (const line of lines) {
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li];
+    const tbl = findTable(lines, li);
+    if (tbl) { paras.push({ runs: [], level: 0, table: tbl.rows }); li = tbl.end - 1; continue; }
     const size = line[0].size;
     const level = size >= body * 1.8 ? 1 : size >= body * 1.4 ? 2 : size >= body * 1.18 ? 3 : 0;
     const runs: ParaRun[] = line.map((i) => ({ text: i.text, bold: i.bold || level > 0, italic: i.italic }));
@@ -43,7 +81,7 @@ export function itemsToParagraphs(items: TextItem[]): Para[] {
     // otherwise continuation lines join the previous paragraph with a space.
     const gap = paras.length ? Math.abs(line[0].y - (lines[lines.indexOf(line) - 1]?.[0]?.y ?? line[0].y)) : 0;
     const prev = paras[paras.length - 1];
-    if (prev && level === 0 && prev.level === 0 && gap < body * 1.9) {
+    if (prev && !prev.table && level === 0 && prev.level === 0 && gap < body * 1.9) {
       const lastRun = prev.runs[prev.runs.length - 1];
       if (lastRun && merged[0] && lastRun.bold === merged[0].bold && lastRun.italic === merged[0].italic) lastRun.text += ' ' + merged[0].text;
       else prev.runs.push({ ...merged[0], text: ' ' + merged[0].text });
@@ -57,7 +95,15 @@ export function itemsToParagraphs(items: TextItem[]): Para[] {
 
 const esc = (s: string) => s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+function tableXml(rows: string[][]): string {
+  const b = '<w:top w:val="single" w:sz="4" w:color="BFBFBF"/><w:left w:val="single" w:sz="4" w:color="BFBFBF"/><w:bottom w:val="single" w:sz="4" w:color="BFBFBF"/><w:right w:val="single" w:sz="4" w:color="BFBFBF"/><w:insideH w:val="single" w:sz="4" w:color="BFBFBF"/><w:insideV w:val="single" w:sz="4" w:color="BFBFBF"/>';
+  const grid = rows[0].map(() => '<w:gridCol w:w="2000"/>').join('');
+  const trs = rows.map((r) => `<w:tr>${r.map((c) => `<w:tc><w:tcPr><w:tcW w:w="2000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t xml:space="preserve">${esc(c)}</w:t></w:r></w:p></w:tc>`).join('')}</w:tr>`).join('');
+  return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders>${b}</w:tblBorders></w:tblPr><w:tblGrid>${grid}</w:tblGrid>${trs}</w:tbl><w:p/>`;
+}
+
 function paraXml(p: Para): string {
+  if (p.table) return tableXml(p.table);
   const style = p.level > 0 ? `<w:pPr><w:pStyle w:val="Heading${p.level}"/></w:pPr>` : '';
   const runs = p.runs
     .filter((r) => r.text.trim())
@@ -105,4 +151,4 @@ export function buildDocx(paras: Para[]): Uint8Array {
     { name: 'word/document.xml', data: enc.encode(document) },
     { name: 'word/styles.xml', data: enc.encode(STYLES) },
   ]);
-    }
+}
