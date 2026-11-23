@@ -265,9 +265,9 @@ export function openPrintView(title: string, cssHtml: string, bodyHtml: string):
   const doc = (script: string) =>
     `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>${cssHtml}` +
     `<style>${PRINT_CSS}</style></head><body>` + bodyHtml + script + '</body></html>';
-  // Desktop app, behind an opt-in flag until its saved output, isolation and cleanup are verified: save through the native PDF command.
+  // Desktop app: save through the native PDF command. localStorage 'toolatlas.nativePdfSave' = '0' opts out (falls back to the print dialog path).
   const internals = (window as unknown as { __TAURI_INTERNALS__?: { invoke?: (c: string, a: unknown) => Promise<string> } }).__TAURI_INTERNALS__;
-  if (internals?.invoke && localStorage.getItem('toolatlas.nativePdfSave') === '1') {
+  if (internals?.invoke && localStorage.getItem('toolatlas.nativePdfSave') !== '0') {
     const w = window as unknown as { __nativePdfSave?: { ok: boolean; path?: string; error?: string } };
     delete w.__nativePdfSave;
     const name = title.replace(/\.[^.]+$/, '') || 'document';
