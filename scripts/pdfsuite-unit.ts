@@ -432,3 +432,27 @@ console.log('All PDF suite ops passed.');
   assert.ok(gridsFromLines(both,[],true).grids.every(g=>g.rows.flat().every(c=>!c.blocks)), 'both horizontal sides remain flat');
   console.log('PASS top/bottom-shared nested grids preserve merged axes and reject partial perimeters');
 }
+
+{
+  const item=(text:string,x:number,y:number,w:number)=>({text,x,y,w,size:10,bold:false,italic:false});
+  const head=[item('Product',10,200,35),item('Units',120,200,25),item('Amount',210,200,35)];
+  const row=(label:string,units:string,amount:string,y:number,shift=0)=>[item(label,10,y,35),item(units,145-units.length*5+shift,y,units.length*5),item(amount,245-amount.length*5+shift,y,amount.length*5)];
+  const table=[...head,...row('Apples','7','12.50',180),...row('Oranges','125','1234.00',160),...row('Pears','23','85.75',140),item('After sales table',10,120,80)];
+  const out=itemsToParagraphs(table);
+  assert.equal(out.filter(p=>p.table).length,1);
+  assert.deepEqual(out[0].table,[['Product','Units','Amount'],['Apples','7','12.50'],['Oranges','125','1234.00'],['Pears','23','85.75']]);
+  assert.equal(out[1].runs[0].text,'After sales table');
+  const lone=itemsToParagraphs([...row('Pears','23','85.75',140),item('After sales table',10,120,80)]);
+  assert.ok(lone.every(p=>!p.table),'one full row plus trailing prose is not a table');
+  const shifted=itemsToParagraphs([...head,...row('Apples','7','12.50',180),...row('Oranges','125','1234.00',160,20)]);
+  assert.ok(shifted.every(p=>!p.table),'numeric ends must independently agree');
+  const one=itemsToParagraphs([...head,...row('Apples','7','12.50',180)]);
+  assert.ok(one.every(p=>!p.table),'two body rows required for numeric alignment inference');
+  const ocr=itemsToParagraphs(table.map(i=>({...i,ocr:true})));
+  assert.ok(ocr.every(p=>!p.table),'OCR words are not used as typographic alignment evidence');
+  const prose=itemsToParagraphs([item('Left column prose starts here',10,200,100),item('Right column prose begins here',180,200,120),item('and continues on another line',10,180,110),item('and continues without a table',180,180,120),item('before its final complete sentence.',10,160,130),item('before its final complete sentence.',180,160,130)]);
+  assert.ok(prose.every(p=>!p.table),'running prose is not a numeric table');
+  const far=itemsToParagraphs([...head,...row('Apples','7','12.50',150),...row('Oranges','125','1234.00',100)]);
+  assert.ok(far.every(p=>!p.table),'widely separated labels are not numeric table evidence');
+  console.log('PASS right-edge numeric borderless tables and trailing prose negatives');
+}
