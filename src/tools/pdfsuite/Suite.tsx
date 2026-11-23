@@ -406,8 +406,10 @@ function OfficeToPdf({ kind }: { kind: 'word' | 'excel' }) {
           downloadBlob(`${base}-deepakstool.pdf`, blob);
           setDone(`Saved ${formatBytes(blob.size)}. The download should have started.`);
         } else {
-          openPrintView(file.name, cssHtml, bodyHtml);
-          setDone('The print view opened in a new tab. Choose "Save as PDF" in the browser dialog.');
+          const savedPath = await openPrintView(file.name, cssHtml, bodyHtml);
+          setDone(savedPath
+            ? `Saved to ${savedPath}. The desktop app writes into your Downloads folder without asking where; a file with the same name is kept and this one gets a number.`
+            : 'The print view opened in a new tab. Choose "Save as PDF" in the browser dialog.');
         }
       } finally {
         dispose();
