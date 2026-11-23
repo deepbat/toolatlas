@@ -1,3 +1,4 @@
+import { NUMERIC_TABLES } from './fixtures/borderless-numeric-table.mjs';
 import { HORIZONTAL_TABLES } from './fixtures/horizontal-border-table.mjs';
 // Browser checks for the PDF suite tools: upload, run, download, verify the result.
 import { chromium } from '@playwright/test';
@@ -208,6 +209,23 @@ try {
     if(!xml.includes('<w:gridSpan w:val="2"/>'))throw new Error('horizontal nested colspan missing');
     if(!(xml.indexOf('Before outer')<xml.indexOf('<w:tbl>')&&xml.indexOf('After outer')>xml.lastIndexOf('</w:tbl>')))throw new Error('outer text order');
     },60000,true,'.docx');
+  }
+  for(const {label,pdf}of NUMERIC_TABLES){
+   await run('pdf-to-word',Buffer.from(pdf,'base64'),null,async path=>{
+    const z=await(await import('jszip')).default.loadAsync(await readFile(path));const xml=await z.file('word/document.xml').async('string');
+    await mkdir('test-artifacts/pdfsuite',{recursive:true});await copyFile(path,`test-artifacts/pdfsuite/numeric-${label}-pdf-to-word.docx`);
+
+    const result=await page.evaluate(xml=>{
+      const d=new DOMParser().parseFromString(xml,'application/xml');const ns='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+      const direct=(el,name)=>Array.from(el?.children??[]).filter(e=>e.namespaceURI===ns&&e.localName===name);
+      const roots=direct(d.getElementsByTagNameNS(ns,'body')[0],'tbl');
+      return {tables:roots.length,rows:direct(roots[0],'tr').map(r=>direct(r,'tc').map(c=>c.textContent))};
+    },xml);
+    const expected={tables:1,rows:[['Product','Units','Amount'],['Apples','7','12.50'],['Oranges','125','1234.00'],['Pears','23','85.75']]};
+    if(JSON.stringify(result)!==JSON.stringify(expected))throw new Error(JSON.stringify(result));
+    for(const text of ['Before sales table','After sales table','Apples','Oranges','Pears'])if(xml.split(text).length!==2)throw new Error('text duplication '+text);
+    if(!(xml.indexOf('Before sales table')<xml.indexOf('<w:tbl>')&&xml.indexOf('After sales table')>xml.lastIndexOf('</w:tbl>')))throw new Error('borderless outside text order');
+   },60000,true,'.docx');
   }
   // PDF to Word with a picture between two paragraphs: the picture must come out as a real image, in place, with its pixels.
   {
@@ -454,4 +472,4 @@ try {
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-                     }
+              }
