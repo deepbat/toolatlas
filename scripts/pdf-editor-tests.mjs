@@ -313,6 +313,11 @@ try {
     await page.locator('[data-testid=tool-redact]').click();await drag(1,65,130,330,168);
     check('redaction export tradeoff visible before download',await page.getByText(/Redaction download rebuilds every page as an image/).isVisible());
     await page.screenshot({path:`${EVIDENCE}/editor-redaction-before-export.png`});
+    let failedDownload=false;const onFailedDownload=()=>{failedDownload=true;};page.on('download',onFailedDownload);
+    await page.evaluate(()=>{window.__redactionToBlob=HTMLCanvasElement.prototype.toBlob;HTMLCanvasElement.prototype.toBlob=function(cb){cb(null);};});
+    await page.locator('[data-testid=download]').click();await page.getByText('Could not encode the redacted page. No file was saved.',{exact:true}).waitFor();
+    check('redaction encoding failure never falls back to an unsafe download',!failedDownload);
+    page.off('download',onFailedDownload);await page.evaluate(()=>{HTMLCanvasElement.prototype.toBlob=window.__redactionToBlob;delete window.__redactionToBlob;});
     const dl=page.waitForEvent('download',{timeout:60000});await page.locator('[data-testid=download]').click();
     const path=await(await dl).path();const bytes=await readFile(path);await writeFile(`${EVIDENCE}/editor-redacted.pdf`,bytes);
     const out=await PDFDocument.load(bytes);check('redaction preserves page count',out.getPageCount()===3);
