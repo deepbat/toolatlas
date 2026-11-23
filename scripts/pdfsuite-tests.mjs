@@ -112,7 +112,7 @@ try {
   const docxZip = new JSZip();
   docxZip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>');
   docxZip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
-  docxZip.file('word/_rels/document.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>');
+  docxZip.file('word/_rels/document.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
   docxZip.file('word/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph" w:styleId="Normal"><w:name w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:pPr><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:sz w:val="32"/></w:rPr></w:style></w:styles>');
   const longMixed = 'The quarter closed strongly across every region. नमस्ते दुनिया, यह एक लंबा अनुच्छेद है जो कई पंक्तियों में लिपटना चाहिए। '.repeat(3) + 'क्षत्रिय ज्ञान अंत तक पहुँचना चाहिए बिना कटे।';
   const borders = '<w:tblPr><w:tblBorders><w:top w:val="single" w:sz="8" w:space="0" w:color="1F2937"/><w:left w:val="single" w:sz="8" w:space="0" w:color="1F2937"/><w:bottom w:val="single" w:sz="8" w:space="0" w:color="1F2937"/><w:right w:val="single" w:sz="8" w:space="0" w:color="1F2937"/><w:insideH w:val="single" w:sz="8" w:space="0" w:color="1F2937"/><w:insideV w:val="single" w:sz="8" w:space="0" w:color="1F2937"/></w:tblBorders></w:tblPr>';
@@ -147,6 +147,8 @@ try {
     const pop = await popP;
     await pop.waitForLoadState();
     const bodyText = await pop.locator('body').innerText();
+    const headW = await pop.evaluate(() => { const e = [...document.querySelectorAll('span')].find((x) => x.textContent === 'Quarterly Report'); return e ? Number(getComputedStyle(e).fontWeight) : 0; });
+    assert.ok(headW >= 600, 'Heading 1 style is applied (bold) in the print view, got weight ' + headW);
     for (const t of ['नमस्ते दुनिया', 'क्षत्रिय', 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ', 'Quarterly Report', 'गणना', 'Page two starts here']) assert.ok(bodyText.includes(t), t);
     // What the browser's Save as PDF actually produces (headless Chromium print):
     await pop.pdf({ path: '/tmp/word-to-pdf-print.pdf' });
@@ -212,4 +214,4 @@ try {
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-    }
+}
