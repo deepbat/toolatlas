@@ -4,6 +4,7 @@ import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { MERGED_TABLE_PDF_B64 } from './fixtures/merged-table.mjs';
 
 const base = process.env.E2E_BASE_URL || 'http://127.0.0.1:4173/toolatlas';
 let server;
@@ -71,6 +72,18 @@ try {
   const scanBytes = Buffer.from(await scan.save());
   await run('pdf-ocr', scanBytes, null, o => assert.equal(o.getPageCount(), 1), 180000);
   await page.getByText(/words read/).waitFor({ timeout: 10000 });
+  // PDF to Word: a real LibreOffice table with a column-spanning title and a row-spanning cell keeps its merges.
+  await run('pdf-to-word', Buffer.from(MERGED_TABLE_PDF_B64, 'base64'), null, async (path) => {
+    const z = await (await import('jszip')).default.loadAsync(await readFile(path));
+    const xml = await z.file('word/document.xml').async('string');
+    assert.equal((xml.match(/<w:tbl>/g) || []).length, 1, 'one table');
+    assert.ok(/<w:gridSpan w:val="3"\/>/.test(xml), 'title row spans three columns');
+    assert.equal((xml.match(/<w:vMerge w:val="restart"\/>/g) || []).length, 1, 'one row-spanning cell');
+    assert.equal((xml.match(/<w:vMerge\/>/g) || []).length, 1, 'its continuation cell');
+    const rows = xml.slice(xml.indexOf('<w:tbl>'), xml.indexOf('</w:tbl>')).split('<w:tr>').slice(1).map((r) => (r.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || []).map((t) => t.replace(/<[^>]+>/g, '')));
+    assert.deepEqual(rows, [['Q1 Results'], ['Region', 'Units', 'Revenue'], ['North', '10', '100'], ['20', '200'], ['South', '30', '300']]);
+    assert.ok(xml.indexOf('Sales summary') < xml.indexOf('<w:tbl>') && xml.indexOf('<w:tbl>') < xml.indexOf('After the table.'), 'table sits between the two paragraphs');
+  }, 60000, true, '.docx');
   // PDF to Word with a picture between two paragraphs: the picture must come out as a real image, in place, with its pixels.
   {
     const dataUrl = await page.evaluate(() => {
@@ -285,4 +298,4 @@ try {
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-}
+                                         }
