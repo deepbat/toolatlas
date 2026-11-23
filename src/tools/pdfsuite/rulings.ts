@@ -144,24 +144,25 @@ function componentGrid(comp: RuleSet): PageGrid | undefined {
   return { top, bottom, left, right, widths: xs.slice(1).map((x, q) => x - xs[q]), heights: ys.slice(1).map((y, q) => ys[q] - y), rows };
 }
 
+function joinedRules(segments: Seg[]): Seg[] {
+  const result: Seg[] = [];
+  for (const at of cluster(segments.map(s => s.at))) {
+    const parts = segments.filter(s => Math.abs(s.at - at) <= TOL).sort((a,b) => a.a - b.a);
+    let last: Seg | undefined;
+    for (const part of parts) {
+      if (last && part.a <= last.b + TOL) last.b = Math.max(last.b, part.b);
+      else { last = { at, a: part.a, b: part.b }; result.push(last); }
+    }
+  }
+  return result;
+}
+
 // A narrow supported case: an otherwise closed inner grid shares exactly one parent rule.
 // Its other vertical side must begin/end at the inner horizontal rules, not continue as a parent column.
 // The same check is applied with swapped axes for a shared top/bottom outer rule.
 function sharedSideRules(comp: RuleSet): RuleSet[] | undefined {
   if (comp.h.length > 80 || comp.v.length > 80) return undefined;
-  const joined = (segments: Seg[]) => {
-    const result: Seg[] = [];
-    for (const at of cluster(segments.map(s => s.at))) {
-      const parts = segments.filter(s => Math.abs(s.at - at) <= TOL).sort((a,b) => a.a - b.a);
-      let last: Seg | undefined;
-      for (const part of parts) {
-        if (last && part.a <= last.b + TOL) last.b = Math.max(last.b, part.b);
-        else { last = { at, a: part.a, b: part.b }; result.push(last); }
-      }
-    }
-    return result;
-  };
-  comp = { h: joined(comp.h), v: joined(comp.v) };
+  comp = { h: joinedRules(comp.h), v: joinedRules(comp.v) };
   const minX = Math.min(...comp.v.map(s => s.at)), maxX = Math.max(...comp.v.map(s => s.at));
   const near = (a: number, b: number) => Math.abs(a - b) <= TOL;
   const candidates: RuleSet[][] = [];
@@ -209,16 +210,67 @@ function sharedEdgeGrids(comp: RuleSet): PageGrid[] | undefined {
   return grids?.every((grid): grid is PageGrid => !!grid) ? grids : undefined;
 }
 
+// A uniquely separable closed grid sharing two adjacent edges of one parent cell.
+// Keep parent rules that extend beyond the child; remove only rules contained in its box.
+function cornerGrids(comp: RuleSet): PageGrid[] | undefined {
+  if (comp.h.length > 80 || comp.v.length > 80) return undefined;
+  comp = {h:joinedRules(comp.h),v:joinedRules(comp.v)};
+  const xs = cluster(comp.v.map(s => s.at)), ys = cluster(comp.h.map(s => s.at));
+  if (xs.length > 16 || ys.length > 16) return undefined;
+  const near = (a: number, b: number) => Math.abs(a - b) <= TOL;
+  const candidates: PageGrid[][] = [];
+  for (let l = 0; l < xs.length - 1; l++) for (let r = l + 1; r < xs.length; r++)
+    for (let b = 0; b < ys.length - 1; b++) for (let t = b + 1; t < ys.length; t++) {
+      const left = xs[l], right = xs[r], bottom = ys[b], top = ys[t];
+      if (right - left < 8 || top - bottom < 8) continue;
+      if (covered(comp.h, top, left, right) < .95 || covered(comp.h, bottom, left, right) < .95 ||
+          covered(comp.v, left, bottom, top) < .95 || covered(comp.v, right, bottom, top) < .95) continue;
+      const inH = (s: Seg) => s.at >= bottom - TOL && s.at <= top + TOL && s.a >= left - TOL && s.b <= right + TOL;
+      const inV = (s: Seg) => s.at >= left - TOL && s.at <= right + TOL && s.a >= bottom - TOL && s.b <= top + TOL;
+      const parentRules = { h: comp.h.filter(s => !inH(s)), v: comp.v.filter(s => !inV(s)) };
+      const parent = componentGrid(parentRules);
+      if (!parent) continue;
+      if (covered(parentRules.h, parent.top, parent.left, parent.right) < .95 || covered(parentRules.h, parent.bottom, parent.left, parent.right) < .95 ||
+          covered(parentRules.v, parent.left, parent.bottom, parent.top) < .95 || covered(parentRules.v, parent.right, parent.bottom, parent.top) < .95) continue;
+      const owners = parent.rows.flat().filter(cell => {
+        if (cell.kind !== 'cell') return false;
+        const q = cellBounds(parent, cell);
+        const inside = left >= q.left - TOL && right <= q.right + TOL && bottom >= q.bottom - TOL && top <= q.top + TOL;
+        const vertical = Number(near(left,q.left)) + Number(near(right,q.right));
+        const horizontal = Number(near(top,q.top)) + Number(near(bottom,q.bottom));
+        return inside && vertical === 1 && horizontal === 1;
+      });
+      if (owners.length !== 1) continue;
+      const q = cellBounds(parent, owners[0]);
+      const freeX = near(left,q.left) ? right : left, freeY = near(top,q.top) ? bottom : top;
+      if (comp.v.some(s => near(s.at,freeX) && (s.a < bottom-TOL || s.b > top+TOL)) ||
+          comp.h.some(s => near(s.at,freeY) && (s.a < left-TOL || s.b > right+TOL))) continue;
+      const childRules = {
+        h: comp.h.filter(s => s.at >= bottom - TOL && s.at <= top + TOL).map(s => ({ ...s, a: Math.max(s.a,left), b: Math.min(s.b,right) })).filter(s => s.b > s.a),
+        v: comp.v.filter(s => s.at >= left - TOL && s.at <= right + TOL).map(s => ({ ...s, a: Math.max(s.a,bottom), b: Math.min(s.b,top) })).filter(s => s.b > s.a),
+      };
+      const child = componentGrid(childRules);
+      if (child) { candidates.push([parent,child]); if (candidates.length > 1) return undefined; }
+    }
+  return candidates.length === 1 ? candidates[0] : undefined;
+}
+
 /**
  * Bordered tables on a page, with merged cells. Returns the tables and the text items they did not use.
  * A table is only accepted when its merged cells are rectangles, so a stray or partly drawn grid is left to the text finder.
  */
 export function gridsFromLines(lines: { h: Seg[]; v: Seg[] }, items: TextItem[], includeEmpty = false): { grids: PageGrid[]; rest: TextItem[] } {
   const grids: PageGrid[] = [];
+  const cornerChildren = new Set<PageGrid>();
   for (const comp of components(lines.h, lines.v)) {
     const grid = componentGrid(comp);
     if (grid) grids.push(grid);
-    else grids.push(...(sharedEdgeGrids(comp) ?? []));
+    else {
+      const shared = sharedEdgeGrids(comp);
+      const corner = shared ? undefined : cornerGrids(comp);
+      if (corner) cornerChildren.add(corner[1]);
+      grids.push(...(shared ?? corner ?? []));
+    }
   }
   // A disconnected grid may be a table inside one parent cell. Choose the smallest containing cell,
   // never just the enclosing table rectangle (a child spanning several cells is not a nested table).
@@ -234,7 +286,7 @@ export function gridsFromLines(lines: { h: Seg[]; v: Seg[] }, items: TextItem[],
         const a = (b.right - b.left) * (b.top - b.bottom);
         const inside = child.left >= b.left - TOL && child.right <= b.right + TOL && child.bottom >= b.bottom - TOL && child.top <= b.top + TOL;
         const insets = [child.left > b.left + TOL, child.right < b.right - TOL, child.bottom > b.bottom + TOL, child.top < b.top - TOL];
-        if (a < area && inside && insets.filter(Boolean).length >= 3) { owner = cell; area = a; }
+        if (a < area && inside && insets.filter(Boolean).length >= (cornerChildren.has(child) ? 2 : 3)) { owner = cell; area = a; }
       }
     }
     if (owner) { children.set(owner, [...(children.get(owner) ?? []), child]); nested.add(child); }

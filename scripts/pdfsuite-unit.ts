@@ -467,3 +467,26 @@ console.log('All PDF suite ops passed.');
   assert.ok(ordinaryXml.includes('w:color="BFBFBF"')&&!ordinaryXml.includes('<w:jc'),'ordinary table styling unchanged');
   console.log('PASS right-edge numeric borderless tables and trailing prose negatives');
 }
+
+{
+  const outer = { h: [300,100,0].map(at => ({at,a:0,b:250})), v: [0,100,250].map(at=>({at,a:0,b:300})) };
+  const inner = { h: [300,260,220].map(at=>({at,a:100,b:220})), v: [{at:100,a:220,b:300},{at:160,a:260,b:300},{at:220,a:220,b:300}] };
+  const lines={h:[...outer.h,...inner.h],v:[...outer.v,...inner.v]};
+  for(const mx of [false,true])for(const my of [false,true]){
+    const l={h:lines.h.map(s=>({at:my?300-s.at:s.at,a:mx?250-s.b:s.a,b:mx?250-s.a:s.b})),v:lines.v.map(s=>({at:mx?250-s.at:s.at,a:my?300-s.b:s.a,b:my?300-s.a:s.b}))};
+    const r=gridsFromLines(l,[],true);assert.equal(r.grids.length,1);
+    const children=r.grids[0].rows.flat().flatMap(c=>c.blocks??[]).filter(b=>'grid'in b);
+    assert.equal(children.length,1,'unique corner child');
+    if('grid'in children[0])assert.equal(children[0].grid.rows.flat().filter(c=>c.colspan===2).length,1,'child colspan retained');
+    for(const axis of ['h','v'] as const)for(const i of [l[axis].length-1]){
+      const partial={...l,[axis]:l[axis].filter((_,j)=>j!==i)};
+      const x=gridsFromLines(partial,[],true);
+      assert.ok(x.grids.every(g=>g.rows.flat().every(c=>!c.blocks)),'missing child perimeter cannot invent nesting');
+    }
+  }
+  const fragmented={h:lines.h.flatMap(s=>[{...s,b:(s.a+s.b)/2},{...s,a:(s.a+s.b)/2}]).reverse(),v:lines.v.flatMap(s=>[{...s,b:(s.a+s.b)/2},{...s,a:(s.a+s.b)/2}]).reverse()};
+  assert.equal(gridsFromLines(fragmented,[],true).grids[0].rows.flat().flatMap(c=>c.blocks??[]).filter(b=>'grid'in b).length,1,'fragmented corner retains unique nesting');
+  const crossing={h:[...outer.h,...inner.h.map(s=>({...s,a:80}))],v:[...outer.v,{at:80,a:220,b:300},...inner.v.slice(1)]};
+  assert.ok(gridsFromLines(crossing,[],true).grids.every(g=>g.rows.flat().every(c=>!c.blocks)),'corner crossing parent boundary not nested');
+  console.log('PASS unique two-adjacent-edge corner nesting and partial-rule negatives');
+}

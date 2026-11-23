@@ -1,3 +1,4 @@
+import { CORNER_TABLES } from './fixtures/corner-border-table.mjs';
 import { NUMERIC_TABLES } from './fixtures/borderless-numeric-table.mjs';
 import { HORIZONTAL_TABLES } from './fixtures/horizontal-border-table.mjs';
 // Browser checks for the PDF suite tools: upload, run, download, verify the result.
@@ -183,7 +184,7 @@ try {
     assert.ok(xml.indexOf('Before the outer table') < xml.indexOf('<w:tbl>') && xml.indexOf('After the outer table') > xml.lastIndexOf('</w:tbl>'));
   }, 60000, true, '.docx');
   }
-  for (const {label,bottom,pdf} of HORIZONTAL_TABLES) {
+  for (const {label,bottom,pdf} of [...HORIZONTAL_TABLES,...CORNER_TABLES]) {
     await run('pdf-to-word',Buffer.from(pdf,'base64'),null,async path=>{
       const z=await(await import('jszip')).default.loadAsync(await readFile(path));
       const xml=await z.file('word/document.xml').async('string');
@@ -474,4 +475,4 @@ try {
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-            }
+}
