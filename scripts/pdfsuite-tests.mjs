@@ -297,6 +297,7 @@ try {
     // so word spacing is checked as a floor of 2 of the 3 occurrences, not as exact text.
     const docXml = await z.file('word/document.xml').async('string');
     const cells = [...docXml.matchAll(/<w:tc>([\s\S]*?)<\/w:tc>/g)].map((m) => m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+    console.log('OCR docx tables=' + (docXml.match(/<w:tbl>/g) || []).length + ' cells=' + JSON.stringify(cells) + ' text=' + text);
     assert.deepEqual(cells, ['Item', 'गणना', 'Apples', '42'], 'OCR table cells: ' + JSON.stringify(cells));
     assert.ok(text.includes('ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ — ਦੂਜੇ ਸਫ਼ੇ ਦੀ ਸਮਗਰੀ'), 'Punjabi sentence exact: ' + text.slice(-200));
     assert.ok((text.match(/अनुच्छेद है जो/g) || []).length >= 2, 'word spaces kept in at least 2 of 3 Hindi lines: ' + text.slice(0, 400));
