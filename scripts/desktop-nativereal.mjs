@@ -70,8 +70,9 @@ if (pt) {
   check(!String(r).startsWith('CALLED'), 'the print window cannot call save_print_pdf');
   const markers = readdirSync(os.tmpdir()).filter(n => n.startsWith('deepaks-tool-callmarker-'));
   console.log('command entry markers:', JSON.stringify(markers));
-  check(!markers.some(n => n.includes('printview')), markers.length ? 'the command body was entered from the print window (code label check had to stop it)' : 'the print window call never reached the command body (blocked before it, by IPC access control)');
-  console.log('layer: ' + (markers.some(n => n.includes('printview')) ? 'code label check (Err returned)' : 'blocked before the command body'));
+  const reachedBody = markers.some(n => n.includes('printview'));
+  console.log('layer: ' + (reachedBody ? 'call reached the command body; the in-code label check answered: ' + String(r) : 'call did not reach the command body (result: ' + String(r) + '). The in-code label check was NOT exercised by this run.'));
+  if (reachedBody) check(String(r).startsWith('REJECTED') && /not available from this window/.test(String(r)), 'the in-code window check rejected the print window call');
   check(!existsSync(`${downloads}\\from-print-window.pdf`), 'no file was written by the print window call');
   pw.close();
 }
