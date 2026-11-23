@@ -600,7 +600,8 @@ export default function PdfEditor() {
       });
       const base = fileName.replace(/\.pdf$/i, '') || 'document';
       downloadBlob(`${base}-edited.pdf`, new Blob([out as unknown as BlobPart], { type: 'application/pdf' }));
-      setNotice(`Edited PDF downloaded.${visual ? ` ${visual} visual replacement(s): original text remains in the file. Do not use for secrets.` : ''} Open it to check the result before sharing.`);
+      const redacted = Object.values(annotsRef.current).some(list => list.some(a => a.kind === 'rect' && a.mode === 'redact'));
+      setNotice(`Edited PDF downloaded.${redacted ? ' Redaction rebuilt all pages as images; searchable text, links, attachments and editable forms were removed.' : ''}${visual ? ` ${visual} visual replacement(s): original text remains in the file. Do not use for secrets.` : ''} Open it to check the result before sharing.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Export failed. Try removing the last change.');
     } finally {
@@ -662,6 +663,9 @@ export default function PdfEditor() {
 
   return (
     <div className="space-y-4" data-testid="pdf-editor">
+      {Object.values(annots).some(list => list.some(a => a.kind === 'rect' && a.mode === 'redact')) && (
+        <div role="status" className="border border-line bg-surface p-3 text-sm text-muted">Redaction download rebuilds every page as an image, removing the original PDF content. Text will not be searchable, forms will be flattened, and links, attachments and original metadata will be removed. Check every marked area before sharing. Whiteout alone does not remove hidden content.</div>
+      )}
       <div className="border border-line bg-surface">
         {/* row 1: file + navigation */}
         <div className="flex flex-wrap items-center gap-2 border-b border-line p-2.5">
@@ -946,8 +950,9 @@ export default function PdfEditor() {
             vertical text is not yet editable.
           </p>
           <p>
-            Whiteout and redact cover content visually. The covered text can still exist inside the file, so do not
-            rely on them to remove secrets; rebuild the page from scratch for true removal. Fonts: added text uses the
+            Whiteout only covers content visually; hidden content remains. Redact rebuilds all pages as images on download,
+            removing original text and objects, links, attachments, metadata and editable forms. Text is no longer searchable.
+            Check the marked areas before sharing. Fonts: added text uses the
             standard PDF fonts (Latin characters only). Editing a digitally signed PDF invalidates its signature.
           </p>
         </div>
@@ -966,4 +971,4 @@ export default function PdfEditor() {
       <Note tone="info">Everything runs on your device. The PDF never leaves your phone or computer.</Note>
     </div>
   );
-                                  }
+}
