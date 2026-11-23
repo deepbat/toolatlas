@@ -191,6 +191,22 @@ console.log('PASS n-up');
   console.log('PASS pdf to word simple tables');
 }
 {
+  // Layout cases taken from real PDFs (LibreOffice and reportlab output): two prose columns, lists, and prose that is not a table.
+  const mk = (t: string, x: number, y: number, w: number, size = 11) => ({ text: t, size, bold: false, italic: false, x, y, w });
+  const items = [mk('Heading', 56, 800, 120, 20)];
+  for (let r = 0; r < 6; r++) {
+    items.push(mk(`left line ${r} has enough words to be prose`, 56, 770 - r * 14, 200), mk(`right line ${r} has enough words to be prose`, 310, 770 - r * 14, 200));
+  }
+  const cols = itemsToParagraphs(items);
+  assert.equal(cols.filter((p) => p.table).length, 0, 'two prose columns are not a table');
+  const text = cols.map((p) => p.runs.map((r) => r.text).join('')).join('\n');
+  assert.ok(text.indexOf('left line 5') < text.indexOf('right line 0'), 'left column is read in full before the right column');
+  const list = itemsToParagraphs([mk('•', 70, 540, 4), mk('milk', 90, 540, 20), mk('•', 70, 524, 4), mk('bread', 90, 524, 24), mk('•', 70, 508, 4), mk('eggs', 90, 508, 20)]);
+  assert.equal(list.filter((p) => p.table).length, 0, 'a bullet list is not a table');
+  assert.equal(list.length, 3, 'each list item is its own paragraph');
+  console.log('PASS pdf to word columns and lists');
+}
+{
   assert.deepEqual(parseRange('B2:D4'), { s: { r: 1, c: 1 }, e: { r: 3, c: 3 } });
   assert.equal(indexToCol(0), 'A');
   assert.equal(indexToCol(27), 'AB');
