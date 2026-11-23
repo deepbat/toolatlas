@@ -177,6 +177,8 @@ test("file routing recognizes MIME and extension", () => {
     "audio tools are retired in the curated catalogue",
   );
   assert.equal(fileKind({ name: "x.exe", type: "" }), null);
+  assert.deepEqual(matchingTools({ name: "memo.docx", type: "" }).map((t) => t.id), ["word-to-pdf"], "a .docx is offered Word to PDF");
+  assert.equal(matchingTools({ name: "list.txt", type: "text/plain" }).length, 0, "a .txt has no matching tool, since Word to PDF only reads .docx");
 });
 test("related suggestions follow workflows", () => {
   assert.ok(
