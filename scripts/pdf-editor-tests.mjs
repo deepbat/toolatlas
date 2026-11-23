@@ -67,7 +67,9 @@ let passed = 0;
 page.on('pageerror', (e) => errors.push(e.message));
 const check = (name, cond) => { if (!cond) throw Error(name); passed++; console.log('PASS ' + name); };
 const test = async (name, fn) => { try { await fn(); } catch (e) { failures.push(name + ': ' + e.message); console.error('FAIL ' + name + ': ' + e.message); } };
-await mkdir('/downloads/toolatlas-evidence', { recursive: true });
+// Evidence goes where CI uploads it (test-artifacts/); set EVIDENCE_DIR to write elsewhere.
+const EVIDENCE = process.env.EVIDENCE_DIR || 'test-artifacts/toolatlas-evidence';
+await mkdir(EVIDENCE, { recursive: true });
 
 const go = async () => {
   await page.goto(BASE + '/tools/pdf-editor/');
@@ -126,7 +128,7 @@ try {
     await ta.fill('Amount due: 1181 INR');
     await page.locator('[data-testid=tool-select]').click();
     check('replacement text shown', await page.locator('div[data-testid^=ann-]:has-text("1181 INR")').isVisible());
-    await page.screenshot({ path: '/downloads/toolatlas-evidence/editor-edit-text.png' });
+    await page.screenshot({ path: `${EVIDENCE}/editor-edit-text.png` });
   });
 
   await test('highlight snaps to text lines', async () => {
@@ -183,7 +185,7 @@ try {
     await page.getByRole('button', { name: 'Use signature', exact: true }).click();
     await clickView(1, 350, 500);
     check('signature placed', (await page.locator('img[data-testid^=ann-]').count()) === 2);
-    await page.screenshot({ path: '/downloads/toolatlas-evidence/editor-annotations.png' });
+    await page.screenshot({ path: `${EVIDENCE}/editor-annotations.png` });
   });
 
   await test('link annotation', async () => {
@@ -271,7 +273,7 @@ try {
     await page.locator('[data-testid=form-plan]').selectOption('Pro');
     await page.locator('[data-testid=form-size]').nth(1).check();
     check('radio marked', await page.locator('[data-testid=form-size]').nth(1).isChecked());
-    await page.screenshot({ path: '/downloads/toolatlas-evidence/editor-form.png' });
+    await page.screenshot({ path: `${EVIDENCE}/editor-form.png` });
     const dl = page.waitForEvent('download');
     await page.locator('[data-testid=download]').click();
     const outPath = await (await dl).path();
@@ -310,7 +312,7 @@ try {
     await page.keyboard.type('Mobile note');
     await page.locator('[data-testid=tool-select]').click();
     check('mobile text works', await page.locator('div[data-testid^=ann-]:has-text("Mobile note")').isVisible());
-    await page.screenshot({ path: '/downloads/toolatlas-evidence/editor-mobile.png', fullPage: false });
+    await page.screenshot({ path: `${EVIDENCE}/editor-mobile.png`, fullPage: false });
     await page.setViewportSize({ width: 1440, height: 1000 });
   });
 
