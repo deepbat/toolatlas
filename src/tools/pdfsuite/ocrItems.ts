@@ -2,8 +2,9 @@
 // Used only for pages whose own text cannot be read back; recognition is a guess, so callers keep real text where it exists.
 import { renderPage } from '../../lib/pdfio';
 import { pdfjs } from '../pdf-editor/pdfjs';
-import { pageLines, gridsFromLines, isOcrRuleBar } from './rulings';
+import { pageLines, gridsFromLines, isOcrRuleBar, cellBounds } from './rulings';
 import type { TextItem } from './docx';
+import type { PageGrid } from './rulings';
 
 const TESS = `${(import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/'}tesseract`;
 type W = { setParameters: (p: Record<string, string>) => Promise<unknown>; recognize: (c: unknown, o: unknown, out: unknown) => Promise<any>; terminate: () => Promise<unknown> };
@@ -56,19 +57,24 @@ export async function ocrPageItems(doc: any, pageNo: number, lang: string): Prom
   }
   // Full-page segmentation can omit an entire ruled table. Read each geometrically bounded cell separately,
   // without its border, rather than inventing missing values or treating a blank OCR result as an empty source cell.
-  const grids = gridsFromLines(lines, [], true).grids;
+  const flatten = (g: PageGrid): PageGrid[] => [g, ...g.rows.flatMap(row => row.flatMap(cell => (cell.blocks ?? []).flatMap(b => 'grid' in b ? flatten(b.grid) : [])))];
+  const grids = gridsFromLines(lines, [], true).grids.flatMap(flatten);
   for (const grid of grids) {
     const selected = data.recognitionLang ?? lang;
     const worker = await workerFor(selected);
     await worker.setParameters({ tessedit_pageseg_mode: '6' });
     try {
       const replacements: TextItem[] = [];
+      const replaced: ReturnType<typeof cellBounds>[] = [];
       let top = grid.top;
       for (let ri = 0; ri < grid.rows.length; ri++) {
         let left = grid.left;
         for (let ci = 0; ci < grid.rows[ri].length; ci++) {
           const cell = grid.rows[ri][ci];
-          if (cell.kind === 'cell') {
+          // A parent cell with an inner grid is not one OCR block. Leave its surrounding words
+          // from full-page OCR in place, and read the nested leaf cells separately.
+          if (cell.kind === 'cell' && !cell.blocks?.some(b => 'grid' in b)) {
+            replaced.push(cellBounds(grid, cell));
             const width = grid.widths.slice(ci, ci + cell.colspan).reduce((a, b) => a + b, 0);
             const height = grid.heights.slice(ri, ri + cell.rowspan).reduce((a, b) => a + b, 0);
             const crop = document.createElement('canvas');
@@ -89,7 +95,7 @@ export async function ocrPageItems(doc: any, pageNo: number, lang: string): Prom
       }
       for (let i = items.length - 1; i >= 0; i--) {
         const it = items[i], cx = it.x + (it.w ?? 0) / 2, cy = it.y + it.size * 0.3;
-        if (cx >= grid.left && cx <= grid.right && cy >= grid.bottom && cy <= grid.top) items.splice(i, 1);
+        if (replaced.some(b => cx >= b.left && cx <= b.right && cy >= b.bottom && cy <= b.top)) items.splice(i, 1);
       }
       items.push(...replacements);
     } finally { await worker.setParameters({ tessedit_pageseg_mode: '3' }); }
@@ -100,4 +106,4 @@ export async function ocrPageItems(doc: any, pageNo: number, lang: string): Prom
 export async function ocrDone() {
   for (const w of workers.values()) await w.terminate();
   workers.clear();
-    }
+                                                                          }
