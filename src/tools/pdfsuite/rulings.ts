@@ -3,7 +3,7 @@
 // ruling lines are found; tables made of aligned text alone go through the text-based table finder.
 import type { TextItem } from './docx';
 
-export interface GridCell { text: string; colspan: number; rowspan: number; kind: 'cell' | 'covered'; anchor?: { i: number; j: number } } // covered = swallowed by a merge of the anchor cell
+export interface GridCell { text: string; colspan: number; rowspan: number; kind: 'cell' | 'covered'; anchor?: { i: number; j: number }; blocks?: Array<{ text: string } | { grid: PageGrid }> } // covered = swallowed by a merge of the anchor cell
 export interface PageGrid { top: number; bottom: number; left: number; right: number; widths: number[]; heights: number[]; rows: GridCell[][] }
 
 interface Seg { a: number; b: number; at: number } // a..b along the line, at = the fixed coordinate
@@ -118,7 +118,6 @@ function cellText(items: TextItem[]): string {
  */
 export function gridsFromLines(lines: { h: Seg[]; v: Seg[] }, items: TextItem[], includeEmpty = false): { grids: PageGrid[]; rest: TextItem[] } {
   const grids: PageGrid[] = [];
-  let rest = items;
   for (const comp of components(lines.h, lines.v)) {
     if (comp.h.length < 2 || comp.v.length < 2) continue;
     const xs = cluster(comp.v.map((s) => s.at));
@@ -138,39 +137,74 @@ export function gridsFromLines(lines: { h: Seg[]; v: Seg[] }, items: TextItem[],
     for (let k = 0; k < R * C; k++) { const r = find(k); members.set(r, [...(members.get(r) ?? []), k]); }
     let ok = true;
     const rows: GridCell[][] = Array.from({ length: R }, () => Array.from({ length: C }, () => ({ text: '', colspan: 1, rowspan: 1, kind: 'covered' as const })));
-    const anchorOf = new Map<number, { i: number; j: number }>();
     for (const cells of members.values()) {
       const is = cells.map((k) => Math.floor(k / C)), js = cells.map((k) => k % C);
       const i0 = Math.min(...is), i1 = Math.max(...is), j0 = Math.min(...js), j1 = Math.max(...js);
       if ((i1 - i0 + 1) * (j1 - j0 + 1) !== cells.length) { ok = false; break; } // not a rectangle
       rows[i0][j0] = { text: '', colspan: j1 - j0 + 1, rowspan: i1 - i0 + 1, kind: 'cell' };
-      for (const k of cells) { anchorOf.set(k, { i: i0, j: j0 }); if (k !== i0 * C + j0) rows[Math.floor(k / C)][k % C].anchor = { i: i0, j: j0 }; }
+      for (const k of cells) { if (k !== i0 * C + j0) rows[Math.floor(k / C)][k % C].anchor = { i: i0, j: j0 }; }
     }
     if (!ok) continue;
     const left = xs[0], right = xs[xs.length - 1], top = ys[0], bottom = ys[ys.length - 1];
-    const inside: TextItem[][] = Array.from({ length: R * C }, () => []);
-    const outside: TextItem[] = [];
-    for (const it of rest) {
-      const cx = it.x + (it.w ?? it.size * it.text.length * 0.5) / 2, cy = it.y + it.size * 0.3;
-      if (cx < left || cx > right || cy > top || cy < bottom) { outside.push(it); continue; }
-      let j = xs.findIndex((x, q) => q < C && cx >= x && cx < xs[q + 1]); if (j < 0) j = C - 1;
-      let i = ys.findIndex((y, q) => q < R && cy <= y && cy > ys[q + 1]); if (i < 0) i = R - 1;
-      inside[i * C + j].push(it);
-    }
-    // Text must land in the lead cell of each merge; gather per merged cell.
-    const byAnchor = new Map<string, TextItem[]>();
-    inside.forEach((arr, k) => { const a = anchorOf.get(k) as { i: number; j: number }; const key = a.i + ',' + a.j; byAnchor.set(key, [...(byAnchor.get(key) ?? []), ...arr]); });
-    for (let i = 0; i < R; i++) for (let j = 0; j < C; j++) if (rows[i][j].kind === 'cell') rows[i][j].text = cellText(byAnchor.get(i + ',' + j) ?? []);
-    if (!includeEmpty && !rows.some((r) => r.some((c) => c.text))) continue;
     grids.push({ top, bottom, left, right, widths: xs.slice(1).map((x, q) => x - xs[q]), heights: ys.slice(1).map((y, q) => ys[q] - y), rows });
-    rest = outside;
   }
-  return { grids, rest };
+  // A disconnected grid may be a table inside one parent cell. Choose the smallest containing cell,
+  // never just the enclosing table rectangle (a child spanning several cells is not a nested table).
+  const children = new Map<GridCell, PageGrid[]>();
+  const nested = new Set<PageGrid>();
+  for (const child of grids) {
+    let owner: GridCell | undefined, area = Infinity;
+    for (const outer of grids) {
+      if (outer === child) continue;
+      for (const row of outer.rows) for (const cell of row) {
+        if (cell.kind !== 'cell') continue;
+        const b = cellBounds(outer, cell);
+        const a = (b.right - b.left) * (b.top - b.bottom);
+        if (a < area && child.left > b.left + TOL && child.right < b.right - TOL && child.bottom > b.bottom + TOL && child.top < b.top - TOL) { owner = cell; area = a; }
       }
+    }
+    if (owner) { children.set(owner, [...(children.get(owner) ?? []), child]); nested.add(child); }
+  }
+  const contains = (g: { left: number; right: number; top: number; bottom: number }, it: TextItem) => {
+    const cx = it.x + (it.w ?? it.size * it.text.length * 0.5) / 2, cy = it.y + it.size * 0.3;
+    return cx >= g.left && cx <= g.right && cy >= g.bottom && cy <= g.top;
+  };
+  for (const grid of grids) for (const row of grid.rows) for (const cell of row) {
+    if (cell.kind !== 'cell') continue;
+    const bounds = cellBounds(grid, cell);
+    const inner = (children.get(cell) ?? []).sort((a, b) => b.top - a.top || a.left - b.left);
+    const own = items.filter(it => contains(bounds, it) && !inner.some(g => contains(g, it)));
+    cell.text = cellText(own);
+    if (inner.length) {
+      cell.blocks = [];
+      let remaining = own;
+      for (const child of inner) {
+        const before = remaining.filter(it => it.y + it.size * 0.3 > child.top);
+        const text = cellText(before);
+        if (text) cell.blocks.push({ text });
+        cell.blocks.push({ grid: child });
+        remaining = remaining.filter(it => !before.includes(it));
+      }
+      const after = cellText(remaining);
+      if (after) cell.blocks.push({ text: after });
+    }
+  }
+  const hasText = (g: PageGrid): boolean => g.rows.some(r => r.some(c => c.text || c.blocks?.some(b => 'grid' in b && hasText(b.grid))));
+  const roots = grids.filter(g => !nested.has(g) && (includeEmpty || hasText(g)));
+  return { grids: roots, rest: items.filter(it => !roots.some(g => contains(g, it))) };
+}
+
+/** Bounds of an anchor cell, including its full row/column span. */
+export function cellBounds(grid: PageGrid, cell: GridCell) {
+  const i = grid.rows.findIndex(row => row.includes(cell)), j = grid.rows[i].indexOf(cell);
+  const left = grid.left + grid.widths.slice(0, j).reduce((a, b) => a + b, 0);
+  const top = grid.top - grid.heights.slice(0, i).reduce((a, b) => a + b, 0);
+  return { left, top, right: left + grid.widths.slice(j, j + cell.colspan).reduce((a, b) => a + b, 0), bottom: top - grid.heights.slice(i, i + cell.rowspan).reduce((a, b) => a + b, 0) };
+}
 
 /** Reject only a narrow OCR bar whose box lies on a known drawn vertical rule. Ordinary bars elsewhere are text. */
 export function isOcrRuleBar(text: string, box: { x0: number; x1: number; y0: number; y1: number }, vertical: Seg[]): boolean {
   if (!/^[|¦]+$/.test(text.trim()) || box.x1 - box.x0 > 1.5 || box.y1 <= box.y0) return false;
   const x = (box.x0 + box.x1) / 2;
   return vertical.some(s => Math.abs(s.at - x) < 0.8 && Math.max(0, Math.min(s.b, box.y1) - Math.max(s.a, box.y0)) / (box.y1 - box.y0) > 0.8);
-}
+                         }
