@@ -182,6 +182,30 @@ export function tablesToSections(tables: SheetTable[], host: HTMLElement): HTMLE
  * browser's own layout engine does the wrapping and script shaping — the
  * pixels match what the page shows. Everything is inlined (base64 assets),
  * so the canvas stays clean. */
+let lastWords: DomWord[] = [];
+
+/** Word boxes measured in a bare frame holding the same markup the picture is drawn from, so boxes and pixels line up. */
+async function measureWords(container: HTMLElement, copy: HTMLElement, w: number, h: number): Promise<DomWord[]> {
+  const frame = document.createElement('iframe');
+  frame.setAttribute('aria-hidden', 'true');
+  frame.style.cssText = `position:fixed;left:-99999px;top:0;width:${w}px;height:${h}px;border:0;visibility:hidden`;
+  document.body.appendChild(frame);
+  try {
+    const d = frame.contentDocument;
+    if (!d) return [];
+    d.open();
+    d.write('<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;padding:0}</style></head><body></body></html>');
+    d.close();
+    d.body.appendChild(d.importNode(container, true));
+    const idx = Array.from(container.querySelectorAll('*')).indexOf(copy);
+    const mirror = idx >= 0 ? (d.body.firstElementChild as HTMLElement).querySelectorAll('*')[idx] as HTMLElement : null;
+    await new Promise((r) => setTimeout(r, 30));
+    return mirror ? wordsOfElement(mirror) : [];
+  } finally {
+    frame.remove();
+  }
+}
+
 async function rasterise(el: HTMLElement, cssHtml: string, scale: number): Promise<HTMLCanvasElement> {
   const w = Math.max(1, el.offsetWidth);
   const h = Math.max(1, el.offsetHeight);
@@ -204,6 +228,7 @@ async function rasterise(el: HTMLElement, cssHtml: string, scale: number): Promi
   copy.style.marginBottom = '0';
   content.appendChild(copy);
   const xhtml = new XMLSerializer().serializeToString(container);
+  lastWords = await measureWords(container, copy, w, h);
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">` +
     `<foreignObject width="100%" height="100%">${xhtml}</foreignObject></svg>`;
@@ -225,13 +250,51 @@ async function rasterise(el: HTMLElement, cssHtml: string, scale: number): Promi
   return canvas;
 }
 
-/** Capture rendered page elements into a PDF of page images at high DPI. */
+export interface DomWord { text: string; left: number; bottom: number; width: number; height: number }
+
+/**
+ * Every word of the rendered page with its box, in CSS pixels relative to the page element. A word split
+ * over two lines is cut at the line break, with the letters shared out by box width.
+ */
+export function wordsOfElement(el: HTMLElement): DomWord[] {
+  const base = el.getBoundingClientRect();
+  const out: DomWord[] = [];
+  const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const text = n.textContent ?? '';
+    if (!text.trim()) continue;
+    const parent = (n as Text).parentElement;
+    if (parent && el.ownerDocument.defaultView!.getComputedStyle(parent).visibility === 'hidden') continue;
+    for (const m of text.matchAll(/\S+/g)) {
+      const range = el.ownerDocument.createRange();
+      range.setStart(n, m.index as number);
+      range.setEnd(n, (m.index as number) + m[0].length);
+      const rects = Array.from(range.getClientRects()).filter((r) => r.width > 0 && r.height > 0);
+      if (!rects.length) continue;
+      const chars = Array.from(m[0]);
+      const total = rects.reduce((a, r) => a + r.width, 0);
+      let used = 0;
+      rects.forEach((r, i) => {
+        const take = i === rects.length - 1 ? chars.length - used : Math.max(1, Math.round((chars.length * r.width) / total));
+        const piece = chars.slice(used, used + take).join('');
+        used += take;
+        if (piece) out.push({ text: piece, left: r.left - base.left, bottom: r.bottom - base.top, width: r.width, height: r.height });
+      });
+    }
+  }
+  return out;
+}
+
+/** Capture rendered page elements into a PDF of page images at high DPI, with an exact invisible text layer. */
 export async function sectionsToPdf(sections: HTMLElement[], cssHtml: string, scale = 2): Promise<Uint8Array> {
   if (!sections.length) throw Error('Nothing to convert: the document rendered no pages.');
   const { PDFDocument } = await import('pdf-lib');
   const doc = await PDFDocument.create();
+  const { InvisibleUnicodeFont, drawInvisibleWords } = await import('./unicodeLayer');
+  const uf = new InvisibleUnicodeFont(doc);
   for (const el of sections) {
     const canvas = await rasterise(el, cssHtml, scale);
+    const words = lastWords;
     const png = await doc.embedPng(canvas.toDataURL('image/png'));
     const w = Math.max(72, (el.offsetWidth * 72) / 96);
     const h = Math.max(72, (el.offsetHeight * 72) / 96);
@@ -240,8 +303,12 @@ export async function sectionsToPdf(sections: HTMLElement[], cssHtml: string, sc
     const sheet = el.classList.contains('sheetpage');
     const pw = sheet ? Math.max(w, 595) : w;
     const ph = sheet ? Math.max(h, 842) : h;
-    doc.addPage([pw, ph]).drawImage(png, { x: 0, y: ph - h, width: w, height: h });
+    const page = doc.addPage([pw, ph]);
+    page.drawImage(png, { x: 0, y: ph - h, width: w, height: h });
+    // Text sits invisibly over the picture so the page can be searched and copied; each character maps back exactly.
+    drawInvisibleWords(page, uf, words.map((k) => ({ text: k.text, x: k.left * 0.75, y: ph - k.bottom * 0.75, w: Math.max(1, k.width * 0.75), h: Math.max(1, k.height * 0.75) })));
   }
+  uf.finish();
   return doc.save();
 }
 
@@ -310,4 +377,4 @@ export function openPrintView(title: string, cssHtml: string, bodyHtml: string):
     setTimeout(() => frame.remove(), 120000);
   }, 500);
   return Promise.resolve(null);
-}
+                                 }
