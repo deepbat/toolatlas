@@ -15,7 +15,7 @@ function lineCells(line: TextItem[]): { x: number; text: string }[] {
   for (const it of items) {
     const end = it.x + (it.w ?? it.text.length * it.size * 0.5);
     const last = cells[cells.length - 1];
-    if (last && it.x - last.end <= it.size * 1.5) { last.text += (it.x - last.end > it.size * 0.18 && !last.text.endsWith(' ') ? ' ' : '') + it.text; last.end = end; }
+    if (last && it.x - last.end <= it.size * 0.6) { last.text += (it.x - last.end > it.size * 0.18 && !last.text.endsWith(' ') ? ' ' : '') + it.text; last.end = end; }
     else cells.push({ x: it.x, text: it.text, end });
   }
   return cells.map((c) => ({ x: c.x, text: c.text.trim() })).filter((c) => c.text);
@@ -40,15 +40,85 @@ function findTable(lines: TextItem[][], start: number): { rows: string[][]; end:
     rows.push(cells.map((c) => c.text));
     end++;
   }
-  return rows.length >= 2 ? { rows, end } : null;
+  if (rows.length < 2) return null;
+  // Not tables: a list (every first cell is only a bullet or number) and columns of running text (long cells).
+  if (rows.every((r) => /^([•\-–—·*▪◦●]|\(?[0-9a-zA-Z]{1,3}[.)])$/.test(r[0]))) return null;
+  const all = rows.flat();
+  if (all.filter((c) => c.split(/\s+/).length >= 6).length * 2 >= all.length || all.some((c) => c.length > 80)) return null;
+  return { rows, end };
+}
+
+/**
+ * Two-column pages: find a vertical gutter that few lines cross, then treat each run of consecutive lines that do not
+ * cross it, with prose (6+ words) on both sides for 4+ lines, as a column block read left column first. Lines that
+ * cross the gutter stay in normal order. Deliberately strict; anything unclear is laid out as before.
+ */
+function splitColumns(items: TextItem[]): { items: TextItem[]; cols: number | null }[] | null {
+  const real = items.filter((i) => i.text.trim() && i.w !== undefined && i.w > 0);
+  if (real.length < 8) return null;
+  const sizes = real.map((i) => i.size).sort((a, b) => a - b);
+  const body = sizes[Math.floor(sizes.length / 2)] || 12;
+  const rows: TextItem[][] = [];
+  for (const it of [...real].sort((a, b) => b.y - a.y || a.x - b.x)) {
+    const last = rows[rows.length - 1];
+    if (last && Math.abs(last[0].y - it.y) < Math.max(2, it.size * 0.35)) last.push(it); else rows.push([it]);
+  }
+  const minX = Math.min(...real.map((i) => i.x)), maxX = Math.max(...real.map((i) => i.x + (i.w as number)));
+  const bins = Math.max(1, Math.floor((maxX - minX) / 2));
+  const cover = new Array(bins).fill(0);
+  for (const r of rows) {
+    const hit = new Set<number>();
+    for (const i of r) for (let x = Math.floor((i.x - minX) / 2); x <= Math.floor((i.x + (i.w as number) - minX) / 2) && x < bins; x++) hit.add(x);
+    hit.forEach((x) => cover[x]++);
+  }
+  const lo = Math.floor(bins * 0.25), hi = Math.ceil(bins * 0.75);
+  let best = -1, bestLen = 0;
+  for (let x = lo; x < hi; ) {
+    if (cover[x] <= rows.length * 0.25) {
+      let e = x; while (e < hi && cover[e] <= rows.length * 0.25) e++;
+      if (e - x > bestLen) { best = x; bestLen = e - x; }
+      x = e;
+    } else x++;
+  }
+  if (best < 0 || bestLen * 2 < body * 1.2) return null;
+  const gx = minX + (best + bestLen / 2) * 2;
+  const kind = (r: TextItem[]) => {
+    const l = r.filter((i) => i.x + (i.w as number) <= gx + 1), rt = r.filter((i) => i.x >= gx - 1);
+    if (l.length + rt.length < r.length) return 'cross';
+    const words = (g: TextItem[]) => g.map((i) => i.text).join(' ').trim().split(/\s+/).filter(Boolean).length;
+    return { l: l.length ? words(l) : 0, r: rt.length ? words(rt) : 0 };
+  };
+  const segs: { items: TextItem[]; cols: number | null }[] = [];
+  let run: TextItem[][] = [];
+  const flush = () => {
+    if (!run.length) return;
+    const ks = run.map(kind) as { l: number; r: number }[];
+    const first = ks.findIndex((k) => k.r > 0), last = ks.length - 1 - [...ks].reverse().findIndex((k) => k.r > 0);
+    const band = run.slice(Math.max(first, 0), last + 1), bk = ks.slice(Math.max(first, 0), last + 1);
+    const prose = (side: 'l' | 'r') => bk.filter((k) => k[side] >= 6).length;
+    if (first >= 0 && prose('l') >= 4 && prose('r') >= 4) {
+      const flat = band.flat();
+      const before = run.slice(0, first).flat(), after = run.slice(last + 1).flat();
+      if (before.length) segs.push({ items: before, cols: null });
+      segs.push({ items: flat.filter((i) => i.x < gx), cols: 1 }, { items: flat.filter((i) => i.x >= gx), cols: 2 });
+      if (after.length) segs.push({ items: after, cols: null });
+    } else segs.push({ items: run.flat(), cols: null });
+    run = [];
+  };
+  for (const r of rows) {
+    const k = kind(r);
+    if (k === 'cross') { flush(); segs.push({ items: r, cols: null }); } else run.push(r);
+  }
+  flush();
+  return segs.some((x) => x.cols) ? segs : null;
 }
 
 /** Group raw pdf.js text items (one page, reading order) into paragraphs. */
-export function itemsToParagraphs(items: TextItem[]): Para[] {
+function layoutLines(items: TextItem[], bodyOverride?: number): Para[] {
   const sorted = [...items].sort((a, b) => b.y - a.y || a.x - b.x);
   if (!sorted.length) return [];
   const sizes = sorted.map((i) => i.size).sort((a, b) => a - b);
-  const body = sizes[Math.floor(sizes.length / 2)] || 12;
+  const body = bodyOverride ?? (sizes[Math.floor(sizes.length / 2)] || 12);
   const lines: TextItem[][] = [];
   for (const item of sorted) {
     if (!item.text.trim()) continue;
@@ -81,7 +151,8 @@ export function itemsToParagraphs(items: TextItem[]): Para[] {
     // otherwise continuation lines join the previous paragraph with a space.
     const gap = paras.length ? Math.abs(line[0].y - (lines[lines.indexOf(line) - 1]?.[0]?.y ?? line[0].y)) : 0;
     const prev = paras[paras.length - 1];
-    if (prev && !prev.table && level === 0 && prev.level === 0 && gap < body * 1.9) {
+    const startsItem = /^([•·●▪◦\-–]|\d{1,3}[.)])(\s|$)/.test(merged[0]?.text ?? '');
+    if (prev && !prev.table && level === 0 && prev.level === 0 && gap < body * 1.9 && !startsItem) {
       const lastRun = prev.runs[prev.runs.length - 1];
       if (lastRun && merged[0] && lastRun.bold === merged[0].bold && lastRun.italic === merged[0].italic) lastRun.text += ' ' + merged[0].text;
       else prev.runs.push({ ...merged[0], text: ' ' + merged[0].text });
@@ -151,4 +222,15 @@ export function buildDocx(paras: Para[]): Uint8Array {
     { name: 'word/document.xml', data: enc.encode(document) },
     { name: 'word/styles.xml', data: enc.encode(STYLES) },
   ]);
-}
+    }
+
+/** Group raw pdf.js text items (one page) into paragraphs; two-column pages are read left column first, then right. */
+export function itemsToParagraphs(items: TextItem[]): Para[] {
+  const segs = splitColumns(items);
+  if (!segs) return layoutLines(items);
+  const out: Para[] = [];
+  const sz = items.filter((i) => i.text.trim()).map((i) => i.size).sort((a, b) => a - b);
+  const body = sz[Math.floor(sz.length / 2)] || 12;
+  for (const sg of segs) out.push(...layoutLines(sg.items, body));
+  return out;
+                                                                                 }
