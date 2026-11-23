@@ -247,6 +247,19 @@ console.log('PASS n-up');
   console.log('PASS pdf to word row-spanning first-column cell');
 }
 {
+  // Hindi, Punjabi and astral text goes through the Unicode-exact invisible layer; pdf.js must read it back unchanged.
+  const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const d = await PDFDocument.create(); d.addPage([595, 842]);
+  const rows: [string, number][] = [['नमस्ते', 50], ['दुनिया,', 230], ['क्षत्रिय', 420], ['ਸਤਿ', 50], ['ਸ੍ਰੀ', 120], ['Hello', 50], ['😀x', 200]];
+  const words = rows.map(([text, x0], i) => ({ text, x0, y0: 50 + Math.floor(i / 3) * 100, x1: x0 + 100, y1: 90 + Math.floor(i / 3) * 100 }));
+  const out = await addTextLayer(await d.save(), [{ page: 1, imgWidth: 595, imgHeight: 842, words }]);
+  const doc = await getDocument({ data: new Uint8Array(out), verbosity: 0 }).promise;
+  const tc = await (await doc.getPage(1)).getTextContent();
+  const got = tc.items.map((i: any) => i.str).join('');
+  assert.equal(got.replace(/\s+/g, ''), rows.map((r) => r[0]).join(''), 'Unicode text read back exactly: ' + got);
+  console.log('PASS unicode invisible text layer');
+}
+{
   assert.deepEqual(parseRange('B2:D4'), { s: { r: 1, c: 1 }, e: { r: 3, c: 3 } });
   assert.equal(indexToCol(0), 'A');
   assert.equal(indexToCol(27), 'AB');
