@@ -163,7 +163,7 @@ await t('every tool link on the guides, home and PDF pages (footer included) ope
   console.log('  checked ' + seen.size + ' tool links; dead: ' + (dead.join(' ') || 'none')); assert.deepEqual(dead, []);
 });
 const six = await mk(6, 'Six');
-const VERB = { 'pdf-delete-pages': 'Delete pages', 'pdf-crop': 'Crop PDF', 'pdf-bates': 'Add Bates numbers', 'pdf-nup': 'Combine pages', 'pdf-booklet': 'Make booklet', 'pdf-rotate': 'Rotate pages', 'pdf-watermark': 'Add watermark', 'pdf-protect': 'Protect PDF', 'pdf-unlock': 'Unlock PDF', 'pdf-repair': 'Repair PDF', 'pdf-sign': 'Sign PDF' };
+const VERB = { 'pdf-delete-pages': 'Delete pages', 'pdf-crop': 'Crop PDF', 'pdf-bates': 'Add Bates numbers', 'pdf-nup': 'Combine pages', 'pdf-booklet': 'Make booklet', 'pdf-rotate': 'Rotate pages', 'pdf-watermark': 'Add watermark', 'pdf-protect': 'Protect PDF', 'pdf-unlock': 'Unlock PDF', 'pdf-repair': 'Repair PDF', 'pdf-sign': 'Sign PDF', 'pdf-ocr': 'Make searchable' };
 const suite = async (id, data, setup) => { await go(id); await up(data); if (setup) await setup(); return dl(VERB[id]); };
 const pagesText = async path => { const k = await openPdf(path); const o = []; for (let i = 1; i <= k; i++) o.push(await pageText(path, i)); return o; };
 await t('delete pages 2,4-6 keeps exactly pages 1 and 3', async () => {
@@ -223,6 +223,16 @@ await t('sign places the signature image at bottom right of the last page with t
   const want = sigPx.w / sigPx.h, got = bw / bh; assert.ok(Math.abs(got - want) / want < 0.2, `aspect ${got.toFixed(2)} vs signature ${want.toFixed(2)}`);
   const other = await diffBox('/tmp/audit-before-sign.pdf', r.path, 1, 1); assert.equal(other.cnt, 0, 'page 1 changed');
   console.log(`  sign stamp box ${bw}x${bh}pt at (${bx.x0},${bx.y0}) on ${bx.w}x${bx.h}; signature aspect ${want.toFixed(2)}, stamp ${got.toFixed(2)}`);
+});
+await t('OCR adds a searchable text layer that matches the scanned words and keeps the picture', async () => {
+  await go('pdf-ocr');
+  const dataUrl = await page.evaluate(() => { const c = document.createElement('canvas'); c.width = 595; c.height = 200; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 595, 200); x.fillStyle = '#000'; x.font = '48px sans-serif'; x.fillText('HELLO SCAN', 40, 110); return c.toDataURL('image/png'); });
+  const sd = await PDFDocument.create(); const im = await sd.embedPng(Buffer.from(dataUrl.split(',')[1], 'base64')); sd.addPage([595, 842]).drawImage(im, { x: 0, y: 442, width: 595, height: 200 });
+  const src = Buffer.from(await sd.save()); await writeFile('/tmp/audit-scan-src.pdf', src);
+  assert.equal((await text('/tmp/audit-scan-src.pdf')).trim(), '', 'control: source has no text layer');
+  await up(src); const p = page.waitForEvent('download', { timeout: 180000 }); await page.getByRole('button', { name: 'Make searchable' }).click(); const d = await p; const path = '/tmp/audit-ocr-out.pdf'; await d.saveAs(path);
+  const tx = (await text(path)).toUpperCase(); assert.ok(tx.includes('HELLO') && tx.includes('SCAN'), 'text layer: ' + JSON.stringify(tx));
+  const same = await diffBox('/tmp/audit-scan-src.pdf', path, 1, 1); assert.equal(same.cnt, 0, 'page picture changed: ' + same.cnt + ' px');
 });
 console.log(`${n} passed, ${fails.length} failed`, errors.length ? 'pageerrors: ' + errors.join(' | ') : '');
 await browser.close(); server?.kill();
