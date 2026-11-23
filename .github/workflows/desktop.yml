@@ -30,28 +30,39 @@ jobs:
           BASE_PATH: /
       - name: Generate app icons from the existing 512px icon
         run: npx --yes @tauri-apps/cli@2 icon public/icon-512.png
+      - name: Resolve Cargo.lock (generated only if none is committed)
+        working-directory: src-tauri
+        run: |
+          if (-not (Test-Path Cargo.lock)) { cargo generate-lockfile; "Cargo.lock was NOT committed: generated fresh" } else { "Cargo.lock committed" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cargo-lock
+          path: src-tauri/Cargo.lock
+          if-no-files-found: error
+      - name: Bundle Rust licence texts for the installer
+        run: node scripts/bundle-licences.mjs x86_64-pc-windows-msvc
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rust-licence-bundle
+          path: src-tauri/licenses/*.txt
+          if-no-files-found: error
       - name: Build NSIS installer
-        run: npx --yes @tauri-apps/cli@2 build --bundles nsis
+        run: npx --yes @tauri-apps/cli@2 build --bundles nsis -- --locked
+      - name: Verify the production installer carries the licence files (7z listing)
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem src-tauri/target/release/bundle/nsis/*.exe | Select-Object -First 1
+          7z l $exe.FullName | Select-String -Pattern 'licenses' | ForEach-Object { $_.Line }
+          $n = (7z l $exe.FullName | Select-String -Pattern 'RUST_LICENSES.txt|THIRD_PARTY_NOTICES.txt').Count
+          "licence files listed in installer: $n"
+          if ($n -lt 2) { exit 1 }
       - uses: actions/upload-artifact@v4
         with:
           name: deepaks-tool-windows-unsigned
           path: src-tauri/target/release/bundle/nsis/*.exe
           if-no-files-found: error
-      - name: List Rust crate licences (production build, Windows target)
-        working-directory: src-tauri
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force ../out | Out-Null
-          cargo metadata --format-version 1 --filter-platform x86_64-pc-windows-msvc | Out-File -Encoding utf8 ../out/meta.json
-          node -e "const m=JSON.parse(require('fs').readFileSync('../out/meta.json','utf8'));const fs=require('fs'),path=require('path');const rows=m.packages.filter(p=>p.source).map(p=>{const d=path.dirname(p.manifest_path);const lf=fs.readdirSync(d).filter(f=>/^(LICEN[CS]E|COPYING|NOTICE|UNLICENSE)/i.test(f));return [p.name,p.version,p.license||p.license_file||'NONE',lf.join('+')||'no-file-in-crate'].join('\t')}).sort();fs.writeFileSync('../out/rust-licenses.tsv',rows.join('\n'));console.log(rows.length+' crates')"
-          Get-Content ../out/rust-licenses.tsv | Measure-Object -Line
-      - uses: actions/upload-artifact@v4
-        with:
-          name: rust-crate-licences
-          path: out/rust-licenses.tsv
-          if-no-files-found: error
       - name: Build test-only installer (remote debugging port on, for CI functional test)
-        run: npx --yes @tauri-apps/cli@2 build --bundles nsis --config src-tauri/tauri.test.conf.json --features native-pdf
+        run: npx --yes @tauri-apps/cli@2 build --bundles nsis --config src-tauri/tauri.test.conf.json --features native-pdf -- --locked
       - uses: actions/upload-artifact@v4
         with:
           name: deepaks-tool-windows-TESTONLY
