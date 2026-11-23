@@ -1,3 +1,4 @@
+import { HORIZONTAL_TABLES } from './fixtures/horizontal-border-table.mjs';
 // Desktop check of the newer conversion paths in the installed app's WebView2 (CDP): Word to PDF image output with its
 // invisible Unicode text layer, Hindi/Punjabi per-page OCR fallback in PDF to Word, and merged-cell output in PDF to Word.
 // Inputs for the OCR and merged-cell steps are PDFs produced by the app's own WebView2 print engine. Saves everything to ./out.
@@ -177,6 +178,36 @@ await step(`pdf-to-word shared-side nested table ${label}`, async () => {
   if (!xml.includes('<w:gridSpan w:val="2"/>')) throw new Error('nested colspan missing');
 });
 
+}
+
+for (const {label,bottom,pdf} of HORIZONTAL_TABLES) {
+ await step(`pdf-to-word horizontal-shared nested table ${label}`,async()=>{
+  await openTool('pdf-to-word','horizontal.pdf','application/pdf',Buffer.from(pdf,'base64'));
+  const pending=page.waitForEvent('download',{timeout:90000});
+  await page.getByRole('button',{name:'Convert to Word',exact:true}).click();
+  const path=`out/${evidencePrefix}-horizontal-${label}-pdf-to-word.docx`;
+  await(await pending).saveAs(path);
+  const z=await JSZip.loadAsync(await readFile(path));const xml=await z.file('word/document.xml').async('string');
+
+    const result = await page.evaluate(({xml,bottom}) => {
+      const d=new DOMParser().parseFromString(xml,'application/xml');
+      const ns='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+      const direct=(el,name)=>Array.from(el?.children??[]).filter(e=>e.namespaceURI===ns&&e.localName===name);
+      const roots=direct(d.getElementsByTagNameNS(ns,'body')[0],'tbl');
+      const rows=direct(roots[0],'tr');
+      const cell=direct(rows[bottom?1:0],'tc')[1];
+      const nested=direct(cell,'tbl');
+      return {roots:roots.length,total:d.getElementsByTagNameNS(ns,'tbl').length,rows:rows.length,
+        cells:rows.map(r=>direct(r,'tc').length),inner:direct(nested[0],'tr').map(r=>direct(r,'tc').map(c=>c.textContent)),
+        text:cell?.textContent,other:rows[bottom?0:1]?.textContent};
+    },{xml,bottom});
+    const expected={roots:1,total:2,rows:2,cells:[2,2],inner:[['in1','in2'],['inspan']],
+      text:bottom?'Before innerin1in2inspan':'in1in2inspanAfter inner',other:bottom?'Outer AOuter B':'Outer COuter D'};
+    if(JSON.stringify(result)!==JSON.stringify(expected))throw new Error(JSON.stringify(result));
+    for(const text of ['in1','in2','inspan',bottom?'Before inner':'After inner'])if(xml.split(text).length!==2)throw new Error('text duplication: '+text);
+    if(!xml.includes('<w:gridSpan w:val="2"/>'))throw new Error('horizontal nested colspan missing');
+    if(!(xml.indexOf('Before outer')<xml.indexOf('<w:tbl>')&&xml.indexOf('After outer')>xml.lastIndexOf('</w:tbl>')))throw new Error('outer text order');
+ });
 }
 
 console.log(failed ? 'FAILED ' + failed : 'ALL PASS');
