@@ -225,8 +225,12 @@ const esc = (s: string) => s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uF
 
 function tableXml(rows: string[][]): string {
   const b = '<w:top w:val="single" w:sz="4" w:color="BFBFBF"/><w:left w:val="single" w:sz="4" w:color="BFBFBF"/><w:bottom w:val="single" w:sz="4" w:color="BFBFBF"/><w:right w:val="single" w:sz="4" w:color="BFBFBF"/><w:insideH w:val="single" w:sz="4" w:color="BFBFBF"/><w:insideV w:val="single" w:sz="4" w:color="BFBFBF"/>';
-  const grid = rows[0].map(() => '<w:gridCol w:w="2000"/>').join('');
-  const trs = rows.map((r) => `<w:tr>${r.map((c) => `<w:tc><w:tcPr><w:tcW w:w="2000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t xml:space="preserve">${esc(c)}</w:t></w:r></w:p></w:tc>`).join('')}</w:tr>`).join('');
+  // Column widths follow the longest text in each column (capped), over the 9000-twip text width; the PDF's own widths are not read.
+  const weights = rows[0].map((_, c) => Math.min(60, Math.max(6, ...rows.map((r) => (r[c] ?? '').length))));
+  const wsum = weights.reduce((a, b) => a + b, 0);
+  const widths = weights.map((w) => Math.round((w / wsum) * 9000));
+  const grid = widths.map((w) => `<w:gridCol w:w="${w}"/>`).join('');
+  const trs = rows.map((r) => `<w:tr>${r.map((c, ci) => `<w:tc><w:tcPr><w:tcW w:w="${widths[ci]}" w:type="dxa"/></w:tcPr><w:p><w:r><w:t xml:space="preserve">${esc(c)}</w:t></w:r></w:p></w:tc>`).join('')}</w:tr>`).join('');
   return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders>${b}</w:tblBorders></w:tblPr><w:tblGrid>${grid}</w:tblGrid>${trs}</w:tbl><w:p/>`;
 }
 
