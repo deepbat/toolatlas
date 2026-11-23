@@ -6,6 +6,7 @@ import { chromium } from '@playwright/test';
 import { PDFDocument, PDFName, PDFDict } from 'pdf-lib';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { NESTED_TABLE_PDF_B64 } from './fixtures/nested-table.mjs';
+import { SHARED_WRITER_PDF_B64, SHARED_CHROMIUM_PDF_B64 } from './fixtures/shared-border-table.mjs';
 
 const port = process.env.CDP_PORT || '9222';
 let browser;
@@ -149,6 +150,34 @@ await step('pdf-to-word inset nested table', async () => {
   for (const text of ['Before inner', 'in1', 'in2', 'inspan', 'After inner']) if (xml.split(text).length !== 2) throw new Error('text duplication: ' + text);
   if (!xml.includes('<w:gridSpan w:val="2"/>')) throw new Error('nested colspan missing');
 });
+
+// Shared-border fixtures use the same installed production conversion path.
+for (const [label, fixture] of [['writer', SHARED_WRITER_PDF_B64], ['chromium', SHARED_CHROMIUM_PDF_B64]]) {
+await step(`pdf-to-word shared-side nested table ${label}`, async () => {
+  await openTool('pdf-to-word', 'nested.pdf', 'application/pdf', Buffer.from(fixture, 'base64'));
+  const pending = page.waitForEvent('download', { timeout: 90000 });
+  await page.getByRole('button', { name: 'Convert to Word', exact: true }).click();
+  const d = await pending; await d.saveAs(`out/${evidencePrefix}-shared-${label}-pdf-to-word.docx`);
+  const z = await JSZip.loadAsync(await readFile(`out/${evidencePrefix}-shared-${label}-pdf-to-word.docx`));
+  const xml = await z.file('word/document.xml').async('string');
+  const result = await page.evaluate(xml => {
+    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+    const ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+    const direct = (el, name) => Array.from(el.children).filter(e => e.namespaceURI === ns && e.localName === name);
+    const roots = direct(doc.getElementsByTagNameNS(ns, 'body')[0], 'tbl');
+    const rows = roots[0] ? direct(roots[0], 'tr') : [];
+    const cell = rows[0] && direct(rows[0], 'tc')[1];
+    const nested = cell && direct(cell, 'tbl');
+    return { roots: roots.length, total: doc.getElementsByTagNameNS(ns, 'tbl').length, rows: rows.length,
+      nested: nested?.length, text: cell?.textContent, after: rows[1]?.textContent,
+      inner: nested?.[0] ? direct(nested[0], 'tr').map(r => direct(r, 'tc').map(c => c.textContent)) : [] };
+  }, xml);
+  if (JSON.stringify(result) !== JSON.stringify({ roots: 1, total: 2, rows: 2, nested: 1, text: 'Before innerin1in2inspanAfter inner', after: 'Outer COuter D', inner: [['in1','in2'],['inspan']] })) throw new Error(JSON.stringify(result));
+  for (const text of ['Before inner', 'in1', 'in2', 'inspan', 'After inner']) if (xml.split(text).length !== 2) throw new Error('text duplication: ' + text);
+  if (!xml.includes('<w:gridSpan w:val="2"/>')) throw new Error('nested colspan missing');
+});
+
+}
 
 console.log(failed ? 'FAILED ' + failed : 'ALL PASS');
 process.exit(failed ? 1 : 0);
