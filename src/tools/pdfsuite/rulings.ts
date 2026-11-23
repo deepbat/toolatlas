@@ -4,7 +4,7 @@
 import type { TextItem } from './docx';
 
 export interface GridCell { text: string; colspan: number; rowspan: number; kind: 'cell' | 'covered'; anchor?: { i: number; j: number } } // covered = swallowed by a merge of the anchor cell
-export interface PageGrid { top: number; bottom: number; left: number; right: number; widths: number[]; rows: GridCell[][] }
+export interface PageGrid { top: number; bottom: number; left: number; right: number; widths: number[]; heights: number[]; rows: GridCell[][] }
 
 interface Seg { a: number; b: number; at: number } // a..b along the line, at = the fixed coordinate
 type Mat = [number, number, number, number, number, number];
@@ -116,7 +116,7 @@ function cellText(items: TextItem[]): string {
  * Bordered tables on a page, with merged cells. Returns the tables and the text items they did not use.
  * A table is only accepted when its merged cells are rectangles, so a stray or partly drawn grid is left to the text finder.
  */
-export function gridsFromLines(lines: { h: Seg[]; v: Seg[] }, items: TextItem[]): { grids: PageGrid[]; rest: TextItem[] } {
+export function gridsFromLines(lines: { h: Seg[]; v: Seg[] }, items: TextItem[], includeEmpty = false): { grids: PageGrid[]; rest: TextItem[] } {
   const grids: PageGrid[] = [];
   let rest = items;
   for (const comp of components(lines.h, lines.v)) {
@@ -161,9 +161,9 @@ export function gridsFromLines(lines: { h: Seg[]; v: Seg[] }, items: TextItem[])
     const byAnchor = new Map<string, TextItem[]>();
     inside.forEach((arr, k) => { const a = anchorOf.get(k) as { i: number; j: number }; const key = a.i + ',' + a.j; byAnchor.set(key, [...(byAnchor.get(key) ?? []), ...arr]); });
     for (let i = 0; i < R; i++) for (let j = 0; j < C; j++) if (rows[i][j].kind === 'cell') rows[i][j].text = cellText(byAnchor.get(i + ',' + j) ?? []);
-    if (!rows.some((r) => r.some((c) => c.text))) continue;
-    grids.push({ top, bottom, left, right, widths: xs.slice(1).map((x, q) => x - xs[q]), rows });
+    if (!includeEmpty && !rows.some((r) => r.some((c) => c.text))) continue;
+    grids.push({ top, bottom, left, right, widths: xs.slice(1).map((x, q) => x - xs[q]), heights: ys.slice(1).map((y, q) => ys[q] - y), rows });
     rest = outside;
   }
   return { grids, rest };
-                   }
+      }
