@@ -54,6 +54,8 @@ for (const [tool, file, buf, shot] of [['word-to-pdf', 'fixture.docx', docxBuf, 
   check(!!m && m[1].toLowerCase().startsWith(downloads.toLowerCase()), tool + ' message names a path inside the Downloads folder');
   check(!!m && existsSync(m[1]), tool + ' the file named in the message exists');
   if (m && existsSync(m[1])) copyFileSync(m[1], `out/prod-${tool}.pdf`);
+  await ev(`(() => { const el = [...document.querySelectorAll('*')].filter(e => e.children.length === 0 && /Saved to /.test(e.textContent)).pop(); if (el) el.scrollIntoView({ block: 'center' }); return !!el; })()`);
+  await sleep(400);
   const shotData = await send('Page.captureScreenshot', { format: 'png' });
   if (shotData.result?.data) writeFileSync(`out/${shot}`, Buffer.from(shotData.result.data, 'base64'));
   await sleep(500);
