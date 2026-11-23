@@ -120,6 +120,7 @@ export default function ImageOcr() {
                 <Select value={lang} onChange={(e) => setLang(e.target.value)} disabled={busy}>
                   <option value="eng">English</option>
                   <option value="hin+eng">Hindi (Devanagari) and English</option>
+                  <option value="hin+pan+eng">Hindi, Punjabi and English (mixed documents)</option>
                   <option value="pan+eng">Punjabi (Gurmukhi) and English</option>
                 </Select>
               </Field>
@@ -183,4 +184,4 @@ export default function ImageOcr() {
       </Note>
     </div>
   );
-      }
+}
