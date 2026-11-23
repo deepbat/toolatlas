@@ -306,7 +306,7 @@ function ToWord() {
         return buildDocx(paras);
       }}>
       <Field label="Pages" hint="Blank means every page."><Input value={pages} onChange={(e) => setPages(e.target.value)} placeholder="1-3,5" /></Field>
-      <div className="mt-3"><Note>Fidelity is honest: text becomes editable paragraphs and headings. Simple tables whose columns line up in text rows are rebuilt as Word tables; tables with borders, merged cells or wrapped cells, images and exact fonts are not preserved. Two-column pages are read left column first in tests on simple layouts; complex or mixed layouts can come out in the wrong order, and so can the text of wrapped table cells. Check the result against the PDF.</Note></div>
+      <div className="mt-3"><Note>Fidelity is honest: text becomes editable paragraphs and headings. Simple tables whose columns line up in text rows are rebuilt as Word tables, including cells that wrap onto a second line in the layouts we tested. Merged cells, ruling lines, images and exact fonts are not preserved, and column widths are not kept. Two-column pages are read left column first in tests on simple layouts; complex or mixed layouts, and tables the tool does not recognise, can come out in the wrong order. Check the result against the PDF.</Note></div>
     </Shell>
   );
 }
