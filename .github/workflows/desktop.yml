@@ -69,7 +69,7 @@ jobs:
           $exe = 'src-tauri/target/release/deepaks-tool.exe'
           "binary: $((Get-Item $exe).Length) bytes"
           $fail = 0
-          foreach ($t in @('__test_hold__','__test_fail__','callmarker','forced failure for cleanup test','test-print','printview-*')) {
+          foreach ($t in @('__test_hold__','__test_fail__','callmarker','forced failure for cleanup test','test-print','printview-*','test-nocsp')) {
             if (Select-String -Path $exe -Pattern $t -SimpleMatch -Quiet) { "FAIL: production binary contains '$t'"; $fail = 1 } else { "ok: production binary has no '$t'" }
           }
           if (Select-String -Path $exe -Pattern 'save_print_pdf' -SimpleMatch -Quiet) { "ok: save_print_pdf command is present" } else { "FAIL: save_print_pdf missing"; $fail = 1 }
