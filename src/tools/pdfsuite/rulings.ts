@@ -144,9 +144,10 @@ function componentGrid(comp: RuleSet): PageGrid | undefined {
   return { top, bottom, left, right, widths: xs.slice(1).map((x, q) => x - xs[q]), heights: ys.slice(1).map((y, q) => ys[q] - y), rows };
 }
 
-// A narrow supported case: an otherwise closed inner grid shares only the parent's left or right rule.
+// A narrow supported case: an otherwise closed inner grid shares exactly one parent rule.
 // Its other vertical side must begin/end at the inner horizontal rules, not continue as a parent column.
-function sharedSideGrids(comp: RuleSet): PageGrid[] | undefined {
+// The same check is applied with swapped axes for a shared top/bottom outer rule.
+function sharedSideRules(comp: RuleSet): RuleSet[] | undefined {
   if (comp.h.length > 80 || comp.v.length > 80) return undefined;
   const joined = (segments: Seg[]) => {
     const result: Seg[] = [];
@@ -163,7 +164,7 @@ function sharedSideGrids(comp: RuleSet): PageGrid[] | undefined {
   comp = { h: joined(comp.h), v: joined(comp.v) };
   const minX = Math.min(...comp.v.map(s => s.at)), maxX = Math.max(...comp.v.map(s => s.at));
   const near = (a: number, b: number) => Math.abs(a - b) <= TOL;
-  const candidates: PageGrid[][] = [];
+  const candidates: RuleSet[][] = [];
   for (const first of comp.h) for (const last of comp.h) {
     if (first.at <= last.at + 4 || !near(first.a, last.a) || !near(first.b, last.b)) continue;
     const left = (first.a + last.a) / 2, right = (first.b + last.b) / 2;
@@ -191,9 +192,21 @@ function sharedSideGrids(comp: RuleSet): PageGrid[] | undefined {
       return child.top < b.top - TOL && child.bottom > b.bottom + TOL &&
         (leftShared ? near(child.left, b.left) && child.right < b.right - TOL : near(child.right, b.right) && child.left > b.left + TOL);
     });
-    if (owners.length === 1) candidates.push([parent, child]);
+    if (owners.length === 1) candidates.push([parentRules, childRules]);
   }
   return candidates.length === 1 ? candidates[0] : undefined;
+}
+
+// Swapping axes turns top/bottom sharing into the same proven side-sharing case.
+// Rebuild each grid in the original coordinate system so merged rows/columns keep their meaning.
+function sharedEdgeGrids(comp: RuleSet): PageGrid[] | undefined {
+  const swap = (rules: RuleSet): RuleSet => ({ h: rules.v.map(s => ({ ...s })), v: rules.h.map(s => ({ ...s })) });
+  const sides = sharedSideRules(comp);
+  const horizontal = sharedSideRules(swap(comp));
+  if (sides && horizontal) return undefined; // two different interpretations are ambiguous
+  const rules = sides ?? horizontal?.map(swap);
+  const grids = rules?.map(componentGrid);
+  return grids?.every((grid): grid is PageGrid => !!grid) ? grids : undefined;
 }
 
 /**
@@ -205,7 +218,7 @@ export function gridsFromLines(lines: { h: Seg[]; v: Seg[] }, items: TextItem[],
   for (const comp of components(lines.h, lines.v)) {
     const grid = componentGrid(comp);
     if (grid) grids.push(grid);
-    else grids.push(...(sharedSideGrids(comp) ?? []));
+    else grids.push(...(sharedEdgeGrids(comp) ?? []));
   }
   // A disconnected grid may be a table inside one parent cell. Choose the smallest containing cell,
   // never just the enclosing table rectangle (a child spanning several cells is not a nested table).
@@ -219,7 +232,9 @@ export function gridsFromLines(lines: { h: Seg[]; v: Seg[] }, items: TextItem[],
         if (cell.kind !== 'cell') continue;
         const b = cellBounds(outer, cell);
         const a = (b.right - b.left) * (b.top - b.bottom);
-        if (a < area && child.left >= b.left - TOL && child.right <= b.right + TOL && (child.left > b.left + TOL || child.right < b.right - TOL) && child.bottom > b.bottom + TOL && child.top < b.top - TOL) { owner = cell; area = a; }
+        const inside = child.left >= b.left - TOL && child.right <= b.right + TOL && child.bottom >= b.bottom - TOL && child.top <= b.top + TOL;
+        const insets = [child.left > b.left + TOL, child.right < b.right - TOL, child.bottom > b.bottom + TOL, child.top < b.top - TOL];
+        if (a < area && inside && insets.filter(Boolean).length >= 3) { owner = cell; area = a; }
       }
     }
     if (owner) { children.set(owner, [...(children.get(owner) ?? []), child]); nested.add(child); }
@@ -266,4 +281,4 @@ export function isOcrRuleBar(text: string, box: { x0: number; x1: number; y0: nu
   if (!/^[|¦]+$/.test(text.trim()) || box.x1 - box.x0 > 1.5 || box.y1 <= box.y0) return false;
   const x = (box.x0 + box.x1) / 2;
   return vertical.some(s => Math.abs(s.at - x) < 0.8 && Math.max(0, Math.min(s.b, box.y1) - Math.max(s.a, box.y0)) / (box.y1 - box.y0) > 0.8);
-  }
+}
