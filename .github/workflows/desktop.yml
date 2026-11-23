@@ -163,7 +163,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Production installer, default save path (WebView2 attached by environment variable)
+      - name: Production installer, default save path (WebView2 attached by registry policy)
         shell: pwsh
         timeout-minutes: 8
         run: |
@@ -172,9 +172,11 @@ jobs:
           Start-Sleep -Seconds 5
           $app = Get-ChildItem "$env:LOCALAPPDATA" -Recurse -Filter deepaks-tool.exe -ErrorAction SilentlyContinue | Select-Object -First 1
           "production exe: $($app.FullName) $((Get-Item $app.FullName).Length) bytes"
-          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222'
+          # The environment variable is ignored by this app (it sets its own browser arguments), so use the WebView2 policy key.
+          $k = 'HKLM:\SOFTWARE\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments'
+          New-Item -Path $k -Force | Out-Null
+          New-ItemProperty -Path $k -Name 'deepaks-tool.exe' -Value '--remote-debugging-port=9222' -PropertyType String -Force | Out-Null
           Start-Process -FilePath $app.FullName
-          Remove-Item Env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
           Start-Sleep -Seconds 12
           "processes after launch:"; Get-Process deepaks-tool,msedgewebview2 -ErrorAction SilentlyContinue | Select-Object Name,Id | Format-Table | Out-String
           "port 9222:"; (netstat -ano | Select-String ':9222') -join "`n"
