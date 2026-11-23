@@ -261,7 +261,7 @@ export const PRINT_CSS =
  * Uses a print window when the browser allows one. Desktop webviews and popup blockers refuse
  * window.open, so fall back to printing from a hidden frame inside the page.
  */
-export function openPrintView(title: string, cssHtml: string, bodyHtml: string): void {
+export function openPrintView(title: string, cssHtml: string, bodyHtml: string): Promise<string | null> {
   const doc = (script: string) =>
     `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>${cssHtml}` +
     `<style>${PRINT_CSS}</style></head><body>` + bodyHtml + script + '</body></html>';
@@ -271,17 +271,17 @@ export function openPrintView(title: string, cssHtml: string, bodyHtml: string):
     const w = window as unknown as { __nativePdfSave?: { ok: boolean; path?: string; error?: string } };
     delete w.__nativePdfSave;
     const name = title.replace(/\.[^.]+$/, '') || 'document';
-    internals.invoke('save_print_pdf', { html: sanitizePrintHtml(doc('')), name }).then(
-      path => { w.__nativePdfSave = { ok: true, path }; },
-      err => { w.__nativePdfSave = { ok: false, error: String(err) }; },
+    // Resolves with the saved file path (the command writes to the Downloads folder, with no save dialog).
+    return internals.invoke('save_print_pdf', { html: sanitizePrintHtml(doc('')), name }).then(
+      path => { w.__nativePdfSave = { ok: true, path }; return path; },
+      err => { w.__nativePdfSave = { ok: false, error: String(err) }; throw new Error('The PDF could not be saved: ' + String(err)); },
     );
-    return;
   }
   const w = window.open('', '_blank');
   if (w) {
     w.document.write(doc('<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},250);});<\/script>'));
     w.document.close();
-    return;
+    return Promise.resolve(null);
   }
   const frame = document.createElement('iframe');
   frame.setAttribute('aria-hidden', 'true');
@@ -299,4 +299,5 @@ export function openPrintView(title: string, cssHtml: string, bodyHtml: string):
     cw.print();
     setTimeout(() => frame.remove(), 120000);
   }, 500);
-    }
+  return Promise.resolve(null);
+}
