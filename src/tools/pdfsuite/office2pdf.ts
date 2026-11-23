@@ -261,6 +261,12 @@ export const PRINT_CSS =
  * Uses a print window when the browser allows one. Desktop webviews and popup blockers refuse
  * window.open, so fall back to printing from a hidden frame inside the page.
  */
+/** True in the desktop app when the native save command is in use (not opted out). */
+export function nativePdfSaveActive(): boolean {
+  const internals = (window as unknown as { __TAURI_INTERNALS__?: { invoke?: unknown } }).__TAURI_INTERNALS__;
+  return !!internals?.invoke && localStorage.getItem('toolatlas.nativePdfSave') !== '0';
+}
+
 export function openPrintView(title: string, cssHtml: string, bodyHtml: string): Promise<string | null> {
   const doc = (script: string) =>
     `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>${cssHtml}` +
