@@ -14,6 +14,8 @@ export default function Ocr() {
   const [pageCount, setPageCount] = useState(0);
   const [pageSpec, setPageSpec] = useState('');
   const [scale, setScale] = useState('2');
+  const [lang, setLang] = useState('eng');
+  const workerLang = useRef('');
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState('');
@@ -51,9 +53,14 @@ export default function Ocr() {
       const buf = await checkPdfFile(file);
       const targets = parsePageRanges(pageSpec, pageCount);
       const { doc } = await openPdfjs(file);
+      if (workerRef.current && workerLang.current !== lang) {
+        await workerRef.current.terminate();
+        workerRef.current = null;
+      }
       if (!workerRef.current) {
         setStatus('Preparing the OCR engine…');
-        workerRef.current = await createWorker('eng', OEM.LSTM_ONLY, {
+        workerLang.current = lang;
+        workerRef.current = await createWorker(lang.split('+'), OEM.LSTM_ONLY, {
           workerPath: `${TESS}/worker.min.js`,
           corePath: TESS,
           langPath: TESS,
@@ -112,8 +119,15 @@ export default function Ocr() {
         )}
       </Panel>
       <Panel title="2. Options" description="Pages that already contain selectable text are left untouched.">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Pages" hint="Blank means every page."><Input value={pageSpec} onChange={(e) => setPageSpec(e.target.value)} placeholder="1-3,5" /></Field>
+          <Field label="Language" hint="Pick the script printed on the page. English words are read in every choice.">
+            <Select value={lang} onChange={(e) => setLang(e.target.value)}>
+              <option value="eng">English</option>
+              <option value="hin+eng">Hindi (Devanagari) and English</option>
+              <option value="pan+eng">Punjabi (Gurmukhi) and English</option>
+            </Select>
+          </Field>
           <Field label="Resolution"><Select value={scale} onChange={(e) => setScale(e.target.value)}>
             <option value="1.5">Fast</option>
             <option value="2">Balanced</option>
@@ -136,9 +150,10 @@ export default function Ocr() {
         <p className="mt-4 text-[11px] text-muted/80">100% local processing. Nothing leaves your device.</p>
       </Panel>
       <Note>
-        Reads printed English text; handwriting and Hindi or Punjabi script are not supported yet. The added
-        text is an invisible best-effort layer for search and copy, and OCR can misread blur or fancy fonts,
-        so check important words against the page.
+        Reads printed English, Hindi (Devanagari) and Punjabi (Gurmukhi) text. Handwriting and other scripts
+        are not supported. The added text is an invisible best-effort layer for search and copy. OCR can
+        misread blur, fancy fonts and conjunct letters, and Hindi or Punjabi needs a clear, upright scan, so
+        check important words against the page.
       </Note>
     </div>
   );
