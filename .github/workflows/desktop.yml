@@ -171,9 +171,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Production installer, default save path (WebView2 attached by registry policy)
+      - name: Production installer, native save and conversion paths (registry policy attach)
         shell: pwsh
-        timeout-minutes: 8
+        timeout-minutes: 15
         run: |
           New-Item -ItemType Directory -Force out | Out-Null
           Get-Process deepaks-tool,msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force
@@ -191,8 +191,17 @@ jobs:
           try { (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:9222/json).Content.Substring(0,300) } catch { "json endpoint: $($_.Exception.Message)" }
           node scripts/desktop-prodsave.mjs *>&1 | Tee-Object -FilePath out/prod-save-log.txt
           "prodsave exit: $LASTEXITCODE"
+          $prodSaveExit = $LASTEXITCODE
+          if ($prodSaveExit -ne 0) { exit $prodSaveExit }
+          node scripts/desktop-printpdf.mjs *>&1 | Tee-Object -FilePath out/prod-print-log.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item out/word-print-webview2.pdf out/prod-word-print-webview2.pdf
+          $env:EVIDENCE_PREFIX = 'prod-final'
+          node scripts/desktop-newpaths.mjs *>&1 | Tee-Object -FilePath out/prod-newpaths-log.txt
+          $prodPathsExit = $LASTEXITCODE
+          Remove-Item Env:EVIDENCE_PREFIX
           Get-Process deepaks-tool -ErrorAction SilentlyContinue | Stop-Process -Force
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+          if ($prodPathsExit -ne 0) { exit $prodPathsExit }
       - uses: actions/download-artifact@v4
         with:
           name: deepaks-tool-windows-TESTONLY
