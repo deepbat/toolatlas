@@ -8,6 +8,7 @@ import { booklet, cropPages, deletePages, flattenForms, nUp, parsePageRanges, re
 import SignaturePad from '../pdf-editor/SignaturePad';
 import Ocr from './Ocr';
 import { protectPdf, repairPdf, unlockPdf } from './qpdf';
+import { pageImages } from './pdfImages';
 import { buildDocx, itemsToParagraphs, type Para, type TextItem } from './docx';
 import { nativePdfSaveActive, openPrintView, renderDocx, sectionsToPdf, tablesToSections, workbookToTables, SHEET_CSS } from './office2pdf';
 import { pdfjs } from '../pdf-editor/pdfjs';
@@ -298,15 +299,23 @@ function ToWord() {
             } catch { /* font style unknown */ }
             items.push({ text: str, size: Math.hypot(it.transform[2], it.transform[3]) || it.height || 12, bold, italic, y: it.transform[5], x: it.transform[4], w: typeof it.width === 'number' ? it.width : undefined });
           }
-          paras.push(...itemsToParagraphs(items));
+          const pageParas = itemsToParagraphs(items);
+          try {
+            // Pictures go in just before the first paragraph that sits lower on the page.
+            for (const im of await pageImages(pdfjs(), page)) {
+              const at = pageParas.findIndex((q) => q.y !== undefined && q.y < im.top - 2);
+              pageParas.splice(at < 0 ? pageParas.length : at, 0, { runs: [], level: 0, image: { png: im.png, w: im.w, h: im.h } });
+            }
+          } catch { /* pictures are best effort; the text is kept */ }
+          paras.push(...pageParas);
           page.cleanup();
         }
         if (unreadable) throw new Error(`${unreadable} characters in this PDF could not be read back as text (common with Indic scripts such as Devanagari and Gurmukhi). A Word file would be missing text, so none was written. Use PDF to Image or keep the PDF.`);
-        if (!paras.length) throw new Error('This PDF has no text layer, so it is probably a scan. Run it through OCR PDF first, then convert the result.');
+        if (!paras.some((q) => !q.image)) throw new Error('This PDF has no text layer, so it is probably a scan. Run it through OCR PDF first, then convert the result.');
         return buildDocx(paras);
       }}>
       <Field label="Pages" hint="Blank means every page."><Input value={pages} onChange={(e) => setPages(e.target.value)} placeholder="1-3,5" /></Field>
-      <div className="mt-3"><Note>Fidelity is honest: text becomes editable paragraphs and headings. Simple tables whose columns line up in text rows are rebuilt as Word tables, including cells that wrap onto a second line in the layouts we tested. Merged cells, ruling lines, images and exact fonts are not preserved, and column widths are not kept. Two-column pages are read left column first in tests on simple layouts; complex or mixed layouts, and tables the tool does not recognise, can come out in the wrong order. Check the result against the PDF.</Note></div>
+      <div className="mt-3"><Note>Fidelity is honest: text becomes editable paragraphs and headings. Simple tables whose columns line up in text rows are rebuilt as Word tables, including cells that wrap onto a second line in the layouts we tested. Pictures stored as images are copied into the document, placed by their height on the page and scaled to fit the text width; vector drawings and charts, page-sized scans, merged cells, ruling lines and exact fonts are not preserved, and column widths are not kept. Two-column pages are read left column first in tests on simple layouts; complex or mixed layouts, and tables the tool does not recognise, can come out in the wrong order. Check the result against the PDF.</Note></div>
     </Shell>
   );
 }
@@ -496,4 +505,4 @@ export default function PdfSuite() {
   const { toolId } = useParams();
   const Part = PARTS[toolId ?? ''];
   return Part ? <Part /> : null;
-}
+                                                                                                                                                                                 }
