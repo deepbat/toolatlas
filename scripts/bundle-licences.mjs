@@ -44,16 +44,33 @@ for (const p of pkgs) {
     texts.get(h).crates.push(`${p.name} ${p.version} (${f})`);
   }
 }
-// Crates with no licence file: standard SPDX text with the manifest authors as holder.
-const MIT = (h) => `MIT License\n\nCopyright (c) ${h}\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.`;
-const BSD3 = (h) => `BSD 3-Clause License\n\nCopyright (c) ${h}\n\nRedistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:\n\n1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.\n\n2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.\n\n3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.`;
 const unresolved = [];
 const generated = [];
+// A crate package that carries no licence file: fetch the licence file from the crate's own
+// repository at the exact commit recorded in the published package (.cargo_vcs_info.json).
+async function fromUpstream(p) {
+  const dir = path.dirname(p.manifest_path);
+  const vcsFile = path.join(dir, '.cargo_vcs_info.json');
+  if (!existsSync(vcsFile) || !p.repository) return null;
+  const sha = JSON.parse(readFileSync(vcsFile, 'utf8'))?.git?.sha1;
+  const m = /github\.com\/([^/]+)\/([^/.]+)/.exec(p.repository);
+  if (!sha || !m) return null;
+  for (const f of ['LICENSE', 'LICENSE.md', 'LICENSE.txt', 'LICENSE-MIT', 'LICENCE', 'COPYING']) {
+    const url = `https://raw.githubusercontent.com/${m[1]}/${m[2]}/${sha}/${f}`;
+    try {
+      const r = await fetch(url);
+      if (r.ok) return { url, text: (await r.text()).replace(/\r\n/g, '\n').trim() };
+    } catch {}
+  }
+  return null;
+}
 for (const p of flagged) {
-  const holder = (p.authors || []).join(', ') || `${p.name} authors`;
-  if (p.license === 'MIT') generated.push(`${p.name} ${p.version}\n${MIT(holder)}`);
-  else if (p.license === 'BSD-3-Clause') generated.push(`${p.name} ${p.version}\n${BSD3(holder)}`);
-  else if (p.license === 'MPL-2.0' && [...texts.values()].some((t) => /Mozilla Public License Version 2\.0/.test(t.text))) generated.push(`${p.name} ${p.version}\nCovered by the unmodified MPL-2.0 text shipped above (same licence as the other MPL-2.0 crates). Copyright holders are named in the crate source.`);
+  if (p.license === 'MPL-2.0' && [...texts.values()].some((t) => /Mozilla Public License Version 2\.0/.test(t.text))) {
+    generated.push(`${p.name} ${p.version}\nCovered by the unmodified MPL-2.0 text shipped above (same licence as the other MPL-2.0 crates).`);
+    continue;
+  }
+  const up = await fromUpstream(p);
+  if (up) generated.push(`${p.name} ${p.version}\nLicence file taken from ${up.url} (the commit recorded in the published crate package).\n\n${up.text}`);
   else unresolved.push(`${p.name} ${p.version} (${p.license})`);
 }
 const out = [];
@@ -62,7 +79,7 @@ out.push('== Crate index (name version | declared licence | licence files shippe
 if (mpl.length) out.push('== MPL-2.0 notice ==', 'These crates are covered by MPL-2.0 and are used unmodified: ' + mpl.map((p) => `${p.name} ${p.version}`).join(', ') + '. Source: https://crates.io/crates/<name>/<version> (download link) and the repository in each manifest. Licence text: included below and at https://www.mozilla.org/MPL/2.0/.', '');
 out.push('== Licence texts shipped inside each crate package ==');
 for (const { text, crates } of texts.values()) out.push('---', 'Applies to: ' + crates.join('; '), '', text, '');
-if (generated.length) out.push('== Crates with no licence file in their package (standard MIT text, holder taken from the manifest authors) ==', ...generated.map((g) => '---\n' + g + '\n'));
+if (generated.length) out.push('== Crates with no licence file in their package (licence file from the upstream repository at the commit recorded in the crate package) ==', ...generated.map((g) => '---\n' + g + '\n'));
 if (unresolved.length) out.push('== UNRESOLVED: no licence text available ==', ...unresolved);
 mkdirSync('src-tauri/licenses', { recursive: true });
 writeFileSync('src-tauri/licenses/RUST_LICENSES.txt', out.join('\n'));
