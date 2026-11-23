@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "test-print",
+  "description": "TEST BUILD ONLY (listed in tauri.test.conf.json, not in tauri.conf.json). Lets the hidden print window reach the command so the in-code window check can be tested on its own. Never part of the production grant.",
+  "windows": ["printview-*"],
+  "remote": { "urls": ["file:///**"] },
+  "permissions": ["allow-save-print-pdf"]
+}
