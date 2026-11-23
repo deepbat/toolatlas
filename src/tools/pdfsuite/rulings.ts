@@ -167,3 +167,10 @@ export function gridsFromLines(lines: { h: Seg[]; v: Seg[] }, items: TextItem[],
   }
   return { grids, rest };
       }
+
+/** Reject only a narrow OCR bar whose box lies on a known drawn vertical rule. Ordinary bars elsewhere are text. */
+export function isOcrRuleBar(text: string, box: { x0: number; x1: number; y0: number; y1: number }, vertical: Seg[]): boolean {
+  if (!/^[|¦]+$/.test(text.trim()) || box.x1 - box.x0 > 1.5 || box.y1 <= box.y0) return false;
+  const x = (box.x0 + box.x1) / 2;
+  return vertical.some(s => Math.abs(s.at - x) < 0.8 && Math.max(0, Math.min(s.b, box.y1) - Math.max(s.a, box.y0)) / (box.y1 - box.y0) > 0.8);
+}

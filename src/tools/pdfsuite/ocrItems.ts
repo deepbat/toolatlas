@@ -2,7 +2,7 @@
 // Used only for pages whose own text cannot be read back; recognition is a guess, so callers keep real text where it exists.
 import { renderPage } from '../../lib/pdfio';
 import { pdfjs } from '../pdf-editor/pdfjs';
-import { pageLines, gridsFromLines } from './rulings';
+import { pageLines, gridsFromLines, isOcrRuleBar } from './rulings';
 import type { TextItem } from './docx';
 
 const TESS = `${(import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/'}tesseract`;
@@ -40,6 +40,7 @@ export async function ocrPageItems(doc: any, pageNo: number, lang: string): Prom
   const vp = page.getViewport({ scale: 1 });
   const sx = canvas.width / vp.width, sy = canvas.height / vp.height;
   const hPt = vp.height;
+  const lines = await pageLines(pdfjs(), page);
   const items: TextItem[] = [];
   // Words of one OCR line share the line's baseline and height: per-word boxes differ (marks above or below the letters)
   // and would otherwise split a line into several, scrambling the reading order.
@@ -47,7 +48,7 @@ export async function ocrPageItems(doc: any, pageNo: number, lang: string): Prom
     const lineH = Math.max(6, (l.bbox.y1 - l.bbox.y0) / sy);
     const ys = l.words.map((w: any) => w.bbox.y1).sort((a: number, c: number) => a - c);
     const base = ys.length ? ys[Math.floor(ys.length / 2)] : l.bbox.y1;
-    const ws = l.words.filter((w: any) => w.text.trim());
+    const ws = l.words.filter((w: any) => w.text.trim() && !isOcrRuleBar(w.text, { x0: w.bbox.x0 / sx, x1: w.bbox.x1 / sx, y0: hPt - w.bbox.y1 / sy, y1: hPt - w.bbox.y0 / sy }, lines.v));
     ws.forEach((w: any, wi: number) => {
       // OCR words are already separate: keep the space between them (the gap rule is tuned for text-layer fragments).
       items.push({ ocr: true, text: wi < ws.length - 1 ? w.text.trim() + ' ' : w.text.trim(), size: lineH, bold: false, italic: false, x: w.bbox.x0 / sx, y: hPt - base / sy, w: (w.bbox.x1 - w.bbox.x0) / sx });
@@ -55,7 +56,7 @@ export async function ocrPageItems(doc: any, pageNo: number, lang: string): Prom
   }
   // Full-page segmentation can omit an entire ruled table. Read each geometrically bounded cell separately,
   // without its border, rather than inventing missing values or treating a blank OCR result as an empty source cell.
-  const grids = gridsFromLines(await pageLines(pdfjs(), page), [], true).grids;
+  const grids = gridsFromLines(lines, [], true).grids;
   for (const grid of grids) {
     const selected = data.recognitionLang ?? lang;
     const worker = await workerFor(selected);

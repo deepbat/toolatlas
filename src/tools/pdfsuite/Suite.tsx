@@ -328,6 +328,7 @@ function ToWord() {
               pageParas.splice(at < 0 ? pageParas.length : at, 0, { runs: [], level: 0, image: { png: im.png, w: im.w, h: im.h } });
             }
           } catch { /* pictures are best effort; the text is kept */ }
+          if (paras.length && pageParas.length) paras.push({ runs: [], level: 0, pageBreak: true });
           paras.push(...pageParas);
           page.cleanup();
         }

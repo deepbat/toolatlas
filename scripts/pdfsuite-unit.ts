@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { addTextLayer, booklet, bookletOrder, cropPages, deletePages, flattenForms, nUp, parsePageRanges, reorderPages, rotatePages, signPdf, stampText, toWinAnsi, watermark } from '../src/tools/pdfsuite/ops';
 import { protectPdf, repairPdf, unlockPdf } from '../src/tools/pdfsuite/qpdf';
 import { buildDocx, itemsToParagraphs } from '../src/tools/pdfsuite/docx';
+import { isOcrRuleBar } from '../src/tools/pdfsuite/rulings';
 import { readZip } from '../src/lib/zip';
 import { indexToCol, parseRange, sheetToTable, workbookToTables } from '../src/tools/pdfsuite/office2pdf';
 
@@ -286,3 +287,12 @@ console.log('PASS n-up');
   console.log('PASS xlsx sheet to table');
 }
 console.log('All PDF suite ops passed.');
+
+{
+  const rule = [{ at: 456, a: 575, b: 607 }];
+  assert.equal(isOcrRuleBar('|', { x0: 455.8, x1: 456.3, y0: 580, y1: 600 }, rule), true);
+  assert.equal(isOcrRuleBar('|', { x0: 445.8, x1: 446.3, y0: 580, y1: 600 }, rule), false, 'legitimate bar away from a border');
+  assert.equal(isOcrRuleBar('|', { x0: 455.8, x1: 456.3, y0: 545, y1: 555 }, rule), false, 'bar above/below a border');
+  assert.equal(isOcrRuleBar('।', { x0: 455.8, x1: 456.3, y0: 580, y1: 600 }, rule), false, 'do not replace punctuation');
+  console.log('PASS geometric OCR border-bar rejection preserves real text');
+    }

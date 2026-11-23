@@ -297,6 +297,7 @@ try {
     // Punjabi sentence exactly. Recognition is still a guess: the Hindi paragraph can merge two words ("है जो" read as one),
     // so this regression checks the spaces in all 3 occurrences.
     const docXml = await z.file('word/document.xml').async('string');
+    assert.equal((docXml.match(/<w:br w:type="page"\/>/g) || []).length, 1, 'two source pages retain their boundary');
     const cells = [...docXml.matchAll(/<w:tc>([\s\S]*?)<\/w:tc>/g)].map((m) => m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
     await mkdir('test-artifacts/pdfsuite', { recursive: true });
     await writeFile('test-artifacts/pdfsuite/ocr-input-broken.pdf', broken);
@@ -317,6 +318,7 @@ try {
     await (await ciDlP).saveAs('/tmp/ci-ocr-regression.docx');
     const ciZ = await (await import('jszip')).default.loadAsync(await readFile('/tmp/ci-ocr-regression.docx'));
     const ciXml = await ciZ.file('word/document.xml').async('string');
+    assert.equal((ciXml.match(/<w:br w:type="page"\/>/g) || []).length, 1, 'preserved CI input retains source page boundary');
     const ciCells = [...ciXml.matchAll(/<w:tc>([\s\S]*?)<\/w:tc>/g)].map(m => m[1].replace(/<[^>]+>/g, '').trim());
     assert.deepEqual(ciCells, ['Item', 'गणना', 'Apples', '42']);
     assert.equal((ciXml.match(/<w:tbl>/g) || []).length, 1, 'only the actual ruled table, not Punjabi prose');
@@ -328,4 +330,4 @@ try {
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-                                                         }
+}
