@@ -27,6 +27,11 @@ fn safe_stem(name: &str) -> String {
 const CSP: &str = "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; script-src 'none'; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; img-src data:; font-src data:; style-src 'unsafe-inline'\">";
 
 fn with_csp(html: &str) -> String {
+    // Test build only: lets one test window run without the CSP so the other access layers can be tested on their own.
+    #[cfg(feature = "native-pdf-test")]
+    if html.contains("<!--test-nocsp-->") {
+        return html.to_string();
+    }
     let lower = html.to_ascii_lowercase();
     if let Some(i) = lower.find("<head>") {
         let at = i + "<head>".len();
@@ -168,4 +173,4 @@ pub async fn save_print_pdf(app: AppHandle, window: tauri::WebviewWindow, html: 
     .map_err(|e| e.to_string())?;
     result?;
     Ok(out.to_string_lossy().to_string())
-}
+  }
