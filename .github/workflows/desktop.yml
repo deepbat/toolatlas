@@ -168,14 +168,17 @@ jobs:
         timeout-minutes: 8
         run: |
           New-Item -ItemType Directory -Force out | Out-Null
-          Get-Process deepaks-tool -ErrorAction SilentlyContinue | Stop-Process -Force
-          Start-Sleep -Seconds 3
+          Get-Process deepaks-tool,msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 5
           $app = Get-ChildItem "$env:LOCALAPPDATA" -Recurse -Filter deepaks-tool.exe -ErrorAction SilentlyContinue | Select-Object -First 1
           "production exe: $($app.FullName) $((Get-Item $app.FullName).Length) bytes"
           $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222'
           Start-Process -FilePath $app.FullName
           Remove-Item Env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
           Start-Sleep -Seconds 12
+          "processes after launch:"; Get-Process deepaks-tool,msedgewebview2 -ErrorAction SilentlyContinue | Select-Object Name,Id | Format-Table | Out-String
+          "port 9222:"; (netstat -ano | Select-String ':9222') -join "`n"
+          try { (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:9222/json).Content.Substring(0,300) } catch { "json endpoint: $($_.Exception.Message)" }
           node scripts/desktop-prodsave.mjs *>&1 | Tee-Object -FilePath out/prod-save-log.txt
           "prodsave exit: $LASTEXITCODE"
           Get-Process deepaks-tool -ErrorAction SilentlyContinue | Stop-Process -Force
@@ -240,8 +243,8 @@ jobs:
         shell: pwsh
         timeout-minutes: 8
         run: |
-          Get-Process deepaks-tool -ErrorAction SilentlyContinue | Stop-Process -Force
-          Start-Sleep -Seconds 3
+          Get-Process deepaks-tool,msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 5
           $app = Get-ChildItem "$env:LOCALAPPDATA" -Recurse -Filter deepaks-tool.exe -ErrorAction SilentlyContinue | Select-Object -First 1
           Start-Process -FilePath $app.FullName
           Start-Sleep -Seconds 10
@@ -275,8 +278,8 @@ jobs:
         timeout-minutes: 5
         continue-on-error: true
         run: |
-          Get-Process deepaks-tool -ErrorAction SilentlyContinue | Stop-Process -Force
-          Start-Sleep -Seconds 3
+          Get-Process deepaks-tool,msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 5
           $app = Get-ChildItem "$env:LOCALAPPDATA" -Recurse -Filter deepaks-tool.exe -ErrorAction SilentlyContinue | Select-Object -First 1
           Start-Process -FilePath $app.FullName
           Start-Sleep -Seconds 10
@@ -287,8 +290,8 @@ jobs:
         timeout-minutes: 8
         continue-on-error: true
         run: |
-          Get-Process deepaks-tool -ErrorAction SilentlyContinue | Stop-Process -Force
-          Start-Sleep -Seconds 3
+          Get-Process deepaks-tool,msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 5
           $app = Get-ChildItem "$env:LOCALAPPDATA" -Recurse -Filter deepaks-tool.exe -ErrorAction SilentlyContinue | Select-Object -First 1
           Start-Process -FilePath $app.FullName
           Start-Sleep -Seconds 10
