@@ -1,0 +1,43 @@
+name: Publish a verified desktop installer (manual)
+
+# Manual only. Publishes the installer artifact of one specific, already verified
+# "Desktop build (Tauri)" run as a GitHub Release asset, together with its SHA-256.
+# It never builds anything, so what is published is exactly the verified file.
+# It does not run until a person dispatches it with a run id and a tag.
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Run id of the verified Desktop build (Tauri) run"
+        required: true
+      tag:
+        description: "Release tag, for example desktop-1"
+        required: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: deepaks-tool-windows-unsigned
+          path: installer
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Refuse anything that is not exactly one production installer
+        run: |
+          ls -l installer
+          test "$(ls installer/*.exe | wc -l)" = "1"
+          cd installer && sha256sum *.exe | tee SHA256SUMS.txt
+      - name: Publish release (draft is not used; the dispatcher is the approval)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ inputs.tag }}" installer/*.exe installer/SHA256SUMS.txt \
+            --repo "${{ github.repository }}" \
+            --title "Deepak's Tool for Windows (unsigned) ${{ inputs.tag }}" \
+            --notes "Unsigned Windows installer built by the Desktop build workflow, run ${{ inputs.run_id }}. Windows may show a warning for an unsigned app. Check the SHA-256 in SHA256SUMS.txt against the downloaded file. Conversion fidelity is limited to what the in-app copy says; Hindi and Punjabi selectable text and OCR are not supported."
