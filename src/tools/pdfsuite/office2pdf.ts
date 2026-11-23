@@ -198,7 +198,11 @@ async function rasterise(el: HTMLElement, cssHtml: string, scale: number): Promi
     : container;
   if (content !== container) content.style.cssText = 'background:#fff;padding:0';
   if (content !== container) container.appendChild(content);
-  content.appendChild(el.cloneNode(true));
+  const copy = el.cloneNode(true) as HTMLElement;
+  // The preview stylesheet draws a drop shadow and a bottom margin around each page; neither belongs in the exported page image.
+  copy.style.boxShadow = 'none';
+  copy.style.marginBottom = '0';
+  content.appendChild(copy);
   const xhtml = new XMLSerializer().serializeToString(container);
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">` +
