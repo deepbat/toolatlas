@@ -1,7 +1,7 @@
 import { TOOL_MAP } from './catalog';
 
 
-export type FileKind = 'pdf' | 'image' | 'audio' | 'video' | 'text' | 'json' | 'csv';
+export type FileKind = 'pdf' | 'image' | 'audio' | 'video' | 'text' | 'docx' | 'json' | 'csv';
 
 
 /**
@@ -52,7 +52,8 @@ export const INPUTS: Record<FileKind, string[]> = {
   ],
   audio: [],
   video: [],
-  text: ['word-to-pdf'],
+  text: [],
+  docx: ['word-to-pdf'],
   json: ['file-converter'],
   csv: ['file-converter', 'excel-to-pdf'],
 };
@@ -75,7 +76,8 @@ export function fileKind(f: Pick<File, 'name' | 'type'>): FileKind | null {
   }
   if (ext === 'json') return 'json';
   if (ext === 'csv' || ext === 'xlsx') return 'csv';
-  if (ext === 'txt' || ext === 'docx' || f.type.startsWith('text/')) return 'text';
+  if (ext === 'docx') return 'docx';
+  if (ext === 'txt' || f.type.startsWith('text/')) return 'text';
   return null;
 }
 
@@ -217,4 +219,4 @@ export async function clearAllTransfers() {
     });
     d.close();
   } catch {}
-              }
+}
