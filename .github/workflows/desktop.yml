@@ -69,6 +69,32 @@ jobs:
           path: src-tauri/target/release/bundle/nsis/*.exe
           if-no-files-found: error
 
+  commit-lockfile:
+    name: Commit Cargo.lock (one time, only if none is committed)
+    needs: windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Is a lockfile already committed?
+        id: chk
+        run: |
+          if [ -f src-tauri/Cargo.lock ]; then echo "need=no" >> "$GITHUB_OUTPUT"; echo "Cargo.lock already committed, nothing to do"; else echo "need=yes" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/download-artifact@v4
+        if: steps.chk.outputs.need == 'yes'
+        with:
+          name: cargo-lock
+          path: src-tauri
+      - name: Commit
+        if: steps.chk.outputs.need == 'yes'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src-tauri/Cargo.lock
+          git commit -m "Add Cargo.lock resolved and tested by the desktop build"
+          git push origin HEAD:main
+
   linux:
     name: Linux build (secondary)
     runs-on: ubuntu-latest
