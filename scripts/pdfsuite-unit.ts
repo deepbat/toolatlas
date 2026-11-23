@@ -204,6 +204,25 @@ console.log('PASS n-up');
   const list = itemsToParagraphs([mk('•', 70, 540, 4), mk('milk', 90, 540, 20), mk('•', 70, 524, 4), mk('bread', 90, 524, 24), mk('•', 70, 508, 4), mk('eggs', 90, 508, 20)]);
   assert.equal(list.filter((p) => p.table).length, 0, 'a bullet list is not a table');
   assert.equal(list.length, 3, 'each list item is its own paragraph');
+  // Coordinates below are from LibreOffice and reportlab PDFs (see the real-PDF fixtures check in pdfsuite-tests).
+  // Wrapped cell, text vertically centred: the note's two lines sit above and below the name.
+  const wrapped = itemsToParagraphs([mk('Name', 61.5, 570.8, 30, 12), mk('Notes', 292.6, 570.8, 28, 12), mk('This note is long enough that it will wrap', 99.1, 536.7, 300, 12), mk('Asha', 59.8, 529.8, 24, 12), mk('yes', 99.1, 522.9, 16, 12), mk('Ravi', 59.8, 488.8, 22, 12), mk('Short', 99.1, 488.8, 28, 12)]);
+  const wt = wrapped.find((p) => p.table);
+  assert.ok(wt, 'wrapped-cell table is rebuilt');
+  assert.deepEqual(wt!.table![1], ['Asha', 'This note is long enough that it will wrap yes'], 'wrapped cell text stays in order in its own cell');
+  // Ordinary table whose cells are long single-line sentences stays a table.
+  const longCells = itemsToParagraphs([
+    mk('Situation', 70.7, 798, 46, 12), mk('Required action by the responsible team', 193.3, 798, 206, 12),
+    mk('Server outage', 59.8, 764, 66, 12), mk('Notify the on-call engineer and open an incident ticket right away', 134.3, 764, 315, 12),
+    mk('Data request', 59.8, 730, 60, 12), mk('Verify the identity of the requester before sharing any records', 134.3, 730, 300, 12),
+    mk('Late invoice', 59.8, 696, 60, 12), mk('Send a reminder after seven days and escalate after thirty days', 134.3, 696, 300, 12),
+  ]);
+  assert.equal(longCells.filter((p) => p.table).length, 1, 'long-text cells still form a table');
+  // Short two-column prose (3 lines a side) is read left column first, not interleaved and not a table.
+  const short = itemsToParagraphs([mk('Town news', 56, 800, 55), mk('The council met on Tuesday and', 56, 770, 150), mk('discussed the new parking rules', 56, 756, 160), mk('for the town centre, which many', 56, 742, 165), mk('Meanwhile the library announced', 310, 770, 160), mk('longer opening hours from March,', 310, 756, 165), mk('with evening sessions for', 310, 742, 130)]);
+  assert.equal(short.filter((p) => p.table).length, 0, 'short columns are not a table');
+  const st = short.map((p) => p.runs.map((r) => r.text).join('')).join('|');
+  assert.ok(st.indexOf('many') < st.indexOf('Meanwhile'), 'short columns are not interleaved');
   console.log('PASS pdf to word columns and lists');
 }
 {
