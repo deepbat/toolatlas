@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createWorker, OEM, type Worker } from 'tesseract.js';
-import { Button, CopyButton, Dropzone, Note, Panel, ProgressBar, TextArea } from '../../components/ui';
+import { Button, CopyButton, Dropzone, Field, Note, Panel, ProgressBar, Select, TextArea } from '../../components/ui';
 import { downloadBlob, formatBytes, publishOutput } from '../../lib/utils';
 
 const TESS = `${(import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/'}tesseract`;
@@ -15,6 +15,8 @@ export default function ImageOcr() {
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const workerRef = useRef<Worker | null>(null);
+  const workerLang = useRef('');
+  const [lang, setLang] = useState('eng');
 
   const loadFile = (f: File) => {
     setFile(f);
@@ -51,8 +53,13 @@ export default function ImageOcr() {
     setError('');
     setText('');
     try {
+      if (workerRef.current && workerLang.current !== lang) {
+        await workerRef.current.terminate();
+        workerRef.current = null;
+      }
       if (!workerRef.current) {
-        workerRef.current = await createWorker('eng', OEM.LSTM_ONLY, {
+        workerLang.current = lang;
+        workerRef.current = await createWorker(lang.split('+'), OEM.LSTM_ONLY, {
           workerPath: `${TESS}/worker.min.js`,
           corePath: TESS,
           langPath: TESS,
@@ -109,6 +116,13 @@ export default function ImageOcr() {
             <div className="min-w-0 text-sm text-muted">
               <p className="truncate font-medium text-fg">{file.name}</p>
               <p>{formatBytes(file.size)}</p>
+              <Field label="Language" hint="Pick the script printed in the picture.">
+                <Select value={lang} onChange={(e) => setLang(e.target.value)} disabled={busy}>
+                  <option value="eng">English</option>
+                  <option value="hin+eng">Hindi (Devanagari) and English</option>
+                  <option value="pan+eng">Punjabi (Gurmukhi) and English</option>
+                </Select>
+              </Field>
               <Button type="button" size="sm" className="mt-3" disabled={busy} onClick={() => void run()}>
                 {busy ? 'Reading…' : text ? 'Read again' : 'Read text'}
               </Button>
@@ -163,9 +177,10 @@ export default function ImageOcr() {
       )}
 
       <Note>
-        Reads printed English text. Handwriting and Hindi or Punjabi script are not supported yet — the
-        recognition model runs fully on your device and no picture is ever uploaded.
+        Reads printed English, Hindi (Devanagari) and Punjabi (Gurmukhi) text. Handwriting and other scripts
+        are not supported. Hindi and Punjabi need a clear, upright picture and can still misread conjunct
+        letters. The recognition model runs fully on your device and no picture is ever uploaded.
       </Note>
     </div>
   );
-}
+      }
