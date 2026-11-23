@@ -226,6 +226,8 @@ for(const {label,pdf}of NUMERIC_TABLES){
     },xml);
     const expected={tables:1,rows:[['Product','Units','Amount'],['Apples','7','12.50'],['Oranges','125','1234.00'],['Pears','23','85.75']]};
     if(JSON.stringify(result)!==JSON.stringify(expected))throw new Error(JSON.stringify(result));
+    if((xml.match(/<w:jc w:val="right"\/>/g)||[]).length!==8)throw new Error('numeric alignment missing');
+    if((xml.match(/w:val="nil"/g)||[]).length!==6)throw new Error('borderless numeric table gained borders');
     for(const text of ['Before sales table','After sales table','Apples','Oranges','Pears'])if(xml.split(text).length!==2)throw new Error('text duplication '+text);
     if(!(xml.indexOf('Before sales table')<xml.indexOf('<w:tbl>')&&xml.indexOf('After sales table')>xml.lastIndexOf('</w:tbl>')))throw new Error('borderless outside text order');
  });
