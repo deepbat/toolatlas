@@ -81,6 +81,29 @@ try {
     const buf = await readFile(path);
     assert.ok(buf[0] === 0x50 && buf[1] === 0x4b, 'docx should be a zip');
   }, 60000, true, '.docx');
+  const JSZipLayout = (await import('jszip')).default;
+  // PDF to Word layout on a generated PDF: a text-aligned table with a wrapped cell, then two prose columns and a list.
+  {
+    const lay = await PDFDocument.create();
+    const font = await lay.embedFont(StandardFonts.Helvetica);
+    const pg = lay.addPage([595, 842]);
+    const t = (text, x, y) => pg.drawText(text, { x, y, size: 11, font });
+    t('Situation', 56, 800); t('Required action', 200, 800);
+    t('Server outage', 56, 780); t('Notify the on-call engineer', 200, 780);
+    t('Data request', 56, 760); t('Verify the requester first', 200, 760);
+    t('Late invoice', 56, 740); t('Send a reminder after a week', 200, 740);
+    const left = ['The council met on Tuesday and', 'discussed the new parking rules', 'for the town centre, which many'];
+    const right = ['Meanwhile the library announced', 'longer opening hours from March,', 'with evening sessions for'];
+    left.forEach((l, i) => t(l, 56, 640 - i * 14)); right.forEach((l, i) => t(l, 310, 640 - i * 14));
+    t('1. First step', 70, 560); t('2. Second step', 70, 546);
+    await run('pdf-to-word', Buffer.from(await lay.save()), null, async (path) => {
+      const z = await JSZipLayout.loadAsync(await readFile(path));
+      const xml = await z.file('word/document.xml').async('string');
+      assert.equal((xml.match(/<w:tbl>/g) || []).length, 1, 'one table rebuilt, columns and list are not tables');
+      assert.ok(xml.indexOf('which many') < xml.indexOf('Meanwhile the library'), 'left column is read before the right column');
+      assert.ok(xml.indexOf('First step') > 0 && xml.indexOf('</w:p><w:p>', xml.indexOf('First step')) > 0, 'list items are separate paragraphs');
+    }, 60000, true, '.docx');
+  }
   // Office to PDF: .docx/.xlsx inputs, image-PDF output, and the selectable-text print view.
   const JSZip = (await import('jszip')).default;
   const XLSX = await import('xlsx');
@@ -189,4 +212,4 @@ try {
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-}
+    }
