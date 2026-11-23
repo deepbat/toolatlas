@@ -1,3 +1,4 @@
+import { CORNER_TABLES } from './fixtures/corner-border-table.mjs';
 import { NUMERIC_TABLES } from './fixtures/borderless-numeric-table.mjs';
 import { HORIZONTAL_TABLES } from './fixtures/horizontal-border-table.mjs';
 // Desktop check of the newer conversion paths in the installed app's WebView2 (CDP): Word to PDF image output with its
@@ -181,7 +182,7 @@ await step(`pdf-to-word shared-side nested table ${label}`, async () => {
 
 }
 
-for (const {label,bottom,pdf} of HORIZONTAL_TABLES) {
+for (const {label,bottom,pdf} of [...HORIZONTAL_TABLES,...CORNER_TABLES]) {
  await step(`pdf-to-word horizontal-shared nested table ${label}`,async()=>{
   await openTool('pdf-to-word','horizontal.pdf','application/pdf',Buffer.from(pdf,'base64'));
   const pending=page.waitForEvent('download',{timeout:90000});
