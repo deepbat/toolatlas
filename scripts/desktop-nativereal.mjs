@@ -68,12 +68,22 @@ if (pt) {
   for (let i = 0; i < 12 && r === 'PENDING'; i++) { await sleep(500); r = await pw.ev('window.__r', false, 3000); }
   console.log('invoke from print window:', r);
   check(!String(r).startsWith('CALLED'), 'the print window cannot call save_print_pdf');
+  const markers = readdirSync(os.tmpdir()).filter(n => n.startsWith('deepaks-tool-callmarker-'));
+  console.log('command entry markers:', JSON.stringify(markers));
+  check(!markers.some(n => n.includes('printview')), markers.length ? 'the command body was entered from the print window (code label check had to stop it)' : 'the print window call never reached the command body (blocked before it, by IPC access control)');
+  console.log('layer: ' + (markers.some(n => n.includes('printview')) ? 'code label check (Err returned)' : 'blocked before the command body'));
   check(!existsSync(`${downloads}\\from-print-window.pdf`), 'no file was written by the print window call');
   pw.close();
 }
 let holdRes; for (let i = 0; i < 60; i++) { holdRes = await ev('window.__hold ? Promise.race([window.__hold, new Promise(r=>setTimeout(()=>r(null),200))]).then(v=>v?JSON.stringify(v):"pending") : "none"'); if (holdRes !== 'pending') break; await sleep(500); }
 console.log('hold result:', holdRes);
 check(tmpLeft().length === 0, `temp print files after the held call finished: ${JSON.stringify(tmpLeft())}`);
+
+// Marker control: a call from the main window must leave its own marker, so a missing print-window marker means something.
+const ctl = await invoke('<p>ctl</p>', 'from-print-window-ctl');
+console.log('marker control call:', ctl);
+check(readdirSync(os.tmpdir()).some(n => n === 'deepaks-tool-callmarker-main.txt'), 'control: a main-window call leaves the main marker');
+if (String(ctl).startsWith('OK ')) copyFileSync(ctl.slice(3), 'out/native-marker-control.pdf');
 
 // 3. Failure path cleanup.
 const f = await invoke('<p>fail</p>', '__test_fail__a');
