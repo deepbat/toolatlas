@@ -454,5 +454,16 @@ console.log('All PDF suite ops passed.');
   assert.ok(prose.every(p=>!p.table),'running prose is not a numeric table');
   const far=itemsToParagraphs([...head,...row('Apples','7','12.50',150),...row('Oranges','125','1234.00',100)]);
   assert.ok(far.every(p=>!p.table),'widely separated labels are not numeric table evidence');
+  const styled=itemsToParagraphs(table,true);
+  assert.deepEqual(styled[0].tableStyle,{rightColumns:[false,true,true],borderless:true});
+  const styledXml=new TextDecoder().decode((await readZip(buildDocx(styled))).get('word/document.xml'));
+  assert.equal((styledXml.match(/<w:jc w:val="right"\/>/g)||[]).length,8,'numeric columns including header right aligned');
+  assert.equal((styledXml.match(/w:val="nil"/g)||[]).length,6,'no table borders when independently no rules');
+  const unproven=itemsToParagraphs(table);
+  assert.equal(unproven[0].tableStyle?.borderless,false,'unknown or ruled page retains borders');
+  const unprovenXml=new TextDecoder().decode((await readZip(buildDocx(unproven))).get('word/document.xml'));
+  assert.ok(unprovenXml.includes('w:color="BFBFBF"'));
+  const ordinaryXml=new TextDecoder().decode((await readZip(buildDocx([{runs:[],level:0,table:[['Label','Value'],['A','B']]}]))).get('word/document.xml'));
+  assert.ok(ordinaryXml.includes('w:color="BFBFBF"')&&!ordinaryXml.includes('<w:jc'),'ordinary table styling unchanged');
   console.log('PASS right-edge numeric borderless tables and trailing prose negatives');
 }
