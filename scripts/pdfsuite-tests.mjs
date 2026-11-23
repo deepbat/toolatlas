@@ -284,18 +284,18 @@ try {
     await page.getByText('in.pdf').first().waitFor();
     await page.getByRole('button', { name: 'Convert to Word', exact: true }).click();
     await page.getByText(/could not be read back as text/).waitFor({ timeout: 30000 });
-    await page.getByLabel(/text cannot be read/).selectOption('hin+pan+eng');
+    await page.getByLabel(/text cannot be read/).selectOption('auto');
     const dlP = page.waitForEvent('download', { timeout: 150000 });
     await page.getByRole('button', { name: 'Convert to Word', exact: true }).click();
     const dl = await dlP;
     await dl.saveAs('/tmp/pdf-to-word-ocr.docx');
     const z = await (await import('jszip')).default.loadAsync(await readFile('/tmp/pdf-to-word-ocr.docx'));
     const text = (await z.file('word/document.xml').async('string')).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-    for (const t of ['Quarterly', 'Report', 'नमस्ते दुनिया', 'ਸਤਿ', 'ਅਕਾਲ', 'ਸਮਗਰੀ', 'Closing notes']) assert.ok(text.includes(t), 'OCR fallback text has ' + t + ': ' + text.slice(0, 300));
+    for (const t of ['Quarterly', 'Report', 'नमस्ते दुनिया', 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ', 'ਸਮਗਰੀ', 'Closing notes']) assert.ok(text.includes(t), 'OCR fallback text has ' + t + ': ' + text.slice(0, 300));
     console.log('PASS pdf-to-word Indic OCR fallback'); n++;
   }
   assert.deepEqual(errors, []);
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-                                         }
+}
