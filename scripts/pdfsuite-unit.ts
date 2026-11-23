@@ -408,3 +408,27 @@ console.log('All PDF suite ops passed.');
   assert.ok(ordinary.grids[0].rows.every(r=>r.every(c=>!c.blocks)),'ordinary grids never become nested');
   console.log('PASS closed one-side-shared nested grid and partial/crossing negatives');
 }
+
+{
+  // Top/bottom are axis-swapped side cases. Reconstruct in the original axes so a colspan becomes a rowspan.
+  const side = { h: [300,100,0].map(at=>({at,a:0,b:250})), v: [0,100,250].map(at=>({at,a:0,b:300})) };
+  const inner = { h: [240,200,160].map(at=>({at,a:115,b:250})), v: [{at:115,a:160,b:240},{at:180,a:200,b:240}] };
+  const swap = (r: typeof side) => ({h:r.v.map(s=>({...s})),v:r.h.map(s=>({...s}))});
+  for (const mirror of [false,true]) {
+    const raw = swap({h:[...side.h,...inner.h],v:[...side.v,...inner.v]});
+    const lines = mirror ? {h:raw.h.map(s=>({...s,at:250-s.at})),v:raw.v.map(s=>({at:s.at,a:250-s.b,b:250-s.a}))} : raw;
+    const r = gridsFromLines(lines,[],true);
+    assert.equal(r.grids.length,1);
+    const nested = r.grids[0].rows.flat().flatMap(c=>c.blocks??[]).filter(b=>'grid' in b);
+    assert.equal(nested.length,1);
+    const child = nested[0];
+    if ('grid' in child) { assert.equal(child.grid.rows.length,2);assert.ok(child.grid.rows.flat().some(c=>c.rowspan===2)); }
+    const partial = {...lines,h:lines.h.filter(s=>!(Math.abs(s.at-(mirror?135:115))<1 && s.a===160 && s.b===240))};
+    assert.ok(gridsFromLines(partial,[],true).grids.every(g=>g.rows.flat().every(c=>!c.blocks)), 'partial horizontal-shared perimeter must not invent nesting');
+  }
+  const crossed = swap({h:[...side.h,...inner.h.map(s=>({...s,a:80}))],v:[...side.v,{at:80,a:160,b:240},{at:180,a:200,b:240}]});
+  assert.ok(gridsFromLines(crossed,[],true).grids.every(g=>g.rows.flat().every(c=>!c.blocks)), 'crossing horizontal rules do not invent nesting');
+  const both = swap({h:[...side.h,...inner.h.map(s=>({...s,a:100}))],v:[...side.v,{at:180,a:200,b:240}]});
+  assert.ok(gridsFromLines(both,[],true).grids.every(g=>g.rows.flat().every(c=>!c.blocks)), 'both horizontal sides remain flat');
+  console.log('PASS top/bottom-shared nested grids preserve merged axes and reject partial perimeters');
+}
