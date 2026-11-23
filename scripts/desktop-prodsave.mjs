@@ -1,5 +1,5 @@
 // Functional check of the PRODUCTION desktop build (the installer users get: no test feature, no debug port in its config).
-// WebView2 is attached through the WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS environment variable set by the workflow, so the
+// WebView2 is attached through the AdditionalBrowserArguments policy registry key set by the workflow (the environment variable is ignored by this app), so the installed binary itself is what runs. Checks the default-on native PDF save, the visible save message, the saved files,
 // installed binary itself is what runs. Checks the default-on native PDF save, the visible save message, the saved files,
 // temp-file cleanup, and that the test-only hooks are not present in this build. Raw CDP, Node 22+.
 import os from 'node:os';
