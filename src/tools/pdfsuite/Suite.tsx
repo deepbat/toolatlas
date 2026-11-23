@@ -312,11 +312,14 @@ function ToWord() {
           // Bordered tables (with merged cells) come from the ruling lines; the text outside them is laid out as before.
           let tableParas: Para[] = [];
           let textItems = items;
+          let noRules = false;
           try {
-            const g = gridsFromLines(await pageLines(pdfjs(), page), items);
+            const lines = await pageLines(pdfjs(), page);
+            noRules = lines.h.length === 0 && lines.v.length === 0;
+            const g = gridsFromLines(lines, items);
             if (g.grids.length) { tableParas = g.grids.map((t) => ({ runs: [], level: 0 as const, y: t.top, grid: { widths: t.widths, rows: t.rows } })); textItems = g.rest; }
           } catch { /* fall back to the text-based table finder */ }
-          const pageParas = itemsToParagraphs(textItems);
+          const pageParas = itemsToParagraphs(textItems, noRules);
           for (const tp of tableParas) {
             const at = pageParas.findIndex((q) => q.y !== undefined && q.y < (tp.y as number) - 2);
             pageParas.splice(at < 0 ? pageParas.length : at, 0, tp);
@@ -346,7 +349,7 @@ function ToWord() {
           <option value="pan+eng">Read them with OCR: Punjabi + English</option>
           <option value="eng">Read them with OCR: English</option>
         </Select></Field></div>
-      <div className="mt-3"><Note>Fidelity is honest: text becomes editable paragraphs and headings. Simple tables whose columns line up in text rows are rebuilt as Word tables, including cells that wrap onto a second line in the layouts we tested. Borderless tables with left-aligned labels and right-aligned numeric columns are rebuilt in the Writer and Chromium fixtures we tested when at least two body rows confirm the column edges. Pictures stored as images are copied into the document, placed by their height on the page and scaled to fit the text width; vector drawings and charts, page-sized scans, shading, border styles and exact fonts are not preserved. Bordered tables drawn with ruling lines keep their column and row merges and widths in the LibreOffice PDF we tested; An inset ruled table inside one cell stays nested in the Writer and Chromium fixtures we tested, including a closed inner grid sharing exactly one outer border in the fixed producer PDFs we tested. Inner tables sharing two or more parent borders, or several connected inner tables, are not supported. A table with missing or partial borders, or merges that are not rectangles, falls back to the text-based finder. Two-column pages are read left column first in tests on simple layouts; complex or mixed layouts, and tables the tool does not recognise, can come out in the wrong order. Check the result against the PDF.</Note></div>
+      <div className="mt-3"><Note>Fidelity is honest: text becomes editable paragraphs and headings. Simple tables whose columns line up in text rows are rebuilt as Word tables, including cells that wrap onto a second line in the layouts we tested. Borderless tables with left-aligned labels and right-aligned numeric columns are rebuilt in the Writer and Chromium fixtures we tested when at least two body rows confirm the column edges. These numeric columns stay right-aligned; when the page has no detected ruling lines, this table keeps no borders. Column widths are estimated. Pictures stored as images are copied into the document, placed by their height on the page and scaled to fit the text width; vector drawings and charts, page-sized scans, shading, border styles and exact fonts are not preserved. Bordered tables drawn with ruling lines keep their column and row merges and widths in the LibreOffice PDF we tested; An inset ruled table inside one cell stays nested in the Writer and Chromium fixtures we tested, including a closed inner grid sharing exactly one outer border in the fixed producer PDFs we tested. Inner tables sharing two or more parent borders, or several connected inner tables, are not supported. A table with missing or partial borders, or merges that are not rectangles, falls back to the text-based finder. Two-column pages are read left column first in tests on simple layouts; complex or mixed layouts, and tables the tool does not recognise, can come out in the wrong order. Check the result against the PDF.</Note></div>
     </Shell>
   );
 }
