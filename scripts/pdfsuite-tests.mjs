@@ -7,6 +7,7 @@ import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { CI_OCR_TABLE } from './fixtures/ci-ocr-table.mjs';
 import { MERGED_TABLE_PDF_B64 } from './fixtures/merged-table.mjs';
 import { NESTED_TABLE_PDF_B64 } from './fixtures/nested-table.mjs';
+import { SHARED_WRITER_PDF_B64, SHARED_CHROMIUM_PDF_B64 } from './fixtures/shared-border-table.mjs';
 import { HEADLESS_SPACING_PDF_B64 } from './fixtures/headless-spacing.mjs';
 
 const base = process.env.E2E_BASE_URL || 'http://127.0.0.1:4173/toolatlas';
@@ -139,6 +140,47 @@ try {
     assert.ok(xml.includes('<w:gridSpan w:val="2"/>'), 'inner merged row');
     assert.ok(xml.indexOf('Before the outer table') < xml.indexOf('<w:tbl>') && xml.indexOf('After the outer table') > xml.lastIndexOf('</w:tbl>'));
   }, 60000, true, '.docx');
+  // Shared-side sources must retain real nesting as well as their wider inner-table geometry.
+  for (const [label, fixture] of [['writer', SHARED_WRITER_PDF_B64], ['chromium', SHARED_CHROMIUM_PDF_B64]]) {
+  await run('pdf-to-word', Buffer.from(fixture, 'base64'), null, async (path) => {
+    const z = await (await import('jszip')).default.loadAsync(await readFile(path));
+    const xml = await z.file('word/document.xml').async('string');
+    await mkdir('test-artifacts/pdfsuite', { recursive: true });
+    await copyFile(path, `test-artifacts/pdfsuite/shared-${label}-pdf-to-word.docx`);
+    await writeFile(`test-artifacts/pdfsuite/shared-${label}-source.pdf`, Buffer.from(fixture, 'base64'));
+    const structure = await page.evaluate(xml => {
+      const d = new DOMParser().parseFromString(xml, 'application/xml');
+      const ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+      const direct = (el, name) => Array.from(el.children).filter(e => e.namespaceURI === ns && e.localName === name);
+      const body = d.getElementsByTagNameNS(ns, 'body')[0];
+      const roots = direct(body, 'tbl');
+      const rows = roots[0] ? direct(roots[0], 'tr') : [];
+      const cells = rows[0] ? direct(rows[0], 'tc') : [];
+      const child = cells[1] && direct(cells[1], 'tbl')[0];
+      return { rootCount: roots.length, rows: rows.length, cells: cells.length,
+        nested: d.getElementsByTagNameNS(ns, 'tbl').length,
+        innerRows: child ? direct(child, 'tr').map(r => direct(r, 'tc').map(c => c.textContent)) : [],
+        cellText: cells[1]?.textContent,
+        childWidths: child ? Array.from(child.getElementsByTagNameNS(ns, 'gridCol')).map(e => Number(e.getAttributeNS(ns, 'w'))) : [],
+        parentWidths: roots[0] ? Array.from(direct(roots[0], 'tblGrid')[0].children).map(e => Number(e.getAttributeNS(ns, 'w'))) : [],
+        order: cells[1] ? Array.from(cells[1].children).map(e => e.localName) : [],
+        secondRow: rows[1]?.textContent,
+      };
+    }, xml);
+    assert.equal(structure.rootCount, 1);
+    assert.equal(structure.nested, 2);
+    assert.equal(structure.rows, 2);
+    assert.equal(structure.cells, 2);
+    assert.deepEqual(structure.innerRows, [['in1', 'in2'], ['inspan']]);
+    assert.equal(structure.cellText, 'Before innerin1in2inspanAfter inner');
+    assert.deepEqual(structure.order, ['tcPr', 'p', 'tbl', 'p', 'p']);
+    assert.equal(structure.secondRow, 'Outer COuter D');
+    assert.ok(structure.childWidths.reduce((a,b) => a+b, 0) > structure.parentWidths[1] * 0.85, 'shared-side child retains almost-full cell width');
+    for (const word of ['in1', 'in2', 'inspan', 'Before inner', 'After inner']) assert.equal(xml.split(word).length - 1, 1, 'text exactly once: ' + word);
+    assert.ok(xml.includes('<w:gridSpan w:val="2"/>'), 'inner merged row');
+    assert.ok(xml.indexOf('Before the outer table') < xml.indexOf('<w:tbl>') && xml.indexOf('After the outer table') > xml.lastIndexOf('</w:tbl>'));
+  }, 60000, true, '.docx');
+  }
   // PDF to Word with a picture between two paragraphs: the picture must come out as a real image, in place, with its pixels.
   {
     const dataUrl = await page.evaluate(() => {
