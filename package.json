@@ -16,7 +16,7 @@
     "test:search": "tsx scripts/search-tests.ts",
     "test:unit": "tsx scripts/stream-edit-tests.ts && tsx scripts/studio-unit-tests.ts && tsx scripts/upgrades-unit.ts && tsx scripts/device-unit.ts && tsx scripts/glyph-unit.ts && tsx scripts/pvc-unit.ts && tsx scripts/pdfsuite-unit.ts",
     "test:device": "node scripts/device-tests.mjs",
-    "test:studio": "node scripts/studio-tests.mjs && node scripts/pdfsuite-tests.mjs",
+    "test:studio": "node scripts/studio-tests.mjs && node scripts/pdfsuite-tests.mjs && node scripts/pdfsuite-audit.mjs",
     "test:quality": "node scripts/quality-checks.mjs && npm run test:upgrades",
     "test:a11y": "node scripts/a11y-tests.mjs",
     "test:pdf-editor": "node scripts/pdf-editor-tests.mjs",
