@@ -447,6 +447,13 @@ function OfficeToPdf({ kind }: { kind: 'word' | 'excel' }) {
               ? 'This app renders the document itself, so layout can differ from Word: fonts may be substituted and some features, such as text boxes or charts, may be missing. Page breaks stored in the file are honoured.'
               : 'Every worksheet that has cells becomes its own section with merged cells and column widths preserved. A worksheet with no cells is skipped. Charts and embedded images are not included.'}
           </Note>
+          {mode === 'print' && (
+            <div className="mt-2">
+              <Note>
+                In a selectable-text PDF the pages look right, but Hindi and other Indic text that you copy or search can come out with a repeated vowel sign or a stray space. We saw this on a Hindi test file, so check any Indic text you copy. Latin text was not affected in that test.
+              </Note>
+            </div>
+          )}
         </div>
       </Panel>
       <Panel title="3. Convert">
@@ -486,4 +493,4 @@ export default function PdfSuite() {
   const { toolId } = useParams();
   const Part = PARTS[toolId ?? ''];
   return Part ? <Part /> : null;
-        }
+}
