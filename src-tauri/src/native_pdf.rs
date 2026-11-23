@@ -65,6 +65,10 @@ pub fn sweep_stale() {
 
 #[tauri::command]
 pub async fn save_print_pdf(app: AppHandle, window: tauri::WebviewWindow, html: String, name: String) -> Result<String, String> {
+    // Test-only trace (this module is behind the native-pdf feature): records which window label reached the command.
+    if name.starts_with("from-print-window") {
+        let _ = std::fs::write(std::env::temp_dir().join(format!("deepaks-tool-callmarker-{}.txt", window.label())), b"entered");
+    }
     // Authorization in code, independent of the CSP and of the capability file: only the main window may call this.
     if window.label() != "main" {
         return Err("save_print_pdf is not available from this window".to_string());
