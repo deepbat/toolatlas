@@ -75,6 +75,7 @@ await step('pdf-to-word downloads a docx', async () => {
   return dl.suggestedFilename() + ' ' + b.length + ' bytes';
 });
 await step('word-to-pdf selectable print view starts printing (hidden frame fallback)', async () => {
+  await page.evaluate(() => localStorage.setItem('toolatlas.nativePdfSave', '0')); // this step tests the print-dialog fallback
   await page.goto(`${origin}/tools/word-to-pdf/`);
   await page.locator('input[type=file]').first().setInputFiles({ name: 'fixture.docx', mimeType: 'application/octet-stream', buffer: docxBuf });
   await page.getByText('fixture.docx').first().waitFor({ timeout: 20000 });
