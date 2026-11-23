@@ -1,10 +1,11 @@
 // Desktop check of the newer conversion paths in the installed app's WebView2 (CDP): Word to PDF image output with its
 // invisible Unicode text layer, Hindi/Punjabi per-page OCR fallback in PDF to Word, and merged-cell output in PDF to Word.
 // Inputs for the OCR and merged-cell steps are PDFs produced by the app's own WebView2 print engine. Saves everything to ./out.
-// Used only by .github/workflows/desktop.yml against the test-only build. Evidence is scoped to these fixtures.
+// Used by desktop.yml first against production through external attach, then against TESTONLY. Evidence is fixture-scoped.
 import { chromium } from '@playwright/test';
 import { PDFDocument, PDFName, PDFDict } from 'pdf-lib';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { NESTED_TABLE_PDF_B64 } from './fixtures/nested-table.mjs';
 
 const port = process.env.CDP_PORT || '9222';
 let browser;
@@ -88,7 +89,12 @@ await step('pdf-to-word Hindi/Punjabi per-page OCR', async () => {
   const cells = [...dx.matchAll(/<w:tc>([\s\S]*?)<\/w:tc>/g)].map(m => m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
   console.log('OCR table cells: ' + JSON.stringify(cells));
   if (JSON.stringify(cells) !== JSON.stringify(['Item', 'गणना', 'Apples', '42'])) throw new Error('table cells ' + JSON.stringify(cells));
-  console.log('OCR spaced phrase count (3 in source): ' + (text.match(/अनुच्छेद है जो/g) || []).length);
+  const sourceSpacing = JSON.parse(await readFile('out/ocr-source-expectations.json', 'utf8'));
+  if (sourceSpacing.expected !== 3 || sourceSpacing.printViewCount !== 3 || sourceSpacing.phrase !== 'अनुच्छेद है जो') throw new Error('source spacing evidence invalid');
+  const spacedCount = (text.match(/अनुच्छेद है जो/g) || []).length;
+  await writeFile(`out/${evidencePrefix}-ocr-spacing-result.json`, JSON.stringify({ ...sourceSpacing, outputCount: spacedCount }));
+  console.log('OCR spaced phrase count (3 in source): ' + spacedCount);
+  if (spacedCount !== 3) throw new Error('OCR word spacing: expected all 3 source occurrences, got ' + spacedCount);
   if (/<w:t[^>]*>\s*[|¦]+\s*<\/w:t>/.test(dx)) throw new Error('standalone border artifact in this fixture');
   const miss = want.filter(t => !text.includes(t));
   console.log('OCR docx text: ' + text.slice(0, 400));
@@ -117,6 +123,31 @@ await step('pdf-to-word merged cells from WebView2-printed table', async () => {
   const mc = [...xml.matchAll(/<w:tc>([\s\S]*?)<\/w:tc>/g)].map(m => m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
   console.log('merged cells: ' + JSON.stringify(mc));
   if (JSON.stringify(mc) !== JSON.stringify(['Quarterly sales', 'Region', 'Q1', 'Q2', 'North', '100', '110', '', '120', '130', 'South', '90', '95'])) throw new Error('cells ' + JSON.stringify(mc));
+});
+
+// 4. Real LibreOffice-produced nested-table PDF, shared with the web regression.
+await step('pdf-to-word inset nested table', async () => {
+  await openTool('pdf-to-word', 'nested.pdf', 'application/pdf', Buffer.from(NESTED_TABLE_PDF_B64, 'base64'));
+  const pending = page.waitForEvent('download', { timeout: 90000 });
+  await page.getByRole('button', { name: 'Convert to Word', exact: true }).click();
+  const d = await pending; await d.saveAs(`out/${evidencePrefix}-nested-pdf-to-word.docx`);
+  const z = await JSZip.loadAsync(await readFile(`out/${evidencePrefix}-nested-pdf-to-word.docx`));
+  const xml = await z.file('word/document.xml').async('string');
+  const result = await page.evaluate(xml => {
+    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+    const ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+    const direct = (el, name) => Array.from(el.children).filter(e => e.namespaceURI === ns && e.localName === name);
+    const roots = direct(doc.getElementsByTagNameNS(ns, 'body')[0], 'tbl');
+    const rows = roots[0] ? direct(roots[0], 'tr') : [];
+    const cell = rows[0] && direct(rows[0], 'tc')[1];
+    const nested = cell && direct(cell, 'tbl');
+    return { roots: roots.length, total: doc.getElementsByTagNameNS(ns, 'tbl').length, rows: rows.length,
+      nested: nested?.length, text: cell?.textContent, after: rows[1]?.textContent,
+      inner: nested?.[0] ? direct(nested[0], 'tr').map(r => direct(r, 'tc').map(c => c.textContent)) : [] };
+  }, xml);
+  if (JSON.stringify(result) !== JSON.stringify({ roots: 1, total: 2, rows: 2, nested: 1, text: 'Before innerin1in2inspanAfter inner', after: 'Outer COuter D', inner: [['in1','in2'],['inspan']] })) throw new Error(JSON.stringify(result));
+  for (const text of ['Before inner', 'in1', 'in2', 'inspan', 'After inner']) if (xml.split(text).length !== 2) throw new Error('text duplication: ' + text);
+  if (!xml.includes('<w:gridSpan w:val="2"/>')) throw new Error('nested colspan missing');
 });
 
 console.log(failed ? 'FAILED ' + failed : 'ALL PASS');

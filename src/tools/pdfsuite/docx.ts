@@ -249,10 +249,10 @@ function tableXml(rows: string[][]): string {
 }
 
 /** A bordered table with merged cells: widths follow the ruling lines in the PDF. */
-function gridXml(g: { widths: number[]; rows: GridCell[][] }): string {
+function gridXml(g: { widths: number[]; rows: GridCell[][] }, available = 9000): string {
   const b = '<w:top w:val="single" w:sz="4" w:color="000000"/><w:left w:val="single" w:sz="4" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:color="000000"/><w:right w:val="single" w:sz="4" w:color="000000"/><w:insideH w:val="single" w:sz="4" w:color="000000"/><w:insideV w:val="single" w:sz="4" w:color="000000"/>';
   const total = g.widths.reduce((a, c) => a + c, 0) || 1;
-  const tw = g.widths.map((w) => Math.max(200, Math.round((w / total) * 9000)));
+  const tw = g.widths.map((w) => Math.max(1, Math.round((w / total) * available)));
   const grid = tw.map((w) => `<w:gridCol w:w="${w}"/>`).join('');
   const trs = g.rows.map((row, i) => {
     const tcs = row.map((c, j) => {
@@ -263,7 +263,10 @@ function gridXml(g: { widths: number[]; rows: GridCell[][] }): string {
         return `<w:tc><w:tcPr><w:tcW w:w="${tw.slice(j, j + span).reduce((x, y) => x + y, 0)}" w:type="dxa"/>${span > 1 ? `<w:gridSpan w:val="${span}"/>` : ''}<w:vMerge/></w:tcPr><w:p/></w:tc>`;
       }
       const width = tw.slice(j, j + c.colspan).reduce((x, y) => x + y, 0);
-      return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${c.colspan > 1 ? `<w:gridSpan w:val="${c.colspan}"/>` : ''}${c.rowspan > 1 ? '<w:vMerge w:val="restart"/>' : ''}</w:tcPr><w:p><w:r><w:t xml:space="preserve">${esc(c.text)}</w:t></w:r></w:p></w:tc>`;
+      const para = (text: string) => `<w:p><w:r><w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
+      // Word requires a paragraph after a nested table; gridXml already supplies it.
+      const content = c.blocks?.map(block => 'grid' in block ? gridXml(block.grid, Math.max(1, Math.round(width * (block.grid.right - block.grid.left) / g.widths.slice(j, j + c.colspan).reduce((x, y) => x + y, 0)))) : para(block.text)).join('') || para(c.text);
+      return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${c.colspan > 1 ? `<w:gridSpan w:val="${c.colspan}"/>` : ''}${c.rowspan > 1 ? '<w:vMerge w:val="restart"/>' : ''}</w:tcPr>${content}</w:tc>`;
     }).join('');
     void i;
     return `<w:tr>${tcs}</w:tr>`;
@@ -348,4 +351,4 @@ export function itemsToParagraphs(items: TextItem[]): Para[] {
   const body = sz[Math.floor(sz.length / 2)] || 12;
   for (const sg of merged) out.push(...layoutLines(sg.items, body));
   return out;
-                                                 }
+}

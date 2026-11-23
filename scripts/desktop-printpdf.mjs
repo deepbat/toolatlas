@@ -1,6 +1,6 @@
 // Saves the Selectable-text print views (Word and Excel) as PDFs through the desktop app's own WebView2
 // print engine (CDP Page.printToPDF), so the saved files can be inspected for text and layout.
-// Raw CDP, Node 22+. Used only by .github/workflows/desktop.yml against the test-only build.
+// Raw CDP, Node 22+. Used by desktop.yml production external attach and the later TESTONLY phase.
 import { writeFile, mkdir } from 'node:fs/promises';
 const port = process.env.CDP_PORT || '9222';
 let targets;
@@ -44,6 +44,7 @@ setTimeout(() => { console.log('FAIL watchdog'); process.exit(2); }, 200000);
     para('Closing notes in English after the break.') +
     '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134"/></w:sectPr></w:body></w:document>');
   const docxBuf = await docxZip.generateAsync({ type: 'nodebuffer' });
+  await writeFile('out/word-print-source.docx', docxBuf);
   const wb = XLSX.utils.book_new();
   const ws1 = XLSX.utils.aoa_to_sheet([['Quarterly बिक्री', '', ''], ['Item', 'गणना', 'Amount'], ['Apples', 5, 125.5], ['कुल', 7, 200]]);
   ws1['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }];
@@ -67,6 +68,12 @@ async function printView(tool, file, buf, outName) {
   const html = await ev(`document.querySelector('iframe[data-print-frame]')?.contentDocument.documentElement.outerHTML || ''`);
   console.log(tool + ' print() calls: ' + printed + ', print-view html chars: ' + String(html).length);
   if (printed !== 1 || !html) throw new Error('no print view');
+  await writeFile(outName.replace(/\.pdf$/, '.html'), html);
+  if (tool === 'word-to-pdf') {
+    const sourceCount = await ev(`(document.querySelector('iframe[data-print-frame]').contentDocument.body.textContent.match(/अनुच्छेद है जो/g)||[]).length`);
+    await writeFile('out/ocr-source-expectations.json', JSON.stringify({ phrase: 'अनुच्छेद है जो', expected: 3, printViewCount: sourceCount }));
+    if (sourceCount !== 3) throw new Error('print source spacing: expected 3, got ' + sourceCount);
+  }
   await ev(`(()=>{const h=${JSON.stringify(html)};document.open();document.write(h);document.close();return 1})()`);
   await sleep(2500);
   const r = await send('Page.printToPDF', { preferCSSPageSize: false, printBackground: true });

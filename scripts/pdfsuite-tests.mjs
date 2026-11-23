@@ -6,6 +6,8 @@ import assert from 'node:assert/strict';
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { CI_OCR_TABLE } from './fixtures/ci-ocr-table.mjs';
 import { MERGED_TABLE_PDF_B64 } from './fixtures/merged-table.mjs';
+import { NESTED_TABLE_PDF_B64 } from './fixtures/nested-table.mjs';
+import { HEADLESS_SPACING_PDF_B64 } from './fixtures/headless-spacing.mjs';
 
 const base = process.env.E2E_BASE_URL || 'http://127.0.0.1:4173/toolatlas';
 let server;
@@ -73,6 +75,19 @@ try {
   const scanBytes = Buffer.from(await scan.save());
   await run('pdf-ocr', scanBytes, null, o => assert.equal(o.getPageCount(), 1), 180000);
   await page.getByText(/words read/).waitFor({ timeout: 10000 });
+  // Preserve the exact external-attach source that lost one Hindi word boundary on raw Chromium.
+  await run('pdf-to-word', Buffer.from(HEADLESS_SPACING_PDF_B64, 'base64'), () => page.getByLabel(/text cannot be read/).selectOption('auto'), async path => {
+    const z = await (await import('jszip')).default.loadAsync(await readFile(path));
+    const xml = await z.file('word/document.xml').async('string');
+    const text = xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    assert.equal((text.match(/अनुच्छेद है जो/g) || []).length, 3, 'all3 source word boundaries');
+    assert.ok(!text.includes('हैजो'), 'not a merged OCR word');
+    assert.equal((xml.match(/<w:br w:type="page"\/>/g) || []).length, 1);
+    const cells = [...xml.matchAll(/<w:tc>([\s\S]*?)<\/w:tc>/g)].map(m => m[1].replace(/<[^>]+>/g, '').trim());
+    assert.deepEqual(cells, ['Item', 'गणना', 'Apples', '42']);
+    await mkdir('test-artifacts/pdfsuite', { recursive: true });
+    await copyFile(path, 'test-artifacts/pdfsuite/headless-spacing-output.docx');
+  }, 180000, true, '.docx');
   // PDF to Word: a real LibreOffice table with a column-spanning title and a row-spanning cell keeps its merges.
   await run('pdf-to-word', Buffer.from(MERGED_TABLE_PDF_B64, 'base64'), null, async (path) => {
     const z = await (await import('jszip')).default.loadAsync(await readFile(path));
@@ -84,6 +99,45 @@ try {
     const rows = xml.slice(xml.indexOf('<w:tbl>'), xml.indexOf('</w:tbl>')).split('<w:tr>').slice(1).map((r) => (r.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || []).map((t) => t.replace(/<[^>]+>/g, '')));
     assert.deepEqual(rows, [['Q1 Results'], ['Region', 'Units', 'Revenue'], ['North', '10', '100'], ['20', '200'], ['South', '30', '300']]);
     assert.ok(xml.indexOf('Sales summary') < xml.indexOf('<w:tbl>') && xml.indexOf('<w:tbl>') < xml.indexOf('After the table.'), 'table sits between the two paragraphs');
+  }, 60000, true, '.docx');
+  // Real Writer-produced PDF: inner grid belongs inside the top-right cell, not after the outer rows.
+  await run('pdf-to-word', Buffer.from(NESTED_TABLE_PDF_B64, 'base64'), null, async (path) => {
+    const z = await (await import('jszip')).default.loadAsync(await readFile(path));
+    const xml = await z.file('word/document.xml').async('string');
+    await mkdir('test-artifacts/pdfsuite', { recursive: true });
+    await copyFile(path, 'test-artifacts/pdfsuite/nested-pdf-to-word.docx');
+    await writeFile('test-artifacts/pdfsuite/nested-source.pdf', Buffer.from(NESTED_TABLE_PDF_B64, 'base64'));
+    const structure = await page.evaluate(xml => {
+      const d = new DOMParser().parseFromString(xml, 'application/xml');
+      const ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+      const direct = (el, name) => Array.from(el.children).filter(e => e.namespaceURI === ns && e.localName === name);
+      const body = d.getElementsByTagNameNS(ns, 'body')[0];
+      const roots = direct(body, 'tbl');
+      const rows = roots[0] ? direct(roots[0], 'tr') : [];
+      const cells = rows[0] ? direct(rows[0], 'tc') : [];
+      const child = cells[1] && direct(cells[1], 'tbl')[0];
+      return { rootCount: roots.length, rows: rows.length, cells: cells.length,
+        nested: d.getElementsByTagNameNS(ns, 'tbl').length,
+        innerRows: child ? direct(child, 'tr').map(r => direct(r, 'tc').map(c => c.textContent)) : [],
+        cellText: cells[1]?.textContent,
+        childWidths: child ? Array.from(child.getElementsByTagNameNS(ns, 'gridCol')).map(e => Number(e.getAttributeNS(ns, 'w'))) : [],
+        parentWidths: roots[0] ? Array.from(direct(roots[0], 'tblGrid')[0].children).map(e => Number(e.getAttributeNS(ns, 'w'))) : [],
+        order: cells[1] ? Array.from(cells[1].children).map(e => e.localName) : [],
+        secondRow: rows[1]?.textContent,
+      };
+    }, xml);
+    assert.equal(structure.rootCount, 1);
+    assert.equal(structure.nested, 2);
+    assert.equal(structure.rows, 2);
+    assert.equal(structure.cells, 2);
+    assert.deepEqual(structure.innerRows, [['in1', 'in2'], ['inspan']]);
+    assert.equal(structure.cellText, 'Before innerin1in2inspanAfter inner');
+    assert.deepEqual(structure.order, ['tcPr', 'p', 'tbl', 'p', 'p']);
+    assert.equal(structure.secondRow, 'Outer COuter D');
+    assert.ok(structure.childWidths.reduce((a,b) => a+b, 0) < structure.parentWidths[1] * 0.7, 'inner table retains narrower source width');
+    for (const word of ['in1', 'in2', 'inspan', 'Before inner', 'After inner']) assert.equal(xml.split(word).length - 1, 1, 'text exactly once: ' + word);
+    assert.ok(xml.includes('<w:gridSpan w:val="2"/>'), 'inner merged row');
+    assert.ok(xml.indexOf('Before the outer table') < xml.indexOf('<w:tbl>') && xml.indexOf('After the outer table') > xml.lastIndexOf('</w:tbl>'));
   }, 60000, true, '.docx');
   // PDF to Word with a picture between two paragraphs: the picture must come out as a real image, in place, with its pixels.
   {
@@ -330,4 +384,4 @@ try {
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-}
+      }

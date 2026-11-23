@@ -2,8 +2,10 @@
 // Used only for pages whose own text cannot be read back; recognition is a guess, so callers keep real text where it exists.
 import { renderPage } from '../../lib/pdfio';
 import { pdfjs } from '../pdf-editor/pdfjs';
-import { pageLines, gridsFromLines, isOcrRuleBar } from './rulings';
+import { pageLines, gridsFromLines, isOcrRuleBar, cellBounds } from './rulings';
 import type { TextItem } from './docx';
+import type { PageGrid } from './rulings';
+import { indicWordSpacing } from './ocrSpacing';
 
 const TESS = `${(import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/'}tesseract`;
 type W = { setParameters: (p: Record<string, string>) => Promise<unknown>; recognize: (c: unknown, o: unknown, out: unknown) => Promise<any>; terminate: () => Promise<unknown> };
@@ -42,6 +44,7 @@ export async function ocrPageItems(doc: any, pageNo: number, lang: string): Prom
   const hPt = vp.height;
   const lines = await pageLines(pdfjs(), page);
   const items: TextItem[] = [];
+  const pixels = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
   // Words of one OCR line share the line's baseline and height: per-word boxes differ (marks above or below the letters)
   // and would otherwise split a line into several, scrambling the reading order.
   for (const b of data.blocks ?? []) for (const p of b.paragraphs) for (const l of p.lines) {
@@ -51,24 +54,41 @@ export async function ocrPageItems(doc: any, pageNo: number, lang: string): Prom
     const ws = l.words.filter((w: any) => w.text.trim() && !isOcrRuleBar(w.text, { x0: w.bbox.x0 / sx, x1: w.bbox.x1 / sx, y0: hPt - w.bbox.y1 / sy, y1: hPt - w.bbox.y0 / sy }, lines.v));
     ws.forEach((w: any, wi: number) => {
       // OCR words are already separate: keep the space between them (the gap rule is tuned for text-layer fragments).
-      items.push({ ocr: true, text: wi < ws.length - 1 ? w.text.trim() + ' ' : w.text.trim(), size: lineH, bold: false, italic: false, x: w.bbox.x0 / sx, y: hPt - base / sy, w: (w.bbox.x1 - w.bbox.x0) / sx });
+      const blank: boolean[] = [];
+      if (/^[\u0900-\u097f\u0a00-\u0a7f]+$/u.test(w.text)) {
+        for (let x = w.bbox.x0; x < w.bbox.x1; x++) {
+          let white = true;
+          for (let y = w.bbox.y0; y < w.bbox.y1; y++) {
+            const at = (y * canvas.width + x) * 4;
+            if (Math.min(pixels[at], pixels[at+1], pixels[at+2]) < 180) { white = false; break; }
+          }
+          blank.push(white);
+        }
+      }
+      const text = indicWordSpacing(w, ws, blank).trim();
+      items.push({ ocr: true, text: wi < ws.length - 1 ? text + ' ' : text, size: lineH, bold: false, italic: false, x: w.bbox.x0 / sx, y: hPt - base / sy, w: (w.bbox.x1 - w.bbox.x0) / sx });
     });
   }
   // Full-page segmentation can omit an entire ruled table. Read each geometrically bounded cell separately,
   // without its border, rather than inventing missing values or treating a blank OCR result as an empty source cell.
-  const grids = gridsFromLines(lines, [], true).grids;
+  const flatten = (g: PageGrid): PageGrid[] => [g, ...g.rows.flatMap(row => row.flatMap(cell => (cell.blocks ?? []).flatMap(b => 'grid' in b ? flatten(b.grid) : [])))];
+  const grids = gridsFromLines(lines, [], true).grids.flatMap(flatten);
   for (const grid of grids) {
     const selected = data.recognitionLang ?? lang;
     const worker = await workerFor(selected);
     await worker.setParameters({ tessedit_pageseg_mode: '6' });
     try {
       const replacements: TextItem[] = [];
+      const replaced: ReturnType<typeof cellBounds>[] = [];
       let top = grid.top;
       for (let ri = 0; ri < grid.rows.length; ri++) {
         let left = grid.left;
         for (let ci = 0; ci < grid.rows[ri].length; ci++) {
           const cell = grid.rows[ri][ci];
-          if (cell.kind === 'cell') {
+          // A parent cell with an inner grid is not one OCR block. Leave its surrounding words
+          // from full-page OCR in place, and read the nested leaf cells separately.
+          if (cell.kind === 'cell' && !cell.blocks?.some(b => 'grid' in b)) {
+            replaced.push(cellBounds(grid, cell));
             const width = grid.widths.slice(ci, ci + cell.colspan).reduce((a, b) => a + b, 0);
             const height = grid.heights.slice(ri, ri + cell.rowspan).reduce((a, b) => a + b, 0);
             const crop = document.createElement('canvas');
@@ -89,7 +109,7 @@ export async function ocrPageItems(doc: any, pageNo: number, lang: string): Prom
       }
       for (let i = items.length - 1; i >= 0; i--) {
         const it = items[i], cx = it.x + (it.w ?? 0) / 2, cy = it.y + it.size * 0.3;
-        if (cx >= grid.left && cx <= grid.right && cy >= grid.bottom && cy <= grid.top) items.splice(i, 1);
+        if (replaced.some(b => cx >= b.left && cx <= b.right && cy >= b.bottom && cy <= b.top)) items.splice(i, 1);
       }
       items.push(...replacements);
     } finally { await worker.setParameters({ tessedit_pageseg_mode: '3' }); }
@@ -100,4 +120,4 @@ export async function ocrPageItems(doc: any, pageNo: number, lang: string): Prom
 export async function ocrDone() {
   for (const w of workers.values()) await w.terminate();
   workers.clear();
-    }
+}
