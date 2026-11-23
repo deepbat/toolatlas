@@ -1,13 +1,14 @@
 // PDF text-layer to DOCX conversion, built on the in-house ZIP writer: no new
 // dependency. The output is honest about fidelity: real editable paragraphs,
-// headings and bold/italic runs, simple text-aligned tables and pictures drawn as images, but no merged-cell tables, vector drawings or exact fonts.
+// headings and bold/italic runs, text-aligned tables, bordered tables with merged cells (from ruling lines) and pictures drawn as images, but no vector drawings or exact fonts.
 
 import { makeZip } from '../../lib/zip';
+import type { GridCell } from './rulings';
 
 export interface TextItem { text: string; size: number; bold: boolean; italic: boolean; y: number; x: number; w?: number }
 export interface ParaRun { text: string; bold: boolean; italic: boolean }
 export interface DocImage { png: Uint8Array; w: number; h: number } // size in points
-export interface Para { runs: ParaRun[]; level: 0 | 1 | 2 | 3; table?: string[][]; y?: number; image?: DocImage } // 0 = body, 1-3 = heading; table = rebuilt from aligned text columns
+export interface Para { runs: ParaRun[]; level: 0 | 1 | 2 | 3; table?: string[][]; y?: number; image?: DocImage; grid?: { widths: number[]; rows: GridCell[][] } } // 0 = body, 1-3 = heading; table = rebuilt from aligned text columns
 
 /** Split one line into cells where a wide gap separates the fragments. */
 function lineCells(line: TextItem[]): { x: number; text: string }[] {
@@ -245,6 +246,29 @@ function tableXml(rows: string[][]): string {
   return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders>${b}</w:tblBorders></w:tblPr><w:tblGrid>${grid}</w:tblGrid>${trs}</w:tbl><w:p/>`;
 }
 
+/** A bordered table with merged cells: widths follow the ruling lines in the PDF. */
+function gridXml(g: { widths: number[]; rows: GridCell[][] }): string {
+  const b = '<w:top w:val="single" w:sz="4" w:color="000000"/><w:left w:val="single" w:sz="4" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:color="000000"/><w:right w:val="single" w:sz="4" w:color="000000"/><w:insideH w:val="single" w:sz="4" w:color="000000"/><w:insideV w:val="single" w:sz="4" w:color="000000"/>';
+  const total = g.widths.reduce((a, c) => a + c, 0) || 1;
+  const tw = g.widths.map((w) => Math.max(200, Math.round((w / total) * 9000)));
+  const grid = tw.map((w) => `<w:gridCol w:w="${w}"/>`).join('');
+  const trs = g.rows.map((row, i) => {
+    const tcs = row.map((c, j) => {
+      if (c.kind === 'covered') {
+        const a = c.anchor as { i: number; j: number };
+        if (a.j !== j) return ''; // swallowed by a column span: no cell of its own
+        const span = g.rows[a.i][a.j].colspan;
+        return `<w:tc><w:tcPr><w:tcW w:w="${tw.slice(j, j + span).reduce((x, y) => x + y, 0)}" w:type="dxa"/>${span > 1 ? `<w:gridSpan w:val="${span}"/>` : ''}<w:vMerge/></w:tcPr><w:p/></w:tc>`;
+      }
+      const width = tw.slice(j, j + c.colspan).reduce((x, y) => x + y, 0);
+      return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${c.colspan > 1 ? `<w:gridSpan w:val="${c.colspan}"/>` : ''}${c.rowspan > 1 ? '<w:vMerge w:val="restart"/>' : ''}</w:tcPr><w:p><w:r><w:t xml:space="preserve">${esc(c.text)}</w:t></w:r></w:p></w:tc>`;
+    }).join('');
+    void i;
+    return `<w:tr>${tcs}</w:tr>`;
+  }).join('');
+  return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders>${b}</w:tblBorders></w:tblPr><w:tblGrid>${grid}</w:tblGrid>${trs}</w:tbl><w:p/>`;
+}
+
 function imageXml(img: DocImage, n: number): string {
   // Fit the text width (6 inches) and keep the shape; EMU = points x 12700.
   const maxW = 432;
@@ -254,6 +278,7 @@ function imageXml(img: DocImage, n: number): string {
 }
 
 function paraXml(p: Para): string {
+  if (p.grid) return gridXml(p.grid);
   if (p.table) return tableXml(p.table);
   const style = p.level > 0 ? `<w:pPr><w:pStyle w:val="Heading${p.level}"/></w:pPr>` : '';
   const runs = p.runs
@@ -320,4 +345,4 @@ export function itemsToParagraphs(items: TextItem[]): Para[] {
   const body = sz[Math.floor(sz.length / 2)] || 12;
   for (const sg of merged) out.push(...layoutLines(sg.items, body));
   return out;
-    }
+                                             }
