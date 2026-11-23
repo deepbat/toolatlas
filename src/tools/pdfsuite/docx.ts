@@ -8,7 +8,7 @@ import type { GridCell } from './rulings';
 export interface TextItem { text: string; size: number; bold: boolean; italic: boolean; y: number; x: number; w?: number; ocr?: boolean }
 export interface ParaRun { text: string; bold: boolean; italic: boolean }
 export interface DocImage { png: Uint8Array; w: number; h: number } // size in points
-export interface Para { runs: ParaRun[]; level: 0 | 1 | 2 | 3; table?: string[][]; y?: number; image?: DocImage; grid?: { widths: number[]; rows: GridCell[][] } } // 0 = body, 1-3 = heading; table = rebuilt from aligned text columns
+export interface Para { pageBreak?: boolean; runs: ParaRun[]; level: 0 | 1 | 2 | 3; table?: string[][]; y?: number; image?: DocImage; grid?: { widths: number[]; rows: GridCell[][] } } // 0 = body, 1-3 = heading; table = rebuilt from aligned text columns
 
 /** Split one line into cells where a wide gap separates the fragments. */
 function lineCells(line: TextItem[]): { x: number; text: string }[] {
@@ -280,6 +280,7 @@ function imageXml(img: DocImage, n: number): string {
 }
 
 function paraXml(p: Para): string {
+  if (p.pageBreak) return '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
   if (p.grid) return gridXml(p.grid);
   if (p.table) return tableXml(p.table);
   const style = p.level > 0 ? `<w:pPr><w:pStyle w:val="Heading${p.level}"/></w:pPr>` : '';
@@ -347,4 +348,4 @@ export function itemsToParagraphs(items: TextItem[]): Para[] {
   const body = sz[Math.floor(sz.length / 2)] || 12;
   for (const sg of merged) out.push(...layoutLines(sg.items, body));
   return out;
-        }
+                                                 }
