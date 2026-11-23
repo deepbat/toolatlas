@@ -5,6 +5,7 @@ import { pdfjs } from '../pdf-editor/pdfjs';
 import { pageLines, gridsFromLines, isOcrRuleBar, cellBounds } from './rulings';
 import type { TextItem } from './docx';
 import type { PageGrid } from './rulings';
+import { indicWordSpacing } from './ocrSpacing';
 
 const TESS = `${(import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/'}tesseract`;
 type W = { setParameters: (p: Record<string, string>) => Promise<unknown>; recognize: (c: unknown, o: unknown, out: unknown) => Promise<any>; terminate: () => Promise<unknown> };
@@ -43,6 +44,7 @@ export async function ocrPageItems(doc: any, pageNo: number, lang: string): Prom
   const hPt = vp.height;
   const lines = await pageLines(pdfjs(), page);
   const items: TextItem[] = [];
+  const pixels = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
   // Words of one OCR line share the line's baseline and height: per-word boxes differ (marks above or below the letters)
   // and would otherwise split a line into several, scrambling the reading order.
   for (const b of data.blocks ?? []) for (const p of b.paragraphs) for (const l of p.lines) {
@@ -52,7 +54,19 @@ export async function ocrPageItems(doc: any, pageNo: number, lang: string): Prom
     const ws = l.words.filter((w: any) => w.text.trim() && !isOcrRuleBar(w.text, { x0: w.bbox.x0 / sx, x1: w.bbox.x1 / sx, y0: hPt - w.bbox.y1 / sy, y1: hPt - w.bbox.y0 / sy }, lines.v));
     ws.forEach((w: any, wi: number) => {
       // OCR words are already separate: keep the space between them (the gap rule is tuned for text-layer fragments).
-      items.push({ ocr: true, text: wi < ws.length - 1 ? w.text.trim() + ' ' : w.text.trim(), size: lineH, bold: false, italic: false, x: w.bbox.x0 / sx, y: hPt - base / sy, w: (w.bbox.x1 - w.bbox.x0) / sx });
+      const blank: boolean[] = [];
+      if (/^[\u0900-\u097f\u0a00-\u0a7f]+$/u.test(w.text)) {
+        for (let x = w.bbox.x0; x < w.bbox.x1; x++) {
+          let white = true;
+          for (let y = w.bbox.y0; y < w.bbox.y1; y++) {
+            const at = (y * canvas.width + x) * 4;
+            if (Math.min(pixels[at], pixels[at+1], pixels[at+2]) < 180) { white = false; break; }
+          }
+          blank.push(white);
+        }
+      }
+      const text = indicWordSpacing(w, ws, blank).trim();
+      items.push({ ocr: true, text: wi < ws.length - 1 ? text + ' ' : text, size: lineH, bold: false, italic: false, x: w.bbox.x0 / sx, y: hPt - base / sy, w: (w.bbox.x1 - w.bbox.x0) / sx });
     });
   }
   // Full-page segmentation can omit an entire ruled table. Read each geometrically bounded cell separately,
@@ -106,4 +120,4 @@ export async function ocrPageItems(doc: any, pageNo: number, lang: string): Prom
 export async function ocrDone() {
   for (const w of workers.values()) await w.terminate();
   workers.clear();
-                                                                          }
+}
