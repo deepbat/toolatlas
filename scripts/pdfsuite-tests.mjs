@@ -71,6 +71,36 @@ try {
   const scanBytes = Buffer.from(await scan.save());
   await run('pdf-ocr', scanBytes, null, o => assert.equal(o.getPageCount(), 1), 180000);
   await page.getByText(/words read/).waitFor({ timeout: 10000 });
+  // PDF to Word with a picture between two paragraphs: the picture must come out as a real image, in place, with its pixels.
+  {
+    const dataUrl = await page.evaluate(() => {
+      const c = document.createElement('canvas'); c.width = 120; c.height = 60; const x = c.getContext('2d');
+      x.fillStyle = '#d02020'; x.fillRect(0, 0, 60, 60); x.fillStyle = '#2040d0'; x.fillRect(60, 0, 60, 60);
+      return c.toDataURL('image/png');
+    });
+    const pd = await PDFDocument.create();
+    const f = await pd.embedFont(StandardFonts.Helvetica);
+    const pgi = pd.addPage([595, 842]);
+    pgi.drawText('Paragraph before the picture', { x: 56, y: 780, size: 12, font: f });
+    pgi.drawImage(await pd.embedPng(Buffer.from(dataUrl.split(',')[1], 'base64')), { x: 56, y: 640, width: 240, height: 120 });
+    pgi.drawText('Paragraph after the picture', { x: 56, y: 600, size: 12, font: f });
+    await run('pdf-to-word', Buffer.from(await pd.save()), null, async (path) => {
+      const z = await (await import('jszip')).default.loadAsync(await readFile(path));
+      const xml = await z.file('word/document.xml').async('string');
+      await (await import('node:fs/promises')).copyFile(path, '/tmp/pdf-to-word-image.docx');
+      const media = Object.keys(z.files).filter((n) => n.startsWith('word/media/'));
+      assert.equal(media.length, 1, 'one picture carried over: ' + media.join());
+      assert.ok(xml.indexOf('before the picture') < xml.indexOf('<w:drawing>') && xml.indexOf('<w:drawing>') < xml.indexOf('after the picture'), 'picture sits between the two paragraphs');
+      const b64 = await z.file(media[0]).async('base64');
+      const px = await page.evaluate(async (b) => {
+        const img = new Image(); img.src = 'data:image/png;base64,' + b; await img.decode();
+        const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+        return { w: img.width, h: img.height, l: [...x.getImageData(10, 30, 1, 1).data], r: [...x.getImageData(img.width - 10, 30, 1, 1).data] };
+      }, b64);
+      assert.deepEqual([px.w, px.h], [120, 60]);
+      assert.ok(px.l[0] > 180 && px.l[2] < 80 && px.r[2] > 160 && px.r[0] < 80, 'left red, right blue: ' + JSON.stringify(px));
+    }, 60000, true, '.docx');
+  }
   await run('pdf-protect', bytes, async () => {
     await page.getByPlaceholder('Password', { exact: true }).fill('s3cret');
     await page.getByPlaceholder('Repeat password').fill('s3cret');
@@ -232,4 +262,4 @@ try {
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-}
+                }
