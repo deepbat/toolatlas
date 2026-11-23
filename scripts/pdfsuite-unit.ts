@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { indicWordSpacing } from '../src/tools/pdfsuite/ocrSpacing';
 import joined from './fixtures/ocr-joined-word.json';
 // Unit tests for the pure PDF suite operations.
@@ -350,3 +351,24 @@ console.log('All PDF suite ops passed.');
   assert.equal(indicWordSpacing(word, line, pixels.map((_,i) => i >=24 && i<27)), 'हैजो', 'small within-word gap is not a word space');
   console.log('PASS pixel-backed Indic OCR word spacing without text substitution');
     }
+
+{
+  // Both production-save and native-real checks evaluate the shared fixture-construction section.
+  // It must remain self-contained and must not inherit printpdf's file-system imports.
+  const src = await readFile('scripts/desktop-printpdf.mjs', 'utf8');
+  const begin = src.indexOf('  const JSZip'), last = src.indexOf('const xlsxBuf');
+  const end = src.indexOf('\n', last);
+  assert.ok(begin >= 0 && last > begin && end > last);
+  for (const caller of ['scripts/desktop-prodsave.mjs', 'scripts/desktop-nativereal.mjs']) {
+    const callerSrc = await readFile(caller, 'utf8');
+    assert.ok(callerSrc.includes('src.slice(a, bEnd)'), 'fixture extraction contract: ' + caller);
+  }
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const fixture = await new AsyncFunction(src.slice(begin, end) + '\nreturn { docxBuf, xlsxBuf };')();
+  assert.ok(fixture.docxBuf.length > 1000 && fixture.xlsxBuf.length > 1000);
+  const zip = await readZip(fixture.docxBuf);
+  const xml = new TextDecoder().decode(zip.get('word/document.xml'));
+  assert.equal((xml.match(/अनुच्छेद है जो/g) || []).length, 3);
+  assert.ok(xml.includes('Item') && xml.includes('Apples'));
+  console.log('PASS desktop shared fixture extraction without external imports');
+      }

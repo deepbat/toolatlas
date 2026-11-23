@@ -44,7 +44,6 @@ setTimeout(() => { console.log('FAIL watchdog'); process.exit(2); }, 200000);
     para('Closing notes in English after the break.') +
     '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134"/></w:sectPr></w:body></w:document>');
   const docxBuf = await docxZip.generateAsync({ type: 'nodebuffer' });
-  await writeFile('out/word-print-source.docx', docxBuf);
   const wb = XLSX.utils.book_new();
   const ws1 = XLSX.utils.aoa_to_sheet([['Quarterly बिक्री', '', ''], ['Item', 'गणना', 'Amount'], ['Apples', 5, 125.5], ['कुल', 7, 200]]);
   ws1['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }];
@@ -52,6 +51,8 @@ setTimeout(() => { console.log('FAIL watchdog'); process.exit(2); }, 200000);
   XLSX.utils.book_append_sheet(wb, ws1, 'बिक्री Data');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([[]]), 'Empty');
   const xlsxBuf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+// Keep fixture construction free of I/O: two desktop checks evaluate the section through xlsxBuf.
+await writeFile('out/word-print-source.docx', docxBuf);
 async function printView(tool, file, buf, outName) {
   await send('Page.navigate', { url: `${origin}${base}/tools/${tool}/` });
   await sleep(4000);
