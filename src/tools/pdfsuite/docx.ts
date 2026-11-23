@@ -5,7 +5,7 @@
 import { makeZip } from '../../lib/zip';
 import type { GridCell } from './rulings';
 
-export interface TextItem { text: string; size: number; bold: boolean; italic: boolean; y: number; x: number; w?: number }
+export interface TextItem { text: string; size: number; bold: boolean; italic: boolean; y: number; x: number; w?: number; ocr?: boolean }
 export interface ParaRun { text: string; bold: boolean; italic: boolean }
 export interface DocImage { png: Uint8Array; w: number; h: number } // size in points
 export interface Para { runs: ParaRun[]; level: 0 | 1 | 2 | 3; table?: string[][]; y?: number; image?: DocImage; grid?: { widths: number[]; rows: GridCell[][] } } // 0 = body, 1-3 = heading; table = rebuilt from aligned text columns
@@ -198,7 +198,9 @@ function layoutLines(items: TextItem[], bodyOverride?: number): Para[] {
   const paras: Para[] = [];
   for (let li = 0; li < lines.length; li++) {
     const line = lines[li];
-    const tbl = findTable(lines, li);
+    // OCR word boxes are not typographic fragments. Wide spacing in a sentence is not evidence of table columns.
+    // Ruled OCR tables are reconstructed separately from the actual page borders.
+    const tbl = line.every((i) => i.ocr) ? null : findTable(lines, li);
     if (tbl) { paras.push({ runs: [], level: 0, table: tbl.rows, y: line[0].y }); li = tbl.end - 1; continue; }
     const size = line[0].size;
     const level = size >= body * 1.8 ? 1 : size >= body * 1.4 ? 2 : size >= body * 1.18 ? 3 : 0;
@@ -345,4 +347,4 @@ export function itemsToParagraphs(items: TextItem[]): Para[] {
   const body = sz[Math.floor(sz.length / 2)] || 12;
   for (const sg of merged) out.push(...layoutLines(sg.items, body));
   return out;
-                                             }
+        }
