@@ -32,7 +32,9 @@ interface ExportOptions {
 const ARROW_DEG = 150;
 
 export async function exportEditedPdf(opts: ExportOptions): Promise<Uint8Array> {
-  const { bytes, viewports, annots, formValues, flattenForms } = opts;
+  const { bytes, viewports, annots, formValues } = opts;
+  const hasRedaction = Object.values(annots).some(list => list.some(a => a.kind === 'rect' && a.mode === 'redact'));
+  const flattenForms = opts.flattenForms || hasRedaction;
 
   // Guard: standard fonts cannot print characters outside WinAnsi.
   const offenders = new Set<string>();
@@ -275,11 +277,16 @@ export async function exportEditedPdf(opts: ExportOptions): Promise<Uint8Array> 
     } catch { /* no AcroForm in this document */ }
   }
 
-  return doc.save();
+  const saved = await doc.save();
+  if (hasRedaction) {
+    const { rasterRedactedPdf } = await import('./redactRaster');
+    return rasterRedactedPdf(saved, annots);
+  }
+  return saved;
 }
 
 // WinAnsi bytes for a standard font's text (callers have checked offenders).
 function pdfEncodeWinAnsi(font: { encodeText: (t: string) => { toString(): string } }, text: string): string {
   const hex = font.encodeText(text).toString();
   return hex.replace(/^<|>$/g, '');
-      }
+}
