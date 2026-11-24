@@ -1,3 +1,4 @@
+import {makeRepairFixtures,checkRecovered} from './fixtures/malformed-repair.mjs';
 import {addPdfBackground} from '../src/tools/studio/pdfBackground';
 import {makeBackgroundFixture,checkBackgroundPixels} from './fixtures/visible-background.mjs';
 import {makeOcrGeometryFixture,fixedOcrLayers,checkOcrGeometry} from './fixtures/ocr-visible-layer.mjs';
@@ -545,4 +546,13 @@ console.log('All PDF suite ops passed.');
 {
  const b=await makeBackgroundFixture();await checkBackgroundPixels(b,await addPdfBackground(b,[1,0,0]));
  console.log('PASS vector background preserves exact crop/rotation/origin pixels and blank pages');
+}
+
+{
+ const {good,cases}=await makeRepairFixtures(),wasm=new URL('../node_modules/@neslinesli93/qpdf-wasm/dist/qpdf.wasm',import.meta.url).pathname;
+ for(const {bytes}of cases){await assert.rejects(repairPdf(bytes,wasm),/accepting the warning/);await checkRecovered(good,await repairPdf(bytes,wasm,true));}
+ await assert.rejects(repairPdf(new TextEncoder().encode('%PDF-1.7 broken'),wasm,true),/No repaired file/);
+ const locked=await protectPdf(good,'secret',wasm);await assert.rejects(repairPdf(locked,wasm,true),/No repaired file/);
+ await checkRecovered(good,await repairPdf(good,wasm));
+ console.log('PASS consented malformed xref recovery three failures, exactpixels/text/geometry/blank, unrecoverable rejection and subsequent success');
 }
