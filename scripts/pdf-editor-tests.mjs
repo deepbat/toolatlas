@@ -336,6 +336,7 @@ try {
     await page.screenshot({path:`${EVIDENCE}/editor-redaction-warning.png`});
     await go();await page.locator('input[type=file]').setInputFiles({name:'redacted.pdf',mimeType:'application/pdf',buffer:bytes});await page.locator('[data-testid=pdf-editor]').waitFor();
     await page.waitForFunction(()=>document.querySelector('[data-testid=page-1] canvas')?.width>100);
+    await page.locator('[data-testid=page-1][data-rendered=true]').waitFor();
     const result=await page.locator('[data-testid=page-1] canvas').evaluate(c=>{
       const ctx=c.getContext('2d'),sx=c.width/612,sy=c.height/792;
       const px=ctx.getImageData(Math.round(80*sx),Math.round(145*sy),Math.round(240*sx),Math.round(15*sy)).data;let dark=0;for(let i=0;i<px.length;i+=4)if(px[i]<10&&px[i+1]<10&&px[i+2]<10)dark++;
