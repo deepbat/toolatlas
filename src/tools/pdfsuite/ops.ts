@@ -29,8 +29,7 @@ export async function deletePages(bytes: Uint8Array, spec: string): Promise<Uint
   const drop = new Set(parsePageRanges(spec, total));
   if (!spec.trim()) throw new Error('Enter the pages to delete, for example 2,4-6.');
   if (drop.size >= total) throw new Error('That would delete every page.');
-  [...drop].sort((a, b) => b - a).forEach((i) => doc.removePage(i));
-  return doc.save();
+  return assemblePages([{ bytes, pages: doc.getPageIndices().filter(i => !drop.has(i)) }]);
 }
 
 export interface CropMargins { top: number; right: number; bottom: number; left: number } // points
