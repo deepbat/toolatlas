@@ -1,3 +1,4 @@
+import { assemblePages } from '../pdfsuite/pageCatalogue';
 import { addPdfBackground } from './pdfBackground';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -486,10 +487,9 @@ function Split() {
       for (let g = 0; g < groups.length; g++) {
         setBusy({ v: g + 1, max: groups.length });
         await tick();
-        const dst = await PDFDocument.create();
-        (await dst.copyPages(src, groups[g])).forEach((p) => dst.addPage(p));
+        const bytes = await assemblePages([{ bytes: new Uint8Array(await io.file.arrayBuffer()), pages: groups[g] }]);
         const first = groups[g][0] + 1, last = groups[g][groups[g].length - 1] + 1;
-        out.push({ name: `${baseName(io.file)}-part-${g + 1}-pages-${first}${last !== first ? '-' + last : ''}.pdf`, bytes: await dst.save() });
+        out.push({ name: `${baseName(io.file)}-part-${g + 1}-pages-${first}${last !== first ? '-' + last : ''}.pdf`, bytes });
       }
       setParts(out);
     } catch (e) {
@@ -512,6 +512,7 @@ function Split() {
             {mode === 'every' && <Field label="Pages per file" htmlFor="s-n"><Input id="s-n" inputMode="numeric" value={every} onChange={(e) => setEvery(e.target.value)} /></Field>}
             {mode === 'ranges' && <Field label="Ranges, one file each" htmlFor="s-r" hint="Example: 1-3, 4-6, 7-"><Input id="s-r" value={ranges} onChange={(e) => setRanges(e.target.value)} placeholder="1-3, 4-6" /></Field>}
           </Grid>
+          <Note>Editable forms, bookmarks, links and document attachments are kept. Bookmarks and links to excluded pages are dropped. Attachments are copied in full, so check them before sharing. XFA forms are not supported. Splitting a signed PDF invalidates its digital signature.</Note>
           <Button onClick={run} disabled={!io.file || !!busy}>Split PDF</Button>
           {busy && <Busy label="Creating files" value={busy.v} max={busy.max} />}
           <Failure error={error} />
