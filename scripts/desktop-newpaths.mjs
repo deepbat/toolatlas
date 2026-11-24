@@ -1,3 +1,4 @@
+import {makeTidyFixture,checkTidyDocument} from './fixtures/tidy-document.mjs';
 import {makeRepairFixtures,checkRecovered} from './fixtures/malformed-repair.mjs';
 import {makeBackgroundFixture,checkBackgroundPixels,chooseRedBackground} from './fixtures/visible-background.mjs';
 import {makeOcrGeometryFixture,checkOcrGeometry} from './fixtures/ocr-visible-layer.mjs';
@@ -114,6 +115,11 @@ for(const selected of[false,true]){
   });
 }
 
+await step('tidy preserves document catalogue and exact pixels',async()=>{
+ const source=await makeTidyFixture();await openTool('pdf-compress','catalogue.pdf','application/pdf',source);await page.getByLabel('Method',{exact:true}).selectOption('tidy');
+ await page.getByRole('button',{name:'Compress PDF',exact:true}).click();await page.getByRole('button',{name:'Download PDF',exact:true}).waitFor();const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Download PDF',exact:true}).click();
+ const path=`out/${evidencePrefix}-tidy-document.pdf`;await(await pending).saveAs(path);await checkTidyDocument(source,await readFile(path));
+});
 for(const {name,bytes}of(await makeRepairFixtures()).cases)await step(`consented repair ${name}`,async()=>{
  const {good}=await makeRepairFixtures();await openTool('pdf-repair','damaged.pdf','application/pdf',bytes);
  const consent=page.getByRole('checkbox',{name:'Allow object recovery if the normal repair fails'});

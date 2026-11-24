@@ -67,11 +67,8 @@ function Compress() {
         setBusy({ label: 'Rewriting the PDF structure' });
         await tick();
         const src = await openPdfLib(io.file);
-        const dst = await PDFDocument.create();
-        const copied = await dst.copyPages(src, src.getPageIndices());
-        copied.forEach((p) => dst.addPage(p));
-        const bytes = await dst.save({ useObjectStreams: true });
-        setOut({ blob: new Blob([bytes as BlobPart], { type: 'application/pdf' }), q: 100, note: 'Text, links and vector artwork are kept. Savings are usually small, and large for files with unused objects.' });
+        const bytes = await src.save({ useObjectStreams: true });
+        setOut({ blob: new Blob([bytes as BlobPart], { type: 'application/pdf' }), q: 100, note: 'Text, forms, bookmarks, links and vector artwork are kept. Savings are usually small; this does not resize images.' });
         return;
       }
       const { doc } = await openPdfjs(io.file);

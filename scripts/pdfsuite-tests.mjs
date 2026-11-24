@@ -1,3 +1,4 @@
+import {makeTidyFixture,checkTidyDocument} from './fixtures/tidy-document.mjs';
 import {makeRepairFixtures,checkRecovered} from './fixtures/malformed-repair.mjs';
 import {makeBackgroundFixture,checkBackgroundPixels,chooseRedBackground} from './fixtures/visible-background.mjs';
 import {makeOcrGeometryFixture,checkOcrGeometry} from './fixtures/ocr-visible-layer.mjs';
@@ -56,6 +57,12 @@ async function run(id, data, setup, check, timeoutMs, raw, keepName) {
   console.log('PASS ' + id); n++;
 }
 try {
+  {
+    const source=await makeTidyFixture();await page.goto(`${base}/tools/pdf-compress/`);
+    await page.locator('input[type=file]').first().setInputFiles({name:'catalogue.pdf',mimeType:'application/pdf',buffer:source});await page.getByText('catalogue.pdf',{exact:true}).first().waitFor();
+    await page.getByLabel('Method',{exact:true}).selectOption('tidy');await page.getByRole('button',{name:'Compress PDF',exact:true}).click();await page.getByRole('button',{name:'Download PDF',exact:true}).waitFor();
+    const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Download PDF',exact:true}).click();await(await pending).saveAs('/tmp/tidy-document.pdf');await checkTidyDocument(source,await readFile('/tmp/tidy-document.pdf'));console.log('PASS tidy preserves editable forms bookmarks attachments links and exact pixels');n++;
+  }
   {
     const {good,cases}=await makeRepairFixtures();
     for(const {name,bytes}of cases){
