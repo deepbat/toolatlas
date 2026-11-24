@@ -96,6 +96,7 @@ export default function PageView(props: PageViewProps) {
 
   useEffect(() => {
     if (!inView || !pdfDoc) return;
+    setRendered(false);
     let cancelled = false;
     let task: any = null;
     (async () => {
@@ -339,6 +340,7 @@ export default function PageView(props: PageViewProps) {
     <div
       ref={containerRef}
       data-testid={`page-${pageIndex + 1}`}
+      data-rendered={rendered ? 'true' : 'false'}
       className="relative mx-auto bg-white shadow-soft"
       style={{ width: info.viewW * scale, height: info.viewH * scale, maxWidth: 'none' }}
     >
@@ -576,4 +578,4 @@ export default function PageView(props: PageViewProps) {
       />
     </div>
   );
-                                            }
+}
