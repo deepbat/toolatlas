@@ -4,7 +4,7 @@ import { Button, Dropzone, Field, FileRow, Grid, Input, Note, Panel, Select, Tog
 import { downloadBlob, formatBytes } from '../../lib/utils';
 import { checkPdfFile, friendlyPdfError, openPdfLib } from '../../lib/pdfio';
 import { Failure } from '../studio/kit';
-import { booklet, cropPages, deletePages, flattenForms, nUp, parsePageRanges, reorderPages, rotatePages, signPdf, stampText, watermark, type StampPlace } from './ops';
+import { booklet, croppedLayoutPages, cropPages, deletePages, flattenForms, nUp, parsePageRanges, reorderPages, rotatePages, signPdf, stampText, watermark, type StampPlace } from './ops';
 import SignaturePad from '../pdf-editor/SignaturePad';
 import Ocr from './Ocr';
 import { protectPdf, repairPdf, unlockPdf } from './qpdf';
@@ -18,7 +18,7 @@ import { PDFDocument } from 'pdf-lib';
 import { applyActualText, pageActualTexts } from './actualtext';
 
 /** Shared shell: pick one PDF, run an operation, download the result. */
-function Shell({ verb, help, outSuffix, outExt = 'pdf', mime = 'application/pdf', run, children, ready = true, lenient = false }: {
+function Shell({ verb, help, outSuffix, outExt = 'pdf', mime = 'application/pdf', run, children, ready = true, lenient = false, onInspect }: {
   verb: string;
   help: ReactNode;
   outSuffix: string;
@@ -29,6 +29,7 @@ function Shell({ verb, help, outSuffix, outExt = 'pdf', mime = 'application/pdf'
   ready?: boolean;
   /** Skip the pdf-lib readability probe for encrypted or damaged inputs. */
   lenient?: boolean;
+  onInspect?: (doc: PDFDocument) => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [pages, setPages] = useState(0);
@@ -48,6 +49,7 @@ function Shell({ verb, help, outSuffix, outExt = 'pdf', mime = 'application/pdf'
         return;
       }
       const doc = await openPdfLib(f);
+      onInspect?.(doc);
       setFile(f);
       setPages(doc.getPageCount());
     } catch (e) {
@@ -157,26 +159,35 @@ function Stamp({ mode }: { mode: 'header-footer' | 'bates' }) {
   );
 }
 
-function NUp() {
+function Arrange({ kind }: { kind: 'nup' | 'booklet' }) {
   const [per, setPer] = useState('2');
   const [border, setBorder] = useState(true);
-  return (
-    <Shell verb="Combine pages" outSuffix={`${per}-up`} help="Places several pages on each A4 sheet, scaled to fit, to save paper."
-      run={(b) => nUp(b, Number(per) as 2 | 4 | 6 | 9, { border })}>
-      <Field label="Pages per sheet"><Select value={per} onChange={(e) => setPer(e.target.value)}>{['2', '4', '6', '9'].map((v) => <option key={v} value={v}>{v}</option>)}</Select></Field>
+  const [cropped, setCropped] = useState(0);
+  const [consent, setConsent] = useState(false);
+  const isNup = kind === 'nup';
+  return <Shell verb={isNup ? 'Combine pages' : 'Make booklet'} outSuffix={isNup ? `${per}-up` : 'booklet'}
+    ready={!cropped || consent}
+    onInspect={doc => { setCropped(croppedLayoutPages(doc).length); setConsent(false); }}
+    help={isNup ? 'Places several pages on each A4 sheet, scaled to fit, to save paper.' : 'Reorders pages two per landscape sheet for folding. Print double-sided and flip on the short edge, then fold the stack in half.'}
+    run={async b => {
+      if (cropped && !consent) throw Error('Choose whether to convert cropped pages to images before continuing.');
+      const { prepareLayoutPdf } = await import('./layoutRaster');
+      const prepared = await prepareLayoutPdf(b);
+      return isNup ? nUp(prepared, Number(per) as 2 | 4 | 6 | 9, { border }) : booklet(prepared);
+    }}>
+    {isNup && <>
+      <Field label="Pages per sheet"><Select value={per} onChange={e => setPer(e.target.value)}>{['2','4','6','9'].map(v => <option key={v} value={v}>{v}</option>)}</Select></Field>
       <div className="mt-3"><Toggle checked={border} onChange={setBorder} label="Thin border around each page" /></div>
-    </Shell>
-  );
+    </>}
+    {!isNup && <Note>The page count is padded to a multiple of 4 with blank pages.</Note>}
+    {cropped > 0 && <div className="mt-3 space-y-3">
+      <Note>{cropped} cropped page(s) need image conversion to keep hidden margins out of the visible output. Only these pages become images at up to 144 dpi, capped at 8 megapixels per page. Fine detail may soften; text on these pages will not be searchable. Page arrangement creates static sheets without interactive links or editable forms; visible form values on cropped pages will be baked in. Other pages keep vector text and artwork. This is not a redaction tool. Keep your original PDF.</Note>
+      <Toggle checked={consent} onChange={setConsent} label="Convert cropped pages to images for this export" />
+    </div>}
+  </Shell>;
 }
-
-function Booklet() {
-  return (
-    <Shell verb="Make booklet" outSuffix="booklet" help="Reorders pages two per landscape sheet for folding. Print double-sided and flip on the short edge, then fold the stack in half."
-      run={(b) => booklet(b)}>
-      <Note>The page count is padded to a multiple of 4 with blank pages.</Note>
-    </Shell>
-  );
-}
+function NUp() { return <Arrange kind="nup" />; }
+function Booklet() { return <Arrange kind="booklet" />; }
 
 function Rotate() {
   const [angle, setAngle] = useState('90');

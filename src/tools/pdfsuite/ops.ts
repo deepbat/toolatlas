@@ -1,6 +1,6 @@
 // Pure, on-device PDF page operations built on pdf-lib. No DOM access, so
 // every function is covered by scripts/pdfsuite-unit.ts.
-import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib';
+import { PDFDocument, PDFPage, PDFEmbeddedPage, pushGraphicsState, popGraphicsState, rectangle, clip, endPath, StandardFonts, degrees, rgb } from 'pdf-lib';
 import { InvisibleUnicodeFont, drawInvisibleWords, needsUnicode } from './unicodeLayer';
 
 /** "1-3,5,8-" style ranges to zero-based indexes. Blank means all pages. */
@@ -85,6 +85,42 @@ export async function stampText(bytes: Uint8Array, o: StampOptions): Promise<Uin
   return doc.save();
 }
 
+/** Zero-based pages whose visible box is smaller than their media box. */
+export function croppedLayoutPages(doc: PDFDocument): number[] {
+  return doc.getPages().flatMap((p, i) => {
+    const m = p.getMediaBox(), c = p.getCropBox();
+    return c.x > m.x || c.y > m.y || c.x + c.width < m.x + m.width || c.y + c.height < m.y + m.height ? [i] : [];
+  });
+}
+
+/** Embed the visible page box, keeping its viewer rotation and vector content. */
+async function layoutPages(out: PDFDocument, src: PDFDocument) {
+  if (croppedLayoutPages(src).length) throw Error('Cropped pages need image preparation before arrangement.');
+  return Promise.all(src.getPages().map(async p => {
+    const media = p.getMediaBox(), crop = p.getCropBox();
+    const left = Math.max(media.x, crop.x), bottom = Math.max(media.y, crop.y);
+    const right = Math.min(media.x + media.width, crop.x + crop.width);
+    const top = Math.min(media.y + media.height, crop.y + crop.height);
+    if (right <= left || top <= bottom) throw Error('A page has no visible area to arrange.');
+    const angle = ((p.getRotation().angle % 360) + 360) % 360;
+    if (![0, 90, 180, 270].includes(angle)) throw Error('Page rotation must be a multiple of 90 degrees.');
+    const w = right - left, h = top - bottom;
+    // A blank page has no content stream and cannot be embedded by pdf-lib.
+    const image = p.node.Contents() ? await out.embedPage(p, { left, bottom, right, top }) : undefined;
+    return { image, angle, rawW: w, rawH: h, width: angle % 180 ? h : w, height: angle % 180 ? w : h };
+  }));
+}
+
+function drawLayoutPage(sheet: PDFPage, e: { image?: PDFEmbeddedPage; angle: number; rawW: number; rawH: number; width: number; height: number }, x: number, y: number, scale: number) {
+  if (!e.image) return;
+  const dx = e.angle === 180 ? e.rawW : e.angle === 270 ? e.rawH : 0;
+  const dy = e.angle === 90 ? e.rawW : e.angle === 180 ? e.rawH : 0;
+  sheet.pushOperators(pushGraphicsState(), rectangle(x, y, e.width * scale, e.height * scale), clip(), endPath());
+  sheet.drawPage(e.image, { x: x + dx * scale, y: y + dy * scale,
+    width: e.rawW * scale, height: e.rawH * scale, rotate: degrees(-e.angle) });
+  sheet.pushOperators(popGraphicsState());
+}
+
 /** Put 2, 4, 6 or 9 source pages on each output sheet. */
 export async function nUp(bytes: Uint8Array, perSheet: 2 | 4 | 6 | 9, opts: { landscape?: boolean; gap?: number; border?: boolean } = {}): Promise<Uint8Array> {
   const src = await PDFDocument.load(bytes, { ignoreEncryption: true });
@@ -94,7 +130,7 @@ export async function nUp(bytes: Uint8Array, perSheet: 2 | 4 | 6 | 9, opts: { la
   const sw = landscape ? 841.89 : 595.28, sh = landscape ? 595.28 : 841.89;
   const gap = opts.gap ?? 12;
   const cw = (sw - gap * (cols + 1)) / cols, ch = (sh - gap * (rows + 1)) / rows;
-  const embedded = await out.embedPdf(src, src.getPageIndices());
+  const embedded = await layoutPages(out, src);
   for (let i = 0; i < embedded.length; i += perSheet) {
     const sheet = out.addPage([sw, sh]);
     for (let k = 0; k < perSheet && i + k < embedded.length; k++) {
@@ -104,7 +140,7 @@ export async function nUp(bytes: Uint8Array, perSheet: 2 | 4 | 6 | 9, opts: { la
       const w = e.width * scale, h = e.height * scale;
       const x = gap + col * (cw + gap) + (cw - w) / 2;
       const y = sh - gap - (row + 1) * ch - row * gap + (ch - h) / 2;
-      sheet.drawPage(e, { x, y, width: w, height: h });
+      drawLayoutPage(sheet, e, x, y, scale);
       if (opts.border) sheet.drawRectangle({ x, y, width: w, height: h, borderColor: rgb(0.6, 0.6, 0.6), borderWidth: 0.5 });
     }
   }
@@ -126,7 +162,7 @@ export function bookletOrder(total: number): number[] {
 export async function booklet(bytes: Uint8Array): Promise<Uint8Array> {
   const src = await PDFDocument.load(bytes, { ignoreEncryption: true });
   const out = await PDFDocument.create();
-  const emb = await out.embedPdf(src, src.getPageIndices());
+  const emb = await layoutPages(out, src);
   const sw = 841.89, sh = 595.28, hw = sw / 2;
   const order = bookletOrder(src.getPageCount());
   for (let i = 0; i < order.length; i += 2) {
@@ -137,7 +173,7 @@ export async function booklet(bytes: Uint8Array): Promise<Uint8Array> {
       const e = emb[idx];
       const scale = Math.min(hw / e.width, sh / e.height);
       const w = e.width * scale, h = e.height * scale;
-      sheet.drawPage(e, { x: k * hw + (hw - w) / 2, y: (sh - h) / 2, width: w, height: h });
+      drawLayoutPage(sheet, e, k * hw + (hw - w) / 2, (sh - h) / 2, scale);
     }
   }
   return out.save();

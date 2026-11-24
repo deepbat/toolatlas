@@ -1,9 +1,10 @@
+import { makeLayoutFixture, checkLayoutPixels } from './fixtures/page-layout.mjs';
 import { CORNER_TABLES } from './fixtures/corner-border-table.mjs';
 import { NUMERIC_TABLES } from './fixtures/borderless-numeric-table.mjs';
 import { HORIZONTAL_TABLES } from './fixtures/horizontal-border-table.mjs';
 // Browser checks for the PDF suite tools: upload, run, download, verify the result.
 import { chromium } from '@playwright/test';
-import { PDFDocument, StandardFonts } from 'pdf-lib';
+import { PDFDocument, PDFName, StandardFonts } from 'pdf-lib';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
@@ -55,6 +56,60 @@ try {
   await run('pdf-bates', bytes, null, o => assert.equal(o.getPageCount(), 6));
   await run('pdf-nup', bytes, null, o => assert.equal(o.getPageCount(), 3));
   await run('pdf-booklet', bytes, null, o => assert.equal(o.getPageCount(), 4));
+  for (const [slug,kind] of [['pdf-nup','nup'],['pdf-booklet','booklet']]) {
+    await run(slug,await makeLayoutFixture(),async()=>{
+      const action=page.getByRole('button',{name:kind==='nup'?'Combine pages':'Make booklet',exact:true});
+      assert.equal(await action.isEnabled(),false);
+      await page.getByText('Convert cropped pages to images for this export',{exact:true}).click();
+      assert.equal(await action.isEnabled(),true);
+      await page.getByRole('button',{name:'Remove in.pdf',exact:true}).click();
+      await page.locator('input[type=file]').first().setInputFiles({name:'in.pdf',mimeType:'application/pdf',buffer:await makeLayoutFixture()});
+      await page.getByText('in.pdf').first().waitFor();
+      assert.equal(await action.isEnabled(),false,'consent must reset when a file is replaced');
+      await page.getByText('Convert cropped pages to images for this export',{exact:true}).click();
+      await mkdir('test-artifacts/pdfsuite',{recursive:true});
+      await page.screenshot({path:`test-artifacts/pdfsuite/${kind}-image-consent.png`,fullPage:true});
+      await page.setViewportSize({width:393,height:852});
+      const choice=page.getByText('Convert cropped pages to images for this export',{exact:true});
+      await choice.scrollIntoViewIfNeeded();
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'Android consent layout overflows');
+      await page.screenshot({path:`test-artifacts/pdfsuite/${kind}-android-consent.png`,fullPage:false});
+      await action.scrollIntoViewIfNeeded();
+      await action.waitFor({state:'visible'});
+      assert.equal(await action.isEnabled(),true,'Android export control is enabled after consent');
+      await page.screenshot({path:`test-artifacts/pdfsuite/${kind}-android-export.png`,fullPage:false});
+      let downloaded=false;const onDownload=()=>{downloaded=true;};page.on('download',onDownload);
+      await page.evaluate(()=>{window.__layoutBlob=HTMLCanvasElement.prototype.toBlob;HTMLCanvasElement.prototype.toBlob=function(cb){cb(null);};});
+      await action.click();await page.getByText('Could not encode a cropped page. No file was saved.',{exact:true}).waitFor();
+      assert.equal(downloaded,false,'image conversion failure must not download uncropped content');
+      page.off('download',onDownload);await page.evaluate(()=>{HTMLCanvasElement.prototype.toBlob=window.__layoutBlob;delete window.__layoutBlob;});
+      if(kind==='nup') {
+      await page.getByLabel('Pages per sheet').selectOption('4');
+      await page.getByText('Thin border around each page',{exact:true}).click();
+      }
+    },async path=>{
+      await checkLayoutPixels(await readFile(path),kind);
+      await page.setViewportSize({width:1200,height:900});
+      await mkdir('test-artifacts/pdfsuite',{recursive:true});
+      await copyFile(path,`test-artifacts/pdfsuite/rotated-crop-${kind}.pdf`);
+    },60000,true);
+  }
+  {
+    const large=await PDFDocument.create(),font=await large.embedFont(StandardFonts.Helvetica);
+    const p=large.addPage([4200,2200]);p.setCropBox(100,100,4000,2000);
+    p.drawText('Large page detail',{x:150,y:1900,size:12,font});
+    await run('pdf-nup',Buffer.from(await large.save()),async()=>{
+      await page.getByText('Convert cropped pages to images for this export',{exact:true}).click();
+    },o=>{
+      let imageCount=0;
+      for(const[,obj]of o.context.enumerateIndirectObjects())if(obj.dict?.get(PDFName.of('Subtype'))===PDFName.of('Image')) {
+        imageCount++;const w=Number(String(obj.dict.get(PDFName.of('Width')))),h=Number(String(obj.dict.get(PDFName.of('Height'))));
+        assert.ok(w*h<=8006000,'canvas exceeds8MP allowance for integer rounding');
+        assert.ok(w>3900&&h>1900,'large crop loses more resolution than the cap requires');
+      }
+      assert.equal(imageCount,1);
+    });
+  }
   await run('pdf-flatten', formBytes, null, o => assert.equal(o.getForm().getFields().length, 0));
   await run('pdf-rotate', bytes, null, o => { assert.equal(o.getPage(0).getRotation().angle, 90); assert.equal(o.getPageCount(), 6); });
   await run('pdf-watermark', bytes, null, o => assert.equal(o.getPageCount(), 6));
