@@ -1,3 +1,4 @@
+import {makeCropFixture,checkCropPixels,CROP_MARGINS} from './fixtures/visible-crop.mjs';
 import {makeStampFixture,checkStampGeometry,STAMP_PLACES} from './fixtures/visible-stamps.mjs';
 import { makeLayoutFixture, checkLayoutPixels } from './fixtures/page-layout.mjs';
 import { verifyEditorRedaction } from './fixtures/editor-redaction.mjs';
@@ -94,6 +95,18 @@ for(const [slug,bates] of [['pdf-header-footer',false],['pdf-bates',true]])for(c
     await page.getByRole('button',{name:bates?'Add Bates numbers':'Add header or footer',exact:true}).click();
     const path=`out/${evidencePrefix}-${slug}-${place}.pdf`;await(await pending).saveAs(path);
     await checkStampGeometry(await readFile(path),place,{bates});
+  });
+}
+
+for(const selected of[false,true]){
+  await step(`viewer crop margins ${selected?'selected':'all'} pages`,async()=>{
+    const source=await makeCropFixture();await openTool('pdf-crop','crop.pdf','application/pdf',source);
+    await page.getByText('Millimetres',{exact:true}).click();
+    for(const [key,value]of Object.entries(CROP_MARGINS))await page.getByLabel(key[0].toUpperCase()+key.slice(1),{exact:true}).fill(String(value));
+    if(selected)await page.getByLabel('Pages',{exact:true}).fill('2');
+    const pending=page.waitForEvent('download',{timeout:60000});await page.getByRole('button',{name:'Crop PDF',exact:true}).click();
+    const path=`out/${evidencePrefix}-visible-crop-${selected?'selected':'all'}.pdf`;await(await pending).saveAs(path);
+    await checkCropPixels(source,await readFile(path),selected);
   });
 }
 

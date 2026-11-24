@@ -40,9 +40,19 @@ export async function cropPages(bytes: Uint8Array, margins: CropMargins, spec = 
   const pages = doc.getPages();
   for (const i of parsePageRanges(spec, pages.length)) {
     const p = pages[i];
-    const box = p.getCropBox();
-    const x = box.x + margins.left, y = box.y + margins.bottom;
-    const w = box.width - margins.left - margins.right, h = box.height - margins.top - margins.bottom;
+    const media = p.getMediaBox(), crop = p.getCropBox();
+    const box = { x: Math.max(media.x, crop.x), y: Math.max(media.y, crop.y),
+      width: Math.min(media.x + media.width, crop.x + crop.width) - Math.max(media.x, crop.x),
+      height: Math.min(media.y + media.height, crop.y + crop.height) - Math.max(media.y, crop.y) };
+    if (Object.values(margins).some(v => !Number.isFinite(v) || v < 0)) throw Error('Crop margins must be finite non-negative numbers.');
+    const angle = ((p.getRotation().angle % 360) + 360) % 360;
+    if (![0, 90, 180, 270].includes(angle)) throw Error('Page rotation must be a multiple of 90 degrees.');
+    // Margins describe what the viewer sees, not the underlying unrotated axes.
+    const m = angle === 90 ? {left:margins.top,right:margins.bottom,top:margins.right,bottom:margins.left}
+      : angle === 180 ? {left:margins.right,right:margins.left,top:margins.bottom,bottom:margins.top}
+      : angle === 270 ? {left:margins.bottom,right:margins.top,top:margins.left,bottom:margins.right} : margins;
+    const x = box.x + m.left, y = box.y + m.bottom;
+    const w = box.width - m.left - m.right, h = box.height - m.top - m.bottom;
     if (w < 10 || h < 10) throw new Error(`Page ${i + 1} would be smaller than 10 pt after cropping.`);
     p.setCropBox(x, y, w, h);
     p.setMediaBox(x, y, w, h);

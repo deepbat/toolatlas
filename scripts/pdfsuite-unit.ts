@@ -1,3 +1,4 @@
+import {makeCropFixture,checkCropPixels,CROP_MARGINS} from './fixtures/visible-crop.mjs';
 import {makeStampFixture,checkStampGeometry,STAMP_PLACES} from './fixtures/visible-stamps.mjs';
 import { makeLayoutFixture, checkLayoutPixels } from './fixtures/page-layout.mjs';
 import { readFile } from 'node:fs/promises';
@@ -510,4 +511,11 @@ console.log('All PDF suite ops passed.');
   }
   await checkStampGeometry(await stampText(b,{text:'STAMP {n}/{total}',place:'header-left',pages:'2'}),'header-left',{selected:true});
   console.log('PASS visible stamps all six positions/four rotations/nonzero boxes, Bates and selected pages');
+}
+
+{
+ const b=await makeCropFixture();await checkCropPixels(b,await cropPages(b,CROP_MARGINS));
+ await checkCropPixels(b,await cropPages(b,CROP_MARGINS,'2'),true);
+ await assert.rejects(()=>cropPages(b,{...CROP_MARGINS,left:-1}),/non-negative/);
+ console.log('PASS crop follows four viewer rotations and selected pages with asymmetric margins');
 }
