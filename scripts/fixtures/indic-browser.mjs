@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {INDIC_WORDS} from './indic-selection.mjs';
+export async function exerciseIndicConversion(page,{base,path}){
+ const JSZip=(await import('jszip')).default,{readFile}=await import('node:fs/promises'),pdfjs=await import('pdfjs-dist/legacy/build/pdf.mjs'),{createCanvas}=await import('@napi-rs/canvas');
+ const z=new JSZip();z.file('[Content_Types].xml','<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+ z.file('_rels/.rels','<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="r1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+ z.file('word/document.xml','<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+INDIC_WORDS.map(t=>'<w:p><w:pPr><w:spacing w:after="720"/></w:pPr><w:r><w:rPr><w:sz w:val="48"/></w:rPr><w:t>'+t+'</w:t></w:r></w:p>').join('')+'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="720" w:bottom="720" w:left="720" w:right="720"/></w:sectPr></w:body></w:document>');
+ await page.goto(`${base}/tools/word-to-pdf/`);await page.locator('input[type=file]').first().setInputFiles({name:'indic-width.docx',mimeType:'application/octet-stream',buffer:await z.generateAsync({type:'nodebuffer'})});await page.getByText('indic-width.docx',{exact:true}).first().waitFor();
+ const pending=page.waitForEvent('download',{timeout:90000});await page.getByRole('button',{name:'Convert to PDF',exact:true}).click();await(await pending).saveAs(path);
+ const {mkdir,copyFile}=await import('node:fs/promises');await mkdir('test-artifacts/indic',{recursive:true});await copyFile(path,'test-artifacts/indic/converted-words.pdf');
+ const doc=await pdfjs.getDocument({data:new Uint8Array(await readFile(path))}).promise;
+ try{assert.equal(doc.numPages,1);const p=await doc.getPage(1),v=p.getViewport({scale:2}),c=createCanvas(v.width,v.height);await p.render({canvasContext:c.getContext('2d'),viewport:v}).promise;const pixels=c.getContext('2d').getImageData(0,0,c.width,c.height).data,items=(await p.getTextContent()).items.filter(i=>i.str.trim());assert.deepEqual(items.map(i=>i.str),INDIC_WORDS);
+ for(const it of items){const t=pdfjs.Util.transform(v.transform,it.transform),left=t[4],baseline=t[5],right=left+it.width*2;let min=Infinity,max=-1;for(let y=Math.max(0,Math.floor(baseline-it.height*2));y<Math.min(c.height,Math.ceil(baseline+6));y++)for(let x=Math.max(0,Math.floor(left-6));x<Math.min(c.width,Math.ceil(right+48));x++){const k=(y*c.width+x)*4;if(pixels[k]<150&&pixels[k+1]<150&&pixels[k+2]<150){min=Math.min(min,x);max=Math.max(max,x);}}
+ assert.ok(max>min,'Visible Indic word missing');assert.ok(Math.abs(min-left)<12,'Selection starts away from word: '+it.str);assert.ok(Math.abs(max-right)<14,'Selection stops before/after painted word: '+it.str+' '+max+' '+right);}
+ }finally{await doc.destroy();}
+}
