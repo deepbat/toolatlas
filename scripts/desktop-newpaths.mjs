@@ -1,3 +1,4 @@
+import {exerciseIndicConversion} from './fixtures/indic-browser.mjs';
 import {exerciseCataloguePaths} from './fixtures/catalogue-browser.mjs';
 import {makeTidyFixture,checkTidyDocument} from './fixtures/tidy-document.mjs';
 import {makeRepairFixtures,checkRecovered} from './fixtures/malformed-repair.mjs';
@@ -159,6 +160,7 @@ for(let n=1;n<=5;n++)for(const x of OVERLAY_X)for(const y of OVERLAY_Y){
 }
 
 // 1. Word to PDF, picture output with the invisible Unicode layer: text must read back and search by phrase.
+await step('Indic converted-word selection covers painted words',()=>exerciseIndicConversion(page,{base:`${origin}${base}`,path:`out/${evidencePrefix}-indic-selection-width.pdf`}));
 await step('word-to-pdf image PDF text layer', async () => {
   await openTool('word-to-pdf', 'fixture.docx', 'application/octet-stream', await mk());
   const p = page.waitForEvent('download', { timeout: 90000 });
