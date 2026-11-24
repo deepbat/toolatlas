@@ -235,7 +235,7 @@ function Organise() {
     <Shell verb="Reorder pages" outSuffix="reordered" ready={!!order.trim()} help="List the pages in their new order. Repeat a number to duplicate that page; pages you leave out are removed."
       run={(b) => reorderPages(b, order)}>
       <Field label="New page order" hint="Page numbers with commas, for example 3,1,2."><Input value={order} onChange={(e) => setOrder(e.target.value)} placeholder="3,1,2" inputMode="text" /></Field>
-      <div className="mt-3"><Note>The rebuilt file keeps the page content, title, author and subject. Fillable form fields and bookmarks are not carried over.</Note></div>
+      <div className="mt-3"><Note>Editable forms, bookmarks, links and document attachments are kept. Repeated pages get separate form fields; repeated field names get a suffix. Bookmarks and links to removed pages are dropped. XFA forms are not supported. Editing a signed PDF invalidates its digital signature.</Note></div>
     </Shell>
   );
 }
