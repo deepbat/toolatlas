@@ -1,3 +1,4 @@
+import {makeStampFixture,checkStampGeometry,STAMP_PLACES} from './fixtures/visible-stamps.mjs';
 import { makeLayoutFixture, checkLayoutPixels } from './fixtures/page-layout.mjs';
 import { CORNER_TABLES } from './fixtures/corner-border-table.mjs';
 import { NUMERIC_TABLES } from './fixtures/borderless-numeric-table.mjs';
@@ -54,6 +55,17 @@ try {
   await run('pdf-crop', bytes, async () => { await page.locator('input[type=number]').nth(0).fill('10'); }, o => assert.ok(o.getPage(0).getHeight() < 842 - 20));
   await run('pdf-header-footer', bytes, null, o => assert.equal(o.getPageCount(), 6));
   await run('pdf-bates', bytes, null, o => assert.equal(o.getPageCount(), 6));
+  for(const [slug,bates] of [['pdf-header-footer',false],['pdf-bates',true]])for(const place of STAMP_PLACES){
+    await run(slug,await makeStampFixture(),async()=>{
+      await page.getByLabel('Text',{exact:true}).fill(bates?'{bates}':'STAMP {n}/{total}');
+      await page.getByLabel('Position',{exact:true}).selectOption(place);
+      if(bates){await page.getByLabel('Prefix',{exact:true}).fill('CASE-');await page.getByLabel('Start at',{exact:true}).fill('7');await page.getByLabel('Digits',{exact:true}).fill('4');}
+    },async path=>{
+      await checkStampGeometry(await readFile(path),place,{bates});
+      await mkdir('test-artifacts/pdfsuite',{recursive:true});
+      await copyFile(path,`test-artifacts/pdfsuite/${slug}-${place}.pdf`);
+    },60000,true);
+  }
   await run('pdf-nup', bytes, null, o => assert.equal(o.getPageCount(), 3));
   await run('pdf-booklet', bytes, null, o => assert.equal(o.getPageCount(), 4));
   for (const [slug,kind] of [['pdf-nup','nup'],['pdf-booklet','booklet']]) {
