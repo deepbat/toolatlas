@@ -1,3 +1,4 @@
+import {makeBackgroundFixture,checkBackgroundPixels,chooseRedBackground} from './fixtures/visible-background.mjs';
 import {makeOcrGeometryFixture,checkOcrGeometry} from './fixtures/ocr-visible-layer.mjs';
 import {makeOverlayFixture,checkSignaturePixels,checkWatermarkGeometry,chooseOverlayMark,OVERLAY_X,OVERLAY_Y} from './fixtures/visible-overlays.mjs';
 import {makeCropFixture,checkCropPixels,CROP_MARGINS} from './fixtures/visible-crop.mjs';
@@ -54,6 +55,16 @@ async function run(id, data, setup, check, timeoutMs, raw, keepName) {
   console.log('PASS ' + id); n++;
 }
 try {
+  {
+    const source=await makeBackgroundFixture();await page.goto(`${base}/tools/pdf-background/`);
+    await page.locator('input[type=file]').first().setInputFiles({name:'background.pdf',mimeType:'application/pdf',buffer:source});
+    await page.getByText('background.pdf',{exact:true}).first().waitFor();await chooseRedBackground(page);
+    await page.getByRole('button',{name:/Apply to all pages/i}).click();
+    await page.getByRole('button',{name:'Download PDF',exact:true}).waitFor();
+    const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Download PDF',exact:true}).click();
+    const path='/tmp/visible-background.pdf';await(await pending).saveAs(path);await checkBackgroundPixels(source,await readFile(path));
+    console.log('PASS background viewer geometry and blank page');n++;
+  }
   for(const selected of [false,true]){
     const source=await makeOcrGeometryFixture();
     await run('pdf-ocr',source,async()=>{if(selected)await page.getByLabel('Pages',{exact:true}).fill('2');},async path=>{
@@ -573,4 +584,4 @@ try {
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-}
+      }

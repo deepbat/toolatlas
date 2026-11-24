@@ -1,3 +1,4 @@
+import { addPdfBackground } from './pdfBackground';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { PDFDocument, PDFCheckBox, PDFDropdown, PDFOptionList, PDFRadioGroup, PDFTextField, rgb } from 'pdf-lib';
@@ -265,19 +266,10 @@ function Background() {
       if (mode === 'bg') {
         setBusy({});
         await tick();
-        const src = await openPdfLib(io.file);
-        const dst = await PDFDocument.create();
         const hex = color.replace('#', '');
-        const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
-        for (let i = 0; i < src.getPageCount(); i++) {
-          const sp = src.getPage(i);
-          const { width, height } = sp.getSize();
-          const emb = await dst.embedPage(sp);
-          const page = dst.addPage([width, height]);
-          page.drawRectangle({ x: 0, y: 0, width, height, color: rgb(r, g, b) });
-          page.drawPage(emb, { x: 0, y: 0, width, height });
-        }
-        setOut(new Blob([(await dst.save()) as BlobPart], { type: 'application/pdf' }));
+        const colorRgb = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [number, number, number];
+        const bytes = new Uint8Array(await io.file.arrayBuffer());
+        setOut(new Blob([(await addPdfBackground(bytes, colorRgb)) as BlobPart], { type: 'application/pdf' }));
         return;
       }
       const { doc } = await openPdfjs(io.file);
