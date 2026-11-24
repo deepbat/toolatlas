@@ -1,3 +1,4 @@
+import {makeOverlayFixture,checkSignaturePixels,checkWatermarkGeometry,chooseOverlayMark,OVERLAY_X,OVERLAY_Y} from './fixtures/visible-overlays.mjs';
 import {makeCropFixture,checkCropPixels,CROP_MARGINS} from './fixtures/visible-crop.mjs';
 import {makeStampFixture,checkStampGeometry,STAMP_PLACES} from './fixtures/visible-stamps.mjs';
 import { makeLayoutFixture, checkLayoutPixels } from './fixtures/page-layout.mjs';
@@ -138,6 +139,15 @@ try {
   await run('pdf-flatten', formBytes, null, o => assert.equal(o.getForm().getFields().length, 0));
   await run('pdf-rotate', bytes, null, o => { assert.equal(o.getPage(0).getRotation().angle, 90); assert.equal(o.getPageCount(), 6); });
   await run('pdf-watermark', bytes, null, o => assert.equal(o.getPageCount(), 6));
+  await run('pdf-watermark',await makeOverlayFixture(),async()=>{
+    await page.getByLabel('Watermark text',{exact:true}).fill('MARK');await page.getByLabel('Size (pt)',{exact:true}).fill('24');
+  },async path=>{await checkWatermarkGeometry(await readFile(path));await copyFile(path,'/tmp/overlay-watermark.pdf');},60000,true);
+  for(let n=1;n<=5;n++)for(const x of OVERLAY_X)for(const y of OVERLAY_Y){
+    await run('pdf-sign',await makeOverlayFixture(),()=>chooseOverlayMark(page,n,x,y),async path=>{
+      await checkSignaturePixels(await readFile(path),n,x,y);
+      if(x==='right'&&y==='top')await copyFile(path,`/tmp/overlay-sign-${n}.pdf`);
+    },60000,true);
+  }
   await run('pdf-page-organiser', bytes, () => page.getByPlaceholder('3,1,2').fill('6,1,2,3,4,5'), o => assert.equal(o.getPageCount(), 6));
   await run('pdf-sign', bytes, async () => {
     await page.getByRole('button', { name: 'Create a signature' }).click();
@@ -555,4 +565,4 @@ try {
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-}
+      }

@@ -1,3 +1,4 @@
+import {makeOverlayFixture,overlayMark,checkSignaturePixels,checkWatermarkGeometry,OVERLAY_X,OVERLAY_Y} from './fixtures/visible-overlays.mjs';
 import {makeCropFixture,checkCropPixels,CROP_MARGINS} from './fixtures/visible-crop.mjs';
 import {makeStampFixture,checkStampGeometry,STAMP_PLACES} from './fixtures/visible-stamps.mjs';
 import { makeLayoutFixture, checkLayoutPixels } from './fixtures/page-layout.mjs';
@@ -518,4 +519,12 @@ console.log('All PDF suite ops passed.');
  await checkCropPixels(b,await cropPages(b,CROP_MARGINS,'2'),true);
  await assert.rejects(()=>cropPages(b,{...CROP_MARGINS,left:-1}),/non-negative/);
  console.log('PASS crop follows four viewer rotations and selected pages with asymmetric margins');
+}
+
+{
+ const b=await makeOverlayFixture(),png=overlayMark();
+ for(let page=1;page<=5;page++)for(const x of OVERLAY_X)for(const y of OVERLAY_Y)await checkSignaturePixels(await signPdf(b,{page,png,width:100,height:40,x,y}),page,x,y);
+ await checkWatermarkGeometry(await watermark(b,{text:'MARK',size:24}));
+ await assert.rejects(()=>signPdf(b,{page:1,png,width:300,height:40,x:'right',y:'bottom'}),/does not fit/);
+ console.log('PASS signature all9positions/fourrotations/nonzeroorigins and viewer-centered watermark');
 }
