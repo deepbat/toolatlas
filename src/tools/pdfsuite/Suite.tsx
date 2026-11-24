@@ -103,6 +103,7 @@ function DeletePages() {
     <Shell verb="Delete pages" outSuffix="trimmed" ready={!!spec.trim()} help="Pages count from 1. Use commas and ranges, for example 2,4-6."
       run={(b) => deletePages(b, spec)}>
       <Field label="Pages to delete"><Input value={spec} onChange={(e) => setSpec(e.target.value)} placeholder="2,4-6" inputMode="text" /></Field>
+      <Note>Fields, bookmarks and links belonging only to deleted pages are removed. Features on the remaining pages are kept. Document attachments are kept in full, so check them before sharing. This is not a redaction tool. XFA forms are not supported. Changing a signed PDF invalidates its digital signature.</Note>
     </Shell>
   );
 }
