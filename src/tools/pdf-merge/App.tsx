@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { PDFDocument } from 'pdf-lib';
+import { assemblePages } from '../pdfsuite/pageCatalogue';
 import { Button, Dropzone, FileRow, Panel, Result } from '../../components/ui';
 import { downloadBlob, formatBytes } from '../../lib/utils';
 import { readAsArrayBuffer } from '../shared';
@@ -61,16 +62,10 @@ export default function PdfMerge() {
     setError('');
     setDone(null);
     try {
-      const merged = await PDFDocument.create();
-      for (const item of items) {
-        const document = await PDFDocument.load(await readAsArrayBuffer(item.file), { ignoreEncryption: true });
-        const pages = await merged.copyPages(document, document.getPageIndices());
-        pages.forEach((page) => merged.addPage(page));
-      }
-      const bytes = await merged.save();
+      const bytes = await assemblePages(await Promise.all(items.map(async item => ({ bytes: new Uint8Array(await readAsArrayBuffer(item.file)) } ))));
       const blob = new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' });
       downloadBlob('toolatlas-merged.pdf', blob);
-      setDone({ size: blob.size, pages: merged.getPageCount() });
+      setDone({ size: blob.size, pages: (await PDFDocument.load(bytes)).getPageCount() });
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -142,6 +137,7 @@ export default function PdfMerge() {
           )}
         </div>
 
+        <p className="mt-3 text-xs text-muted">Editable forms, bookmarks, links and attachments are kept. Repeated field and attachment names get a suffix. XFA forms are not supported. Merging a signed PDF invalidates its digital signature.</p>
         {error && <p className="mt-3 text-sm text-rose-500">{error}</p>}
         {done && (
           <div className="mt-4">
