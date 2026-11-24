@@ -1,3 +1,4 @@
+import { makeLayoutFixture, checkLayoutPixels } from './fixtures/page-layout.mjs';
 import { verifyEditorRedaction } from './fixtures/editor-redaction.mjs';
 import { CORNER_TABLES } from './fixtures/corner-border-table.mjs';
 import { NUMERIC_TABLES } from './fixtures/borderless-numeric-table.mjs';
@@ -65,6 +66,22 @@ await step('editor true redaction privacy and pixels', async () => {
   });
   return 'shared browser fixture; hidden content, attachments, forms, geometry, failure closed and pixels';
 });
+
+for (const [slug,kind,verb] of [['pdf-nup','nup','Combine pages'],['pdf-booklet','booklet','Make booklet']]) {
+  await step(`rotated cropped vector ${kind} and blank pages`,async()=>{
+    await openTool(slug,'layout.pdf','application/pdf',await makeLayoutFixture());
+    if(await page.getByRole('button',{name:verb,exact:true}).isEnabled())throw Error('Cropped export enabled without consent');
+    await page.getByText('Convert cropped pages to images for this export',{exact:true}).click();
+    if(kind==='nup') {
+      await page.getByLabel('Pages per sheet').selectOption('4');
+      await page.getByText('Thin border around each page',{exact:true}).click();
+    }
+    const pending=page.waitForEvent('download',{timeout:60000});
+    await page.getByRole('button',{name:verb,exact:true}).click();
+    const path=`out/${evidencePrefix}-rotated-crop-${kind}.pdf`;
+    await(await pending).saveAs(path);await checkLayoutPixels(await readFile(path),kind);
+  });
+}
 
 // 1. Word to PDF, picture output with the invisible Unicode layer: text must read back and search by phrase.
 await step('word-to-pdf image PDF text layer', async () => {
