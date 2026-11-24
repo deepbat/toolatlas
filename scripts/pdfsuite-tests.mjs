@@ -1,3 +1,4 @@
+import {makeRepairFixtures,checkRecovered} from './fixtures/malformed-repair.mjs';
 import {makeBackgroundFixture,checkBackgroundPixels,chooseRedBackground} from './fixtures/visible-background.mjs';
 import {makeOcrGeometryFixture,checkOcrGeometry} from './fixtures/ocr-visible-layer.mjs';
 import {makeOverlayFixture,checkSignaturePixels,checkWatermarkGeometry,chooseOverlayMark,OVERLAY_X,OVERLAY_Y} from './fixtures/visible-overlays.mjs';
@@ -55,6 +56,22 @@ async function run(id, data, setup, check, timeoutMs, raw, keepName) {
   console.log('PASS ' + id); n++;
 }
 try {
+  {
+    const {good,cases}=await makeRepairFixtures();
+    for(const {name,bytes}of cases){
+      await page.goto(`${base}/tools/pdf-repair/`);await page.locator('input[type=file]').first().setInputFiles({name:'damaged.pdf',mimeType:'application/pdf',buffer:bytes});
+      await page.getByText('damaged.pdf',{exact:true}).first().waitFor();
+      const consent=page.getByRole('checkbox',{name:'Allow object recovery if the normal repair fails'});assert.equal(await consent.isChecked(),false);
+      let unexpected=0;const track=()=>unexpected++;page.on('download',track);
+      await page.getByRole('button',{name:'Repair PDF',exact:true}).click();await page.getByText(/after accepting the warning/).waitFor();assert.equal(unexpected,0,'Failed repair downloaded a file');page.off('download',track);
+      await page.getByText('Damaged or unsupported objects may be lost',{exact:false}).waitFor();
+      await consent.check();const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Repair PDF',exact:true}).click();
+      const path=`/tmp/repair-${name}.pdf`;await(await pending).saveAs(path);await checkRecovered(good,await readFile(path));
+      await page.getByRole('button',{name:/Remove/}).first().click();await page.locator('input[type=file]').first().setInputFiles({name:'again.pdf',mimeType:'application/pdf',buffer:bytes});
+      await page.getByText('again.pdf',{exact:true}).first().waitFor();assert.equal(await consent.isChecked(),false);
+      console.log('PASS consented repair '+name);n++;
+    }
+  }
   {
     const source=await makeBackgroundFixture();await page.goto(`${base}/tools/pdf-background/`);
     await page.locator('input[type=file]').first().setInputFiles({name:'background.pdf',mimeType:'application/pdf',buffer:source});
@@ -584,4 +601,4 @@ try {
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-      }
+}
