@@ -569,3 +569,9 @@ console.log('All PDF suite ops passed.');
   ['merge',[{bytes:a},{bytes:b}],[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]],{fields:[...common,'choice','person.name','omittedSecret',...common.map(n=>n+' (2)'),'choice (2)','person (2).name','omittedSecret (2)'],attachments:2,bookmarks:6,bookmarkPages:[1,0,2,4,3,5]}],
  ]as const){await checkCatalogueOutput([a,b],await assemblePages(inputs as any),expected,options);console.log('PASS catalogue '+name+' editable fields, bookmarks, links, attachments, exact pixels and pruned omitted values');}
 }
+
+{
+ const source=await makeCatalogueFixture('Alpha'),out=await deletePages(source,'3');
+ await checkCatalogueOutput([source],out,[[0,0],[0,1]],{fields:['customer','approved','shared','choice','person.name'],attachments:1,omitSecret:true,bookmarks:2,bookmarkPages:[1,0]});
+ console.log('PASS delete prunes excluded fields and destinations while preserving retained catalogue and exact pixels');
+}
