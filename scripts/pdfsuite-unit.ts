@@ -1,3 +1,5 @@
+import {addPdfBackground} from '../src/tools/studio/pdfBackground';
+import {makeBackgroundFixture,checkBackgroundPixels} from './fixtures/visible-background.mjs';
 import {makeOcrGeometryFixture,fixedOcrLayers,checkOcrGeometry} from './fixtures/ocr-visible-layer.mjs';
 import {makeOverlayFixture,overlayMark,checkSignaturePixels,checkWatermarkGeometry,OVERLAY_X,OVERLAY_Y} from './fixtures/visible-overlays.mjs';
 import {makeCropFixture,checkCropPixels,CROP_MARGINS} from './fixtures/visible-crop.mjs';
@@ -538,4 +540,9 @@ console.log('All PDF suite ops passed.');
  }
  await checkOcrGeometry(source,await addTextLayer(source,[fixedOcrLayers()[1]]),{selected:true,fixed:true});
  console.log('PASS OCR layer viewer bounds/orientation all rotations/crops/nonzero origins English/Hindi/Punjabi + selected pages, pixels unchanged');
+}
+
+{
+ const b=await makeBackgroundFixture();await checkBackgroundPixels(b,await addPdfBackground(b,[1,0,0]));
+ console.log('PASS vector background preserves exact crop/rotation/origin pixels and blank pages');
 }
