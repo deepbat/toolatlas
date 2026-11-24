@@ -1,3 +1,4 @@
+import {makeBackgroundFixture,checkBackgroundPixels,chooseRedBackground} from './fixtures/visible-background.mjs';
 import {makeOcrGeometryFixture,checkOcrGeometry} from './fixtures/ocr-visible-layer.mjs';
 import {makeOverlayFixture,checkSignaturePixels,checkWatermarkGeometry,chooseOverlayMark,OVERLAY_X,OVERLAY_Y} from './fixtures/visible-overlays.mjs';
 import {makeCropFixture,checkCropPixels,CROP_MARGINS} from './fixtures/visible-crop.mjs';
@@ -112,6 +113,12 @@ for(const selected of[false,true]){
   });
 }
 
+await step('background viewer geometry and blank page',async()=>{
+ const source=await makeBackgroundFixture();await openTool('pdf-background','background.pdf','application/pdf',source);await chooseRedBackground(page);
+ await page.getByRole('button',{name:/Apply to all pages/i}).click();await page.getByRole('button',{name:'Download PDF',exact:true}).waitFor();
+ const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Download PDF',exact:true}).click();
+ const path=`out/${evidencePrefix}-visible-background.pdf`;await(await pending).saveAs(path);await checkBackgroundPixels(source,await readFile(path));
+});
 for(const selected of [false,true])await step(`OCR visible layer ${selected?'selected':'all'} pages`,async()=>{
  const source=await makeOcrGeometryFixture();await openTool('pdf-ocr','scan.pdf','application/pdf',source);
  if(selected)await page.getByLabel('Pages',{exact:true}).fill('2');
