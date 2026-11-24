@@ -1,3 +1,4 @@
+import {makeStampFixture,checkStampGeometry,STAMP_PLACES} from './fixtures/visible-stamps.mjs';
 import { makeLayoutFixture, checkLayoutPixels } from './fixtures/page-layout.mjs';
 import { readFile } from 'node:fs/promises';
 import { indicWordSpacing } from '../src/tools/pdfsuite/ocrSpacing';
@@ -499,4 +500,14 @@ console.log('All PDF suite ops passed.');
   await checkLayoutPixels(await nUp(fixture, 4, { border: false }), 'nup',false);
   await checkLayoutPixels(await booklet(fixture), 'booklet',false);
   console.log('PASS n-up/booklet preserve four rotations, CropBox, vector text and blank pages');
+}
+
+{
+  const b=await makeStampFixture();
+  for(const place of STAMP_PLACES){
+    await checkStampGeometry(await stampText(b,{text:'STAMP {n}/{total}',place}),place);
+    await checkStampGeometry(await stampText(b,{text:'{bates}',place,batesPrefix:'CASE-',batesStart:7,batesDigits:4}),place,{bates:true});
+  }
+  await checkStampGeometry(await stampText(b,{text:'STAMP {n}/{total}',place:'header-left',pages:'2'}),'header-left',{selected:true});
+  console.log('PASS visible stamps all six positions/four rotations/nonzero boxes, Bates and selected pages');
 }
