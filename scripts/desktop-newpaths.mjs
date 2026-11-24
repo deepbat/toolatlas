@@ -1,3 +1,4 @@
+import { verifyEditorRedaction } from './fixtures/editor-redaction.mjs';
 import { CORNER_TABLES } from './fixtures/corner-border-table.mjs';
 import { NUMERIC_TABLES } from './fixtures/borderless-numeric-table.mjs';
 import { HORIZONTAL_TABLES } from './fixtures/horizontal-border-table.mjs';
@@ -54,6 +55,16 @@ async function openTool(slug, file, mime, buf, label) {
   await page.locator('input[type=file]').first().setInputFiles({ name: file, mimeType: mime, buffer: buf });
   await page.getByText(file).first().waitFor({ timeout: 20000 });
 }
+
+// Same exact fixture and assertions as the browser editor regression.
+await step('editor true redaction privacy and pixels', async () => {
+  await verifyEditorRedaction(page, {
+    base: `${origin}${base}`,
+    evidence: `out/${evidencePrefix}-redaction`,
+    check: (name, ok) => { if (!ok) throw Error(name); console.log('PASS redaction: ' + name); },
+  });
+  return 'shared browser fixture; hidden content, attachments, forms, geometry, failure closed and pixels';
+});
 
 // 1. Word to PDF, picture output with the invisible Unicode layer: text must read back and search by phrase.
 await step('word-to-pdf image PDF text layer', async () => {
