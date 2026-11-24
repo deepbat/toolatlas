@@ -1,3 +1,4 @@
+import { makeLayoutFixture, checkLayoutPixels } from './fixtures/page-layout.mjs';
 import { readFile } from 'node:fs/promises';
 import { indicWordSpacing } from '../src/tools/pdfsuite/ocrSpacing';
 import joined from './fixtures/ocr-joined-word.json';
@@ -489,4 +490,13 @@ console.log('All PDF suite ops passed.');
   const crossing={h:[...outer.h,...inner.h.map(s=>({...s,a:80}))],v:[...outer.v,{at:80,a:220,b:300},...inner.v.slice(1)]};
   assert.ok(gridsFromLines(crossing,[],true).grids.every(g=>g.rows.flat().every(c=>!c.blocks)),'corner crossing parent boundary not nested');
   console.log('PASS unique two-adjacent-edge corner nesting and partial-rule negatives');
+}
+
+{
+  const fixture = await makeLayoutFixture(false);
+  const awaitCrop = await makeLayoutFixture();
+  await assert.rejects(() => nUp(awaitCrop,4), /image preparation/);
+  await checkLayoutPixels(await nUp(fixture, 4, { border: false }), 'nup',false);
+  await checkLayoutPixels(await booklet(fixture), 'booklet',false);
+  console.log('PASS n-up/booklet preserve four rotations, CropBox, vector text and blank pages');
 }
