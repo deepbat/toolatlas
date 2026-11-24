@@ -1,3 +1,4 @@
+import {makeOcrGeometryFixture,fixedOcrLayers,checkOcrGeometry} from './fixtures/ocr-visible-layer.mjs';
 import {makeOverlayFixture,overlayMark,checkSignaturePixels,checkWatermarkGeometry,OVERLAY_X,OVERLAY_Y} from './fixtures/visible-overlays.mjs';
 import {makeCropFixture,checkCropPixels,CROP_MARGINS} from './fixtures/visible-crop.mjs';
 import {makeStampFixture,checkStampGeometry,STAMP_PLACES} from './fixtures/visible-stamps.mjs';
@@ -527,4 +528,14 @@ console.log('All PDF suite ops passed.');
  await checkWatermarkGeometry(await watermark(b,{text:'MARK',size:24}));
  await assert.rejects(()=>signPdf(b,{page:1,png,width:300,height:40,x:'right',y:'bottom'}),/does not fit/);
  console.log('PASS signature all9positions/fourrotations/nonzeroorigins and viewer-centered watermark');
+}
+
+{
+ const source=await makeOcrGeometryFixture();
+ for(const text of ['ORBIT','नमस्ते','ਸਤਿ']){
+  const layers=fixedOcrLayers().map(l=>({...l,words:l.words.map(w=>({...w,text}))}));
+  await checkOcrGeometry(source,await addTextLayer(source,layers),{words:[text],fixed:true});
+ }
+ await checkOcrGeometry(source,await addTextLayer(source,[fixedOcrLayers()[1]]),{selected:true,fixed:true});
+ console.log('PASS OCR layer viewer bounds/orientation all rotations/crops/nonzero origins English/Hindi/Punjabi + selected pages, pixels unchanged');
 }

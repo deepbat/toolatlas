@@ -1,3 +1,4 @@
+import {makeOcrGeometryFixture,checkOcrGeometry} from './fixtures/ocr-visible-layer.mjs';
 import {makeOverlayFixture,checkSignaturePixels,checkWatermarkGeometry,chooseOverlayMark,OVERLAY_X,OVERLAY_Y} from './fixtures/visible-overlays.mjs';
 import {makeCropFixture,checkCropPixels,CROP_MARGINS} from './fixtures/visible-crop.mjs';
 import {makeStampFixture,checkStampGeometry,STAMP_PLACES} from './fixtures/visible-stamps.mjs';
@@ -111,6 +112,13 @@ for(const selected of[false,true]){
   });
 }
 
+for(const selected of [false,true])await step(`OCR visible layer ${selected?'selected':'all'} pages`,async()=>{
+ const source=await makeOcrGeometryFixture();await openTool('pdf-ocr','scan.pdf','application/pdf',source);
+ if(selected)await page.getByLabel('Pages',{exact:true}).fill('2');
+ const pending=page.waitForEvent('download',{timeout:120000});await page.getByRole('button',{name:'Make searchable',exact:true}).click();
+ const path=`out/${evidencePrefix}-ocr-visible-${selected?'selected':'all'}.pdf`;await(await pending).saveAs(path);
+ await checkOcrGeometry(source,await readFile(path),{selected});
+});
 await step('viewer centered diagonal watermark',async()=>{
  await openTool('pdf-watermark','overlay.pdf','application/pdf',await makeOverlayFixture());
  await page.getByLabel('Watermark text',{exact:true}).fill('MARK');await page.getByLabel('Size (pt)',{exact:true}).fill('24');

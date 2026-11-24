@@ -1,6 +1,6 @@
 // Pure, on-device PDF page operations built on pdf-lib. No DOM access, so
 // every function is covered by scripts/pdfsuite-unit.ts.
-import { PDFDocument, PDFPage, PDFEmbeddedPage, pushGraphicsState, popGraphicsState, rectangle, clip, endPath, StandardFonts, degrees, rgb } from 'pdf-lib';
+import { PDFDocument, PDFPage, PDFEmbeddedPage, pushGraphicsState, popGraphicsState, concatTransformationMatrix, rectangle, clip, endPath, StandardFonts, degrees, rgb } from 'pdf-lib';
 import { InvisibleUnicodeFont, drawInvisibleWords, needsUnicode } from './unicodeLayer';
 
 /** "1-3,5,8-" style ranges to zero-based indexes. Blank means all pages. */
@@ -305,36 +305,32 @@ export async function addTextLayer(bytes: Uint8Array, layers: OcrPageLayer[]): P
   const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const pages = doc.getPages();
-  // Hindi, Punjabi and other scripts Helvetica cannot carry go through the Unicode-exact invisible layer.
-  if (layers.some((l) => needsUnicode(l.words))) {
-    const uf = new InvisibleUnicodeFont(doc);
-    for (const layer of layers) {
-      const page = pages[layer.page - 1];
-      if (!page) throw new Error(`Page ${layer.page} is outside this ${pages.length}-page document.`);
-      if (layer.imgWidth < 1 || layer.imgHeight < 1) throw new Error('The scan image has no size.');
-      const { width, height } = page.getSize();
-      const sx = width / layer.imgWidth, sy = height / layer.imgHeight;
-      drawInvisibleWords(page, uf, layer.words.map((w) => ({ text: w.text, x: w.x0 * sx, y: height - w.y1 * sy, w: Math.max(1, (w.x1 - w.x0) * sx), h: Math.max(1, (w.y1 - w.y0) * sy) })));
-    }
-    uf.finish();
-    return doc.save();
-  }
+  const unicode = layers.some((l) => needsUnicode(l.words));
+  const uf = unicode ? new InvisibleUnicodeFont(doc) : undefined;
   for (const layer of layers) {
     const page = pages[layer.page - 1];
     if (!page) throw new Error(`Page ${layer.page} is outside this ${pages.length}-page document.`);
-    if (layer.imgWidth < 1 || layer.imgHeight < 1) throw new Error('The scan image has no size.');
-    const { width, height } = page.getSize();
+    if (![layer.imgWidth, layer.imgHeight].every(Number.isFinite) || layer.imgWidth < 1 || layer.imgHeight < 1) throw new Error('The scan image has no size.');
+    const geometry = visiblePage(page), { width, height } = geometry;
     const sx = width / layer.imgWidth, sy = height / layer.imgHeight;
-    for (const w of layer.words) {
+    // OCR boxes come from PDF.js's rotated, cropped viewport. Work in those
+    // viewer axes, then map the entire invisible layer back into the raw page.
+    const origin = geometry.point(0, 0), ux = geometry.point(1, 0), uy = geometry.point(0, 1);
+    page.pushOperators(pushGraphicsState(), concatTransformationMatrix(ux.x-origin.x, ux.y-origin.y, uy.x-origin.x, uy.y-origin.y, origin.x, origin.y));
+    const words = layer.words.map(w => ({ text: w.text, x: w.x0 * sx, y: height - w.y1 * sy,
+      w: Math.max(1, (w.x1 - w.x0) * sx), h: Math.max(1, (w.y1 - w.y0) * sy) }));
+    if (uf) drawInvisibleWords(page, uf, words);
+    else for (const w of words) {
       const text = toWinAnsi(w.text);
       if (!text) continue;
-      const bw = Math.max(1, (w.x1 - w.x0) * sx), bh = Math.max(1, (w.y1 - w.y0) * sy);
-      let size = bh;
-      const tw = font.widthOfTextAtSize(text, size);
-      if (tw > bw) size = Math.max(1, size * (bw / tw));
-      page.drawText(text, { x: w.x0 * sx, y: height - w.y1 * sy, size, font, opacity: 0 });
+      const size = w.h, tw = font.widthOfTextAtSize(text, size);
+      page.pushOperators(pushGraphicsState(), concatTransformationMatrix(tw > 0 ? w.w / tw : 1, 0, 0, 1, w.x, w.y));
+      page.drawText(text, { x: 0, y: 0, size, font, opacity: 0 });
+      page.pushOperators(popGraphicsState());
     }
+    page.pushOperators(popGraphicsState());
   }
+  uf?.finish();
   return doc.save();
 }
 
