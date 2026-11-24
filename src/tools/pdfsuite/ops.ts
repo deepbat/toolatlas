@@ -1,3 +1,4 @@
+import { assemblePages } from './pageCatalogue';
 // Pure, on-device PDF page operations built on pdf-lib. No DOM access, so
 // every function is covered by scripts/pdfsuite-unit.ts.
 import { PDFDocument, PDFPage, PDFEmbeddedPage, pushGraphicsState, popGraphicsState, concatTransformationMatrix, rectangle, clip, endPath, StandardFonts, degrees, rgb } from 'pdf-lib';
@@ -250,12 +251,7 @@ export async function reorderPages(bytes: Uint8Array, spec: string): Promise<Uin
     if (!Number.isInteger(n) || n < 1 || n > total) throw new Error(`"${part.trim()}" is not a page number between 1 and ${total}.`);
     return n - 1;
   });
-  const out = await PDFDocument.create();
-  for (const p of await out.copyPages(src, order)) out.addPage(p);
-  const title = src.getTitle(); if (title) out.setTitle(title);
-  const author = src.getAuthor(); if (author) out.setAuthor(author);
-  const subject = src.getSubject(); if (subject) out.setSubject(subject);
-  return out.save();
+  return assemblePages([{ bytes, pages: order }]);
 }
 
 export interface SignPlacement {
