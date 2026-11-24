@@ -1,3 +1,4 @@
+import {makeIndicSelectionFixture,checkIndicSelection} from './fixtures/indic-selection.mjs';
 import {assemblePages} from '../src/tools/pdfsuite/pageCatalogue';
 import {makeCatalogueFixture,checkCatalogueOutput} from './fixtures/page-catalogue.mjs';
 import {makeRepairFixtures,checkRecovered} from './fixtures/malformed-repair.mjs';
@@ -574,4 +575,10 @@ console.log('All PDF suite ops passed.');
  const source=await makeCatalogueFixture('Alpha'),out=await deletePages(source,'3');
  await checkCatalogueOutput([source],out,[[0,0],[0,1]],{fields:['customer','approved','shared','choice','person.name'],attachments:1,omitSecret:true,bookmarks:2,bookmarkPages:[1,0]});
  console.log('PASS delete prunes excluded fields and destinations while preserving retained catalogue and exact pixels');
+}
+
+{
+ const f=await makeIndicSelectionFixture(),out=await addTextLayer(f.source,f.layers);
+ await checkIndicSelection(f.source,out);
+ console.log('PASS Indic full-word selection widths, exact Unicode, positions and unchanged pixels');
 }
