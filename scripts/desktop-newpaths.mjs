@@ -1,3 +1,4 @@
+import {makeOverlayFixture,checkSignaturePixels,checkWatermarkGeometry,chooseOverlayMark,OVERLAY_X,OVERLAY_Y} from './fixtures/visible-overlays.mjs';
 import {makeCropFixture,checkCropPixels,CROP_MARGINS} from './fixtures/visible-crop.mjs';
 import {makeStampFixture,checkStampGeometry,STAMP_PLACES} from './fixtures/visible-stamps.mjs';
 import { makeLayoutFixture, checkLayoutPixels } from './fixtures/page-layout.mjs';
@@ -108,6 +109,20 @@ for(const selected of[false,true]){
     const path=`out/${evidencePrefix}-visible-crop-${selected?'selected':'all'}.pdf`;await(await pending).saveAs(path);
     await checkCropPixels(source,await readFile(path),selected);
   });
+}
+
+await step('viewer centered diagonal watermark',async()=>{
+ await openTool('pdf-watermark','overlay.pdf','application/pdf',await makeOverlayFixture());
+ await page.getByLabel('Watermark text',{exact:true}).fill('MARK');await page.getByLabel('Size (pt)',{exact:true}).fill('24');
+ const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Add watermark',exact:true}).click();
+ const path=`out/${evidencePrefix}-visible-watermark.pdf`;await(await pending).saveAs(path);await checkWatermarkGeometry(await readFile(path));
+});
+for(let n=1;n<=5;n++)for(const x of OVERLAY_X)for(const y of OVERLAY_Y){
+ await step(`viewer signature ${n} ${x} ${y}`,async()=>{
+  await openTool('pdf-sign','overlay.pdf','application/pdf',await makeOverlayFixture());await chooseOverlayMark(page,n,x,y);
+  const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Sign PDF',exact:true}).click();
+  const path=`out/${evidencePrefix}-visible-sign-${n}-${x}-${y}.pdf`;await(await pending).saveAs(path);await checkSignaturePixels(await readFile(path),n,x,y);
+ });
 }
 
 // 1. Word to PDF, picture output with the invisible Unicode layer: text must read back and search by phrase.
