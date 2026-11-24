@@ -1,3 +1,4 @@
+import {exerciseIndicConversion} from './fixtures/indic-browser.mjs';
 import {exerciseCataloguePaths} from './fixtures/catalogue-browser.mjs';
 import {makeTidyFixture,checkTidyDocument} from './fixtures/tidy-document.mjs';
 import {makeRepairFixtures,checkRecovered} from './fixtures/malformed-repair.mjs';
@@ -98,6 +99,7 @@ try {
       await copyFile(path,`/tmp/ocr-visible-${selected?'selected':'all'}.pdf`);
     },120000,true);
   }
+  await exerciseIndicConversion(page,{base,path:'/tmp/indic-conversion-width.pdf'});console.log('PASS Indic converted-word selection covers painted words');n++;
   await run('pdf-delete-pages', bytes, () => page.getByPlaceholder('2,4-6').fill('2,4-6'), o => assert.equal(o.getPageCount(), 2));
   await run('pdf-crop', bytes, async () => { await page.locator('input[type=number]').nth(0).fill('10'); }, o => assert.ok(o.getPage(0).getHeight() < 842 - 20));
   for(const selected of[false,true]){
