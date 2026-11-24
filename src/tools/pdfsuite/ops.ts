@@ -74,6 +74,22 @@ export interface StampOptions {
   batesDigits?: number;
 }
 
+/** Visible viewer geometry and its inverse map into raw PDF page coordinates. */
+function visiblePage(p: PDFPage) {
+  const m = p.getMediaBox(), c = p.getCropBox();
+  const left = Math.max(m.x, c.x), bottom = Math.max(m.y, c.y);
+  const rawW = Math.min(m.x + m.width, c.x + c.width) - left;
+  const rawH = Math.min(m.y + m.height, c.y + c.height) - bottom;
+  const angle = ((p.getRotation().angle % 360) + 360) % 360;
+  if (rawW <= 0 || rawH <= 0) throw Error('A page has no visible area.');
+  if (![0, 90, 180, 270].includes(angle)) throw Error('Page rotation must be a multiple of 90 degrees.');
+  return { angle, width: angle % 180 ? rawH : rawW, height: angle % 180 ? rawW : rawH,
+    point: (x: number, y: number) => ({
+      x: left + (angle === 90 ? rawW - y : angle === 180 ? rawW - x : angle === 270 ? y : x),
+      y: bottom + (angle === 90 ? x : angle === 180 ? rawH - y : angle === 270 ? rawH - x : y),
+    }) };
+}
+
 /** Header/footer text, page numbers and Bates numbers all go through here. */
 export async function stampText(bytes: Uint8Array, o: StampOptions): Promise<Uint8Array> {
   const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
@@ -84,23 +100,13 @@ export async function stampText(bytes: Uint8Array, o: StampOptions): Promise<Uin
   const targets = parsePageRanges(o.pages ?? '', pages.length);
   targets.forEach((i, seq) => {
     const p = pages[i];
-    const m = p.getMediaBox(), c = p.getCropBox();
-    const left = Math.max(m.x, c.x), bottom = Math.max(m.y, c.y);
-    const rawW = Math.min(m.x + m.width, c.x + c.width) - left;
-    const rawH = Math.min(m.y + m.height, c.y + c.height) - bottom;
-    const angle = ((p.getRotation().angle % 360) + 360) % 360;
-    if (rawW <= 0 || rawH <= 0) throw Error('A page has no visible area to stamp.');
-    if (![0, 90, 180, 270].includes(angle)) throw Error('Page rotation must be a multiple of 90 degrees.');
-    const width = angle % 180 ? rawH : rawW, height = angle % 180 ? rawW : rawH;
+    const geometry = visiblePage(p), { width, height, angle } = geometry;
     const bates = `${o.batesPrefix ?? ''}${String((o.batesStart ?? 1) + seq).padStart(o.batesDigits ?? 6, '0')}`;
     const text = o.text.replace(/\{n\}/g, String(i + 1)).replace(/\{total\}/g, String(pages.length)).replace(/\{bates\}/g, bates);
     const tw = font.widthOfTextAtSize(text, size);
     const x = o.place.endsWith('left') ? margin : o.place.endsWith('right') ? width - margin - tw : (width - tw) / 2;
     const y = o.place.startsWith('header') ? height - margin - size * 0.8 : margin;
-    // Map viewer-space bottom-left coordinates back into unrotated page space.
-    const px = angle === 90 ? rawW - y : angle === 180 ? rawW - x : angle === 270 ? y : x;
-    const py = angle === 90 ? x : angle === 180 ? rawH - y : angle === 270 ? rawH - x : y;
-    p.drawText(text, { x: left + px, y: bottom + py, rotate: degrees(angle), size, font, color: rgb(r, g, b) });
+    p.drawText(text, { ...geometry.point(x, y), rotate: degrees(angle), size, font, color: rgb(r, g, b) });
   });
   return doc.save();
 }
@@ -222,14 +228,14 @@ export async function watermark(bytes: Uint8Array, o: WatermarkOptions): Promise
   const pages = doc.getPages();
   for (const i of parsePageRanges(o.pages ?? '', pages.length)) {
     const p = pages[i];
-    const { width, height } = p.getSize();
+    const geometry = visiblePage(p), { width, height } = geometry;
     let size = o.size ?? 48;
     let tw = font.widthOfTextAtSize(text, size);
     const maxTw = 0.95 * Math.hypot(width, height);
     if (tw > maxTw) { size = Math.max(8, size * maxTw / tw); tw = font.widthOfTextAtSize(text, size); }
     const x = width / 2 - (tw / 2) * cos + size * 0.35 * sin;
     const y = height / 2 - (tw / 2) * sin - size * 0.35 * cos;
-    p.drawText(text, { x, y, size, font, color: rgb(0.45, 0.45, 0.45), opacity: o.opacity ?? 0.15, rotate: degrees(45) });
+    p.drawText(text, { ...geometry.point(x, y), size, font, color: rgb(0.45, 0.45, 0.45), opacity: o.opacity ?? 0.15, rotate: degrees(45 + geometry.angle) });
   }
   return doc.save();
 }
@@ -271,11 +277,13 @@ export async function signPdf(bytes: Uint8Array, p: SignPlacement): Promise<Uint
   if (p.width < 10 || p.height < 10) throw new Error('The signature would be smaller than 10 pt.');
   const img = await doc.embedPng(p.png);
   const page = pages[idx];
-  const { width, height } = page.getSize();
+  const geometry = visiblePage(page), { width, height } = geometry;
   const margin = p.margin ?? 36;
   const x = p.x === 'left' ? margin : p.x === 'right' ? width - margin - p.width : (width - p.width) / 2;
   const y = p.y === 'bottom' ? margin : p.y === 'top' ? height - margin - p.height : (height - p.height) / 2;
-  page.drawImage(img, { x, y, width: p.width, height: p.height });
+  if (![p.width, p.height, margin].every(Number.isFinite) || margin < 0) throw Error('Signature size and margin must be finite and non-negative.');
+  if (p.width + 2 * margin > width || p.height + 2 * margin > height) throw Error('The signature does not fit inside the visible page margins. Choose a smaller width.');
+  page.drawImage(img, { ...geometry.point(x, y), width: p.width, height: p.height, rotate: degrees(geometry.angle) });
   return doc.save();
 }
 
