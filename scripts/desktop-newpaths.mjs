@@ -1,3 +1,4 @@
+import {exerciseCataloguePaths} from './fixtures/catalogue-browser.mjs';
 import {makeTidyFixture,checkTidyDocument} from './fixtures/tidy-document.mjs';
 import {makeRepairFixtures,checkRecovered} from './fixtures/malformed-repair.mjs';
 import {makeBackgroundFixture,checkBackgroundPixels,chooseRedBackground} from './fixtures/visible-background.mjs';
@@ -115,6 +116,7 @@ for(const selected of[false,true]){
   });
 }
 
+await step('page catalogue merge split reorder and duplicate',async()=>{await exerciseCataloguePaths(page,{base:`${origin}${base}`,evidence:`out/${evidencePrefix}-catalogue`,check:name=>console.log('PASS catalogue '+name)});});
 await step('tidy preserves document catalogue and exact pixels',async()=>{
  const source=await makeTidyFixture();await openTool('pdf-compress','catalogue.pdf','application/pdf',source);await page.getByLabel('Method',{exact:true}).selectOption('tidy');
  await page.getByRole('button',{name:'Compress PDF',exact:true}).click();await page.getByRole('button',{name:'Download PDF',exact:true}).waitFor();const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Download PDF',exact:true}).click();

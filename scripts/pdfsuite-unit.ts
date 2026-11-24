@@ -1,3 +1,5 @@
+import {assemblePages} from '../src/tools/pdfsuite/pageCatalogue';
+import {makeCatalogueFixture,checkCatalogueOutput} from './fixtures/page-catalogue.mjs';
 import {makeRepairFixtures,checkRecovered} from './fixtures/malformed-repair.mjs';
 import {addPdfBackground} from '../src/tools/studio/pdfBackground';
 import {makeBackgroundFixture,checkBackgroundPixels} from './fixtures/visible-background.mjs';
@@ -555,4 +557,15 @@ console.log('All PDF suite ops passed.');
  const locked=await protectPdf(good,'secret',wasm);await assert.rejects(repairPdf(locked,wasm,true),/No repaired file/);
  await checkRecovered(good,await repairPdf(good,wasm));
  console.log('PASS consented malformed xref recovery three failures, exactpixels/text/geometry/blank, unrecoverable rejection and subsequent success');
+}
+
+{
+ const a=await makeCatalogueFixture('Alpha'),b=await makeCatalogueFixture('Beta',StandardFonts.Courier);
+ const common=['customer','approved','shared'];
+ for(const [name,inputs,expected,options]of[
+  ['split',[{bytes:a,pages:[0]}],[[0,0]],{fields:common,attachments:1,omitSecret:true,bookmarks:1,bookmarkPages:[0]}],
+  ['reorder',[{bytes:a,pages:[1,0]}],[[0,1],[0,0]],{fields:[...common,'choice','person.name'],attachments:1,omitSecret:true,bookmarks:2,bookmarkPages:[0,1]}],
+  ['duplicate',[{bytes:a,pages:[0,1,0]}],[[0,0],[0,1],[0,0]],{fields:[...common,'choice','person.name',...common.map(n=>n+' (2)')],attachments:1,omitSecret:true,bookmarks:2,bookmarkPages:[1,0]}],
+  ['merge',[{bytes:a},{bytes:b}],[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]],{fields:[...common,'choice','person.name','omittedSecret',...common.map(n=>n+' (2)'),'choice (2)','person (2).name','omittedSecret (2)'],attachments:2,bookmarks:6,bookmarkPages:[1,0,2,4,3,5]}],
+ ]as const){await checkCatalogueOutput([a,b],await assemblePages(inputs as any),expected,options);console.log('PASS catalogue '+name+' editable fields, bookmarks, links, attachments, exact pixels and pruned omitted values');}
 }
