@@ -1,3 +1,4 @@
+import {makeCropFixture,checkCropPixels,CROP_MARGINS} from './fixtures/visible-crop.mjs';
 import {makeStampFixture,checkStampGeometry,STAMP_PLACES} from './fixtures/visible-stamps.mjs';
 import { makeLayoutFixture, checkLayoutPixels } from './fixtures/page-layout.mjs';
 import { CORNER_TABLES } from './fixtures/corner-border-table.mjs';
@@ -53,6 +54,18 @@ async function run(id, data, setup, check, timeoutMs, raw, keepName) {
 try {
   await run('pdf-delete-pages', bytes, () => page.getByPlaceholder('2,4-6').fill('2,4-6'), o => assert.equal(o.getPageCount(), 2));
   await run('pdf-crop', bytes, async () => { await page.locator('input[type=number]').nth(0).fill('10'); }, o => assert.ok(o.getPage(0).getHeight() < 842 - 20));
+  for(const selected of[false,true]){
+    const source=await makeCropFixture();
+    await run('pdf-crop',source,async()=>{
+      await page.getByText('Millimetres',{exact:true}).click();
+      for(const [key,value]of Object.entries(CROP_MARGINS))await page.getByLabel(key[0].toUpperCase()+key.slice(1),{exact:true}).fill(String(value));
+      if(selected)await page.getByLabel('Pages',{exact:true}).fill('2');
+    },async path=>{
+      await checkCropPixels(source,await readFile(path),selected);
+      await mkdir('test-artifacts/pdfsuite',{recursive:true});
+      await copyFile(path,`test-artifacts/pdfsuite/visible-crop-${selected?'selected':'all'}.pdf`);
+    },60000,true);
+  }
   await run('pdf-header-footer', bytes, null, o => assert.equal(o.getPageCount(), 6));
   await run('pdf-bates', bytes, null, o => assert.equal(o.getPageCount(), 6));
   for(const [slug,bates] of [['pdf-header-footer',false],['pdf-bates',true]])for(const place of STAMP_PLACES){
