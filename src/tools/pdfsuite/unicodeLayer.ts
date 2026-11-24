@@ -1,14 +1,23 @@
+// Locally generated blank TrueType font, three glyphs: .notdef, advancing, combining.
+// No third-party font outlines or font license dependency. Used only in render mode3.
+// Embedding actual widths prevents reader fallback fonts from inventing geometry.
+const encoded = 'AAEAAAAKAIAAAwAgT1MvMkVhSIUAAAEoAAAAYGNtYXAF0v3eAAABlAAAADxnbHlmAAAAAAAAAdgAAAABaGVhZFdhoeAAAACsAAAANmhoZWEDIgMkAAAA5AAAACRobXR4B9AAAAAAAYgAAAAMbG9jYQAAAAAAAAHQAAAACG1heHAABAACAAABCAAAACBuYW1lAoNfFQAAAdwAAADAcG9zdGqgMgUAAAKcAAAALgABAAAAAQAAcDmjEF8PPPUAAwPoAAAAAHwlsIAAAAAAfCWwgAAAAAAAAAAAAAAAAwACAAAAAAAAAAEAAAMg/zgAAAPoAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAADAAEAAAADAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAwPoAZAABQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBAAAAAAAAAAAAAAAAPz8/PwAAAEEDAQMg/zgAAAMgAMgAAAAAAAAAAAAAAAAAAAAgAAAD6AAAA+gAAAAAAAAAAAACAAAAAwAAABQAAwABAAAAFAAEACgAAAAGAAQAAQACAEEDAf//AAAAQQMB////wP0BAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAH4AAQAAAAAAAQAPAAAAAQAAAAAAAgAHAA8AAQAAAAAAAwAPAAAAAQAAAAAABAAPAAAAAQAAAAAABgAPAAAAAwABBAkAAQAeABYAAwABBAkAAgAOADQAAwABBAkAAwAeABYAAwABBAkABAAeABYAAwABBAkABgAeABZEZWVwYWtJbnZpc2libGVSZWd1bGFyAEQAZQBlAHAAYQBrAEkAbgB2AGkAcwBpAGIAbABlAFIAZQBnAHUAbABhAHIAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAABAgEDAmcxAmcyAAA=';
+export function invisibleFontBytes(): Uint8Array {
+  return Uint8Array.from(atob(encoded), c => c.charCodeAt(0));
+}
+
 // Invisible, Unicode-exact text for scanned or image-only pages.
 //
 // Chromium's print path and Helvetica cannot carry Hindi or Punjabi text reliably. This builds a tiny
 // composite font instead: every distinct character gets its own code, and a ToUnicode map sends each
 // code straight back to that character. The text is drawn in render mode 3 (invisible), so no glyph
 // shapes are needed and no shaping can reorder anything. Readers that copy or search text use the
-// ToUnicode map, which is exact here. No font file is embedded.
+// ToUnicode map, which is exact here. A tiny blank font fixes reader fallback metrics.
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFNumber, PDFOperator, PDFRef, PDFString, popGraphicsState, pushGraphicsState, type PDFPage } from 'pdf-lib';
 
 export interface PlacedWord { text: string; x: number; y: number; w: number; h: number }
 
+const zeroAdvance = (cp: number) => /[\p{Mn}\p{Cf}]/u.test(String.fromCodePoint(cp));
 const hex4 = (n: number) => n.toString(16).toUpperCase().padStart(4, '0');
 
 function utf16Hex(cp: number): string {
@@ -31,7 +40,7 @@ export class InvisibleUnicodeFont {
       if (cp < 0x20 || cp === 0x7f) continue;
       let id = this.cids.get(cp);
       if (id === undefined) { id = this.order.length + 1; this.cids.set(cp, id); this.order.push(cp); }
-      hex += hex4(id); count++;
+      hex += hex4(id); if (!zeroAdvance(cp)) count++;
     }
     return { hex, count };
   }
@@ -47,12 +56,17 @@ export class InvisibleUnicodeFont {
     const cmap = `/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n/CMapName /Adobe-Identity-UCS def\n/CMapType 2 def\n1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n${parts.join('\n')}\nendcmap\nCMapName currentdict /CMap defineresource pop\nend\nend`;
     const toUni = ctx.register(ctx.stream(cmap));
     const base = PDFName.of('DeepakInvisible');
+    const fontBytes = invisibleFontBytes();
+    const fontFile = ctx.register(ctx.flateStream(fontBytes, { Length1: fontBytes.length }));
+    const glyphMap = new Uint8Array((this.order.length + 1) * 2);
+    this.order.forEach((cp, i) => { glyphMap[(i + 1) * 2 + 1] = zeroAdvance(cp) ? 2 : 1; });
+    const glyphMapRef = ctx.register(ctx.flateStream(glyphMap));
     const desc = ctx.register(ctx.obj({
-      Type: 'FontDescriptor', FontName: base, Flags: 4, FontBBox: [0, -200, 1000, 800], ItalicAngle: 0, Ascent: 800, Descent: -200, CapHeight: 700, StemV: 80,
+      Type: 'FontDescriptor', FontName: base, FontFile2: fontFile, Flags: 4, FontBBox: [0, -200, 1000, 800], ItalicAngle: 0, Ascent: 800, Descent: -200, CapHeight: 700, StemV: 80,
     }));
     const sysInfo = ctx.obj({ Registry: PDFString.of('Adobe'), Ordering: PDFString.of('Identity'), Supplement: 0 });
     const cid = ctx.register(ctx.obj({
-      Type: 'Font', Subtype: 'CIDFontType2', BaseFont: base, CIDSystemInfo: sysInfo, FontDescriptor: desc, DW: 1000, CIDToGIDMap: 'Identity',
+      Type: 'Font', Subtype: 'CIDFontType2', BaseFont: base, CIDSystemInfo: sysInfo, FontDescriptor: desc, DW: 1000, W: this.order.flatMap((cp, i) => zeroAdvance(cp) ? [i + 1, [0]] : []), CIDToGIDMap: glyphMapRef,
     }));
     const type0 = ctx.obj({ Type: 'Font', Subtype: 'Type0', BaseFont: base, Encoding: 'Identity-H', DescendantFonts: [cid], ToUnicode: toUni });
     ctx.assign(this.ref, type0 as PDFDict);
@@ -82,10 +96,11 @@ export function drawInvisibleWords(page: PDFPage, font: InvisibleUnicodeFont, wo
   });
   for (const w of withSpaces) {
     const { hex, count } = font.encode(w.text);
-    if (!count) continue;
+    if (!hex) continue;
     const size = Math.max(1, w.h);
-    // Every code is 1000 units wide, so horizontal scaling makes the string exactly as wide as the word box.
-    const tz = Math.max(1, Math.min(10000, (w.w / (count * size)) * 100));
+    // Base characters advance 1000 units; combining marks and format characters
+    // have zero width, matching reader text selection. Fit the advances to the word box.
+    const tz = Math.max(1, Math.min(10000, (w.w / (Math.max(1, count) * size)) * 100));
     op('Tf', [name, PDFNumber.of(size)]);
     op('Tz', [PDFNumber.of(tz)]);
     op('Tm', [PDFNumber.of(1), PDFNumber.of(0), PDFNumber.of(0), PDFNumber.of(1), PDFNumber.of(w.x), PDFNumber.of(w.y)]);
