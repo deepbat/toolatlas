@@ -1,3 +1,4 @@
+import {makeOcrGeometryFixture,checkOcrGeometry} from './fixtures/ocr-visible-layer.mjs';
 import {makeOverlayFixture,checkSignaturePixels,checkWatermarkGeometry,chooseOverlayMark,OVERLAY_X,OVERLAY_Y} from './fixtures/visible-overlays.mjs';
 import {makeCropFixture,checkCropPixels,CROP_MARGINS} from './fixtures/visible-crop.mjs';
 import {makeStampFixture,checkStampGeometry,STAMP_PLACES} from './fixtures/visible-stamps.mjs';
@@ -53,6 +54,13 @@ async function run(id, data, setup, check, timeoutMs, raw, keepName) {
   console.log('PASS ' + id); n++;
 }
 try {
+  for(const selected of [false,true]){
+    const source=await makeOcrGeometryFixture();
+    await run('pdf-ocr',source,async()=>{if(selected)await page.getByLabel('Pages',{exact:true}).fill('2');},async path=>{
+      await checkOcrGeometry(source,await readFile(path),{selected});
+      await copyFile(path,`/tmp/ocr-visible-${selected?'selected':'all'}.pdf`);
+    },120000,true);
+  }
   await run('pdf-delete-pages', bytes, () => page.getByPlaceholder('2,4-6').fill('2,4-6'), o => assert.equal(o.getPageCount(), 2));
   await run('pdf-crop', bytes, async () => { await page.locator('input[type=number]').nth(0).fill('10'); }, o => assert.ok(o.getPage(0).getHeight() < 842 - 20));
   for(const selected of[false,true]){
@@ -565,4 +573,4 @@ try {
   console.log(`${n} PDF suite checks passed`);
 } finally {
   await browser.close(); server?.kill();
-      }
+}
