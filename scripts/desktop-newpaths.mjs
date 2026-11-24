@@ -1,3 +1,4 @@
+import {makeRepairFixtures,checkRecovered} from './fixtures/malformed-repair.mjs';
 import {makeBackgroundFixture,checkBackgroundPixels,chooseRedBackground} from './fixtures/visible-background.mjs';
 import {makeOcrGeometryFixture,checkOcrGeometry} from './fixtures/ocr-visible-layer.mjs';
 import {makeOverlayFixture,checkSignaturePixels,checkWatermarkGeometry,chooseOverlayMark,OVERLAY_X,OVERLAY_Y} from './fixtures/visible-overlays.mjs';
@@ -113,6 +114,15 @@ for(const selected of[false,true]){
   });
 }
 
+for(const {name,bytes}of(await makeRepairFixtures()).cases)await step(`consented repair ${name}`,async()=>{
+ const {good}=await makeRepairFixtures();await openTool('pdf-repair','damaged.pdf','application/pdf',bytes);
+ const consent=page.getByRole('checkbox',{name:'Allow object recovery if the normal repair fails'});
+ if(await consent.isChecked())throw Error('Recovery consent defaulted on');
+ await page.getByRole('button',{name:'Repair PDF',exact:true}).click();await page.getByText(/after accepting the warning/).waitFor();
+ await page.getByText('Damaged or unsupported objects may be lost',{exact:false}).waitFor();await consent.check();
+ const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Repair PDF',exact:true}).click();
+ const path=`out/${evidencePrefix}-repair-${name}.pdf`;await(await pending).saveAs(path);await checkRecovered(good,await readFile(path));
+});
 await step('background viewer geometry and blank page',async()=>{
  const source=await makeBackgroundFixture();await openTool('pdf-background','background.pdf','application/pdf',source);await chooseRedBackground(page);
  await page.getByRole('button',{name:/Apply to all pages/i}).click();await page.getByRole('button',{name:'Download PDF',exact:true}).waitFor();

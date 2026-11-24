@@ -18,7 +18,7 @@ import { PDFDocument } from 'pdf-lib';
 import { applyActualText, pageActualTexts } from './actualtext';
 
 /** Shared shell: pick one PDF, run an operation, download the result. */
-function Shell({ verb, help, outSuffix, outExt = 'pdf', mime = 'application/pdf', run, children, ready = true, lenient = false, onInspect }: {
+function Shell({ verb, help, outSuffix, outExt = 'pdf', mime = 'application/pdf', run, children, ready = true, lenient = false, onInspect, onFileChange }: {
   verb: string;
   help: ReactNode;
   outSuffix: string;
@@ -30,6 +30,7 @@ function Shell({ verb, help, outSuffix, outExt = 'pdf', mime = 'application/pdf'
   /** Skip the pdf-lib readability probe for encrypted or damaged inputs. */
   lenient?: boolean;
   onInspect?: (doc: PDFDocument) => void;
+  onFileChange?: () => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [pages, setPages] = useState(0);
@@ -38,7 +39,7 @@ function Shell({ verb, help, outSuffix, outExt = 'pdf', mime = 'application/pdf'
   const [done, setDone] = useState('');
 
   const load = async (files: File[]) => {
-    setError(''); setDone('');
+    setError(''); setDone(''); onFileChange?.();
     const f = files[0];
     if (!f) return;
     try {
@@ -80,7 +81,7 @@ function Shell({ verb, help, outSuffix, outExt = 'pdf', mime = 'application/pdf'
         {!file ? (
           <Dropzone accept="application/pdf,.pdf" multiple={false} onFiles={load} title="Drop a PDF or browse" hint="PDF files up to 150 MB" />
         ) : (
-          <FileRow name={file.name} meta={pages ? `${pages} ${pages === 1 ? 'page' : 'pages'} · ${formatBytes(file.size)}` : formatBytes(file.size)} onRemove={() => { setFile(null); setDone(''); }} />
+          <FileRow name={file.name} meta={pages ? `${pages} ${pages === 1 ? 'page' : 'pages'} · ${formatBytes(file.size)}` : formatBytes(file.size)} onRemove={() => { setFile(null); setDone(''); onFileChange?.(); }} />
         )}
       </Panel>
       <Panel title="2. Options" description={help}>{children}</Panel>
@@ -396,11 +397,13 @@ function Unlock() {
 }
 
 function Repair() {
+  const [recover, setRecover] = useState(false);
   return (
     <Shell verb="Repair PDF" outSuffix="repaired" lenient
       help="Rebuilds the internal structure of a file that viewers call damaged or refuse to open."
-      run={(b) => repairPdf(b)}>
-      <Note>Repair fixes broken file structure. Content that was never saved correctly, or pages missing from the original, cannot be brought back.</Note>
+      onFileChange={() => setRecover(false)} run={(b) => repairPdf(b, undefined, recover)}>
+      <Toggle checked={recover} onChange={setRecover} label="Allow object recovery if the normal repair fails" />
+      <Note>Object recovery rebuilds surviving objects when file pointers are broken. Damaged or unsupported objects may be lost, including text, pictures, forms or links. Keep the original and check every recovered page before using it. Missing content cannot be brought back.</Note>
     </Shell>
   );
 }
