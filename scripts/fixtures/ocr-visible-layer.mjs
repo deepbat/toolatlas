@@ -17,11 +17,16 @@ export async function checkOcrGeometry(source,out,{selected=false,words=['ORBIT'
  const a=await pdfjs.getDocument({data:new Uint8Array(source)}).promise,b=await pdfjs.getDocument({data:new Uint8Array(out)}).promise;
  try{assert.equal(b.numPages,5);for(let n=1;n<=5;n++){
   const p=await b.getPage(n),v=p.getViewport({scale:1}),items=(await p.getTextContent()).items;
+  const scan=await a.getPage(n),sv=scan.getViewport({scale:1}),sc=createCanvas(sv.width,sv.height),sx=sc.getContext('2d');
+  await scan.render({canvasContext:sx,viewport:sv}).promise;
+  const pixels=sx.getImageData(0,0,sc.width,sc.height).data;let inkLeft=Infinity,inkRight=-1;
+  for(let y=30;y<90;y++)for(let x=20;x<160;x++){const k=(y*sc.width+x)*4;if(pixels[k]<120&&pixels[k+1]<120&&pixels[k+2]<120){inkLeft=Math.min(inkLeft,x);inkRight=Math.max(inkRight,x);}}
+  const inkWidth=inkRight-inkLeft+1;assert.ok(inkWidth>30,'Fixture scan word missing');
   if(selected&&n!==2)assert.equal(items.length,0,'OCR marked an unselected page');
   else for(const text of words){const it=items.find(i=>i.str===text);assert.ok(it,'missing OCR '+text+' page'+n);const t=pdfjs.Util.transform(v.transform,it.transform);
    assert.ok(Math.abs(t[4]-40)<(fixed?.1:5),'OCR x misses visible word page'+n+': '+t);
    assert.ok(Math.abs(t[5]-70)<(fixed?.1:6),'OCR baseline misses visible word page'+n+': '+t);
-   if(text==='ORBIT')assert.ok(it.width>(fixed?79.9:70)&&it.width<(fixed?80.1:84),'OCR text width misses scan word page'+n+': '+it.width);
+   if(text==='ORBIT')assert.ok(Math.abs(it.width-(fixed?80:inkWidth))<(fixed?.1:4),'OCR text width misses scan word page'+n+': '+it.width+' vs ink '+inkWidth);
    assert.ok(t[0]>0&&t[3]<0&&Math.abs(t[1])<.01&&Math.abs(t[2])<.01,'OCR not viewer upright page'+n);
   }
   const render=async p=>{const vp=p.getViewport({scale:1}),c=createCanvas(vp.width,vp.height);await p.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;return c.getContext('2d').getImageData(0,0,c.width,c.height).data;};
