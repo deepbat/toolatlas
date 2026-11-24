@@ -1,3 +1,4 @@
+import {makeStampFixture,checkStampGeometry,STAMP_PLACES} from './fixtures/visible-stamps.mjs';
 import { makeLayoutFixture, checkLayoutPixels } from './fixtures/page-layout.mjs';
 import { verifyEditorRedaction } from './fixtures/editor-redaction.mjs';
 import { CORNER_TABLES } from './fixtures/corner-border-table.mjs';
@@ -80,6 +81,19 @@ for (const [slug,kind,verb] of [['pdf-nup','nup','Combine pages'],['pdf-booklet'
     await page.getByRole('button',{name:verb,exact:true}).click();
     const path=`out/${evidencePrefix}-rotated-crop-${kind}.pdf`;
     await(await pending).saveAs(path);await checkLayoutPixels(await readFile(path),kind);
+  });
+}
+
+for(const [slug,bates] of [['pdf-header-footer',false],['pdf-bates',true]])for(const place of STAMP_PLACES){
+  await step(`visible ${slug} ${place}`,async()=>{
+    await openTool(slug,'stamp.pdf','application/pdf',await makeStampFixture());
+    await page.getByLabel('Text',{exact:true}).fill(bates?'{bates}':'STAMP {n}/{total}');
+    await page.getByLabel('Position',{exact:true}).selectOption(place);
+    if(bates){await page.getByLabel('Prefix',{exact:true}).fill('CASE-');await page.getByLabel('Start at',{exact:true}).fill('7');await page.getByLabel('Digits',{exact:true}).fill('4');}
+    const pending=page.waitForEvent('download',{timeout:60000});
+    await page.getByRole('button',{name:bates?'Add Bates numbers':'Add header or footer',exact:true}).click();
+    const path=`out/${evidencePrefix}-${slug}-${place}.pdf`;await(await pending).saveAs(path);
+    await checkStampGeometry(await readFile(path),place,{bates});
   });
 }
 

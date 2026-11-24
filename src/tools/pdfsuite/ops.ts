@@ -74,13 +74,23 @@ export async function stampText(bytes: Uint8Array, o: StampOptions): Promise<Uin
   const targets = parsePageRanges(o.pages ?? '', pages.length);
   targets.forEach((i, seq) => {
     const p = pages[i];
-    const { width, height } = p.getSize();
+    const m = p.getMediaBox(), c = p.getCropBox();
+    const left = Math.max(m.x, c.x), bottom = Math.max(m.y, c.y);
+    const rawW = Math.min(m.x + m.width, c.x + c.width) - left;
+    const rawH = Math.min(m.y + m.height, c.y + c.height) - bottom;
+    const angle = ((p.getRotation().angle % 360) + 360) % 360;
+    if (rawW <= 0 || rawH <= 0) throw Error('A page has no visible area to stamp.');
+    if (![0, 90, 180, 270].includes(angle)) throw Error('Page rotation must be a multiple of 90 degrees.');
+    const width = angle % 180 ? rawH : rawW, height = angle % 180 ? rawW : rawH;
     const bates = `${o.batesPrefix ?? ''}${String((o.batesStart ?? 1) + seq).padStart(o.batesDigits ?? 6, '0')}`;
     const text = o.text.replace(/\{n\}/g, String(i + 1)).replace(/\{total\}/g, String(pages.length)).replace(/\{bates\}/g, bates);
     const tw = font.widthOfTextAtSize(text, size);
     const x = o.place.endsWith('left') ? margin : o.place.endsWith('right') ? width - margin - tw : (width - tw) / 2;
     const y = o.place.startsWith('header') ? height - margin - size * 0.8 : margin;
-    p.drawText(text, { x, y, size, font, color: rgb(r, g, b) });
+    // Map viewer-space bottom-left coordinates back into unrotated page space.
+    const px = angle === 90 ? rawW - y : angle === 180 ? rawW - x : angle === 270 ? y : x;
+    const py = angle === 90 ? x : angle === 180 ? rawH - y : angle === 270 ? rawH - x : y;
+    p.drawText(text, { x: left + px, y: bottom + py, rotate: degrees(angle), size, font, color: rgb(r, g, b) });
   });
   return doc.save();
 }
