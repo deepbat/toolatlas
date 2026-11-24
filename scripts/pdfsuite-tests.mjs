@@ -1,3 +1,4 @@
+import {exerciseCataloguePaths} from './fixtures/catalogue-browser.mjs';
 import {makeTidyFixture,checkTidyDocument} from './fixtures/tidy-document.mjs';
 import {makeRepairFixtures,checkRecovered} from './fixtures/malformed-repair.mjs';
 import {makeBackgroundFixture,checkBackgroundPixels,chooseRedBackground} from './fixtures/visible-background.mjs';
@@ -57,6 +58,7 @@ async function run(id, data, setup, check, timeoutMs, raw, keepName) {
   console.log('PASS ' + id); n++;
 }
 try {
+  await exerciseCataloguePaths(page,{base,evidence:'/tmp/catalogue-browser',check:name=>{console.log('PASS catalogue '+name);n++;}});
   {
     const source=await makeTidyFixture();await page.goto(`${base}/tools/pdf-compress/`);
     await page.locator('input[type=file]').first().setInputFiles({name:'catalogue.pdf',mimeType:'application/pdf',buffer:source});await page.getByText('catalogue.pdf',{exact:true}).first().waitFor();
