@@ -20,7 +20,7 @@ export class Painter {
   }
 
   pickFontKey(cssFamily, scriptFontKey) {
-    if (scriptFontKey) return scriptFontKey;
+    if (scriptFontKey && scriptFontKey !== 'latin') return scriptFontKey;
     const f = (cssFamily || '').toLowerCase();
     if (/calibri|carlito/.test(f)) return 'carlito';
     if (/cambria|caladea/.test(f)) return 'caladea';
@@ -355,8 +355,12 @@ function splitScripts(text) {
   for (const ch of text) {
     let script = null;
     for (const s of SCRIPT_FONTS) if (s.re.test(ch)) { script = s.key; break; }
-    // spaces and neutral punctuation stay with the surrounding segment so
-    // word gaps inside Indic text live in the same invisible text layer
+    // Latin letters always break back to a Latin segment: the Google Fonts
+    // Noto script faces carry no Latin glyphs, so inheriting the Indic kind
+    // across them paints tofu. Only spaces, digits and neutral punctuation
+    // stay with the surrounding segment so word gaps and numbers inside
+    // Indic text live in the same invisible text layer.
+    if (!script && /[A-Za-z\u00C0-\u024F\u1E00-\u1EFF]/.test(ch)) script = 'latin';
     const kind = script || (cur ? cur.kind : 'latin');
     if (cur && cur.kind === kind) cur.text += ch;
     else { cur = { kind, script, text: ch }; segs.push(cur); }

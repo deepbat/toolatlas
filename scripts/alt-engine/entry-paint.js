@@ -65,6 +65,51 @@ async function loadFontBytes() {
   return out;
 }
 
+// docx-preview renders list markers as ::before pseudo-elements (Symbol-font
+// bullets, CSS counters for numbers), which the painter's text walk cannot
+// see. Materialize each marker as a real inline span, resolving counters the
+// same way docx-preview's stylesheet does (all counters reset at the wrapper,
+// one counter per num-id/level class). Symbol-font private-use bullet U+F0B7
+// is substituted by U+2022 in the paragraph font, which the bundled fonts
+// carry.
+function materializeListMarkers(container) {
+  const counters = new Map();
+  for (const p of container.querySelectorAll('p[class*="docx-num-"]')) {
+    const m = p.className.match(/docx-num-(\d+)-(\d+)/);
+    if (!m) continue;
+    const counterName = `docx-num-${m[1]}-${m[2]}`;
+    const val = (counters.get(counterName) || 0) + 1;
+    counters.set(counterName, val);
+    const content = getComputedStyle(p, '::before').content;
+    if (!content || content === 'none' || content === 'normal') continue;
+    let marker;
+    if (content.includes('counter(')) {
+      // pattern: "" counter(name) "<suffix with css escapes>"
+      const suf = (content.match(/counter\([^)]*\)\s*"((?:[^"\\]|\\.)*)"/) || [null, ''])[1];
+      marker = String(val) + cssUnescape(suf);
+    } else {
+      const lit = (content.match(/^"((?:[^"\\]|\\.)*)"$/) || [null, ''])[1];
+      marker = cssUnescape(lit);
+    }
+    if (!marker) continue;
+    // Tabs shape to .notdef in the bundled fonts (visible tofu box). A nbsp
+    // has an empty outline and extracts cleanly; the following text is
+    // positioned from DOM measurement, so the narrower gap is harmless.
+    marker = marker.replace(/\t/g, '\u00A0');
+    // Symbol-font PUA bullet -> standard bullet in the paragraph font
+    const beforeFont = getComputedStyle(p, '::before').fontFamily || '';
+    if (/symbol/i.test(beforeFont)) marker = marker.replace(/[-]/g, '\u2022');
+    const span = document.createElement('span');
+    span.textContent = marker;
+    p.insertBefore(span, p.firstChild);
+  }
+}
+
+function cssUnescape(s) {
+  return s.replace(/\\([0-9a-fA-F]{1,6})\s?/g, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+          .replace(/\\(.)/g, '$1');
+}
+
 window.convertDocx = async (buf) => {
   await injectFonts();
   const container = document.getElementById('container');
@@ -75,6 +120,7 @@ window.convertDocx = async (buf) => {
     useBase64URL: true, breakPages: true,
   });
   await document.fonts.ready;
+  materializeListMarkers(container);
   const fontFiles = await loadFontBytes();
   const painter = new Painter(fontFiles);
   const bytes = await painter.paint(container, { Title: 'converted' });
