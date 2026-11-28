@@ -55,39 +55,56 @@ reservation and no cross-origin isolation.
 
 ## Integration state (28/11, branch feat/alt-office-engine)
 
-- The painter engine is wired as the on-device converter: `localOffice.ts`
-  opens `office-engine/alt/converter.html` and skips the LibreOffice-specific
-  repair pass for painter output (`engine: 'painter'` in the converted
-  message). The WASM page, its isolation and its tests are untouched.
-- `scripts/build-alt-engine.mjs` bundles `scripts/alt-engine/entry-converter.js`
-  to `public/office-engine/alt/engine.js` (413 KB gzip, converter-popup only)
-  and writes a sha256 font manifest. Fonts are committed under `alt/fonts/`.
-- XLSX goes through the same painter: SheetJS CE tables with print-area
-  exclusion (privacy-asserted by the fixture), header/footer strings read
-  from sheet XML, simple arithmetic formulas evaluated in-page (CE drops
-  uncached formula results). Charts, cell fills/fonts and orientation are
-  still absent.
-- Verified end to end through the real BroadcastChannel protocol in headless
-  Chrome on 7 fixtures. Existing suites green: engine lifecycle, network
-  isolation, asset hashes; tsc clean. Not yet covered: alt-page network
-  isolation assertions (the network test still targets the WASM page),
-  Playwright e2e through the real Suite UI, CI.
+- The painter is the Suite's default Word/Excel to PDF output: Suite.tsx
+  paints rendered sections through `officePainterEngine.paintSections`
+  (vector PDF, real text) instead of rasterising pages for an image PDF.
+  The radio copy says so honestly ("PDF with real text (recommended)").
+  The print view is unchanged. The engine loads on demand
+  (officePainterEngine chunk 213 KB, fontkit split to its own 393 KB chunk,
+  both under the 600 kB budget; entry chunk unchanged at 437 kB).
+- `officePainter.ts` is the strict-TS port of the bench painter. Indic runs
+  always take the vector-path + invisible exact-text route; the invisible
+  layer is Tz-fitted to the painted box (unicodeLayer.ts trick) or pdf.js
+  invents spaces and splits words at larger sizes. The bench painter
+  (scripts/alt-engine/painter.js) carries the same fixes.
+- Excel: `workbookToPaintHtml` (office2pdf.ts) replaces the basic SheetJS
+  table route: print areas honoured (defined names), simple arithmetic
+  formulas evaluated (CE drops uncached results), header/footer strings read
+  from the sheet XML via jszip, one PDF page per worksheet, column widths
+  kept. Charts, cell fills/fonts and orientation remain absent, and the UI
+  note says so.
+- `localOffice.ts` (WASM popup driver) is restored untouched; the WASM page,
+  its engine and its tests are untouched. The alt protocol page
+  (office-engine/alt/converter.html) remains as the protocol-level harness.
+- Isolation: `isolation-sw.js` allowlists the alt engine's exact paths; the
+  alt page registers the SW (scope /office-engine/alt/) and awaits it before
+  fetching fonts. `local-office-network-tests.mjs` covers the alt page:
+  allowlisted 200s with CSP headers, path-escape/query/POST 403s, external
+  fetch and blob-worker exfiltration denied.
+- Suite-level e2e: `office-painter-e2e.mjs` drives the real UI for
+  word-to-pdf and excel-to-pdf against vite preview and asserts exact Indic
+  extraction, stored page breaks, repeating header/footer, formula results
+  and print-area exclusion.
+- Green: tsc, pdfsuite-tests.mjs (112 browser checks incl. exact Indic words
+  with selection geometry and one-page-per-worksheet), painter e2e, both
+  isolation suites, session tests, pdfsuite-unit, engine lifecycle, asset
+  hashes, 9 quality checks, 22 exact-KB checks. pdfkit added (MIT; notices
+  and reviewed-deps updated); jszip promoted to a direct dependency (dual
+  MIT/GPL, taken as MIT).
+- Not yet: pushed/PR (waiting on a working GitHub PAT), CI run.
 
 ## Known limitations / not yet done
 
-- Painter is bench-grade: multi-run mixed-formatting lines, list markers,
-  hyperlinks, rotated/floating objects and page-size edge cases are not
-  characterized yet. VML text boxes render in-flow (docx-preview limit,
-  content preserved).
-- XLSX is out of scope for docx-preview. SheetJS CE preserves values, merges
-  and Indic text but not charts, cell styles, print areas or orientation; no
-  free on-device route matches ZetaOffice XLSX fidelity.
-- Selection highlight geometry on reordered (Indic) lines sits at the
-  segment origin, not per-glyph (zero-advance invisible layer). Copy and
-  search are exact; visual selection is degraded on those lines only.
-- Not yet integrated into the app or CI: no UI wiring, no PR, no green
-  checks. docx-preview + pdfkit/fontkit add ~1.4 MB uncompressed bench
-  bundle, on-demand only; integration must measure the real chunk.
+- Painter is young: multi-run mixed-formatting lines, hyperlinks, rotated
+  objects and unusual page sizes are characterized on the fixture set only.
+  VML text boxes render in-flow (docx-preview limit, content preserved).
+- XLSX: SheetJS CE preserves values, merges, column widths, Indic text,
+  print areas, header/footer and simple formulas, but not charts, cell
+  styles or orientation; no free on-device route matches ZetaOffice XLSX
+  fidelity.
+- Selection highlight geometry on Indic lines follows the Tz-fitted
+  invisible layer (per-line box), not per-glyph. Copy and search are exact;
+  visual selection granularity is coarser on those lines only.
 - Arial has no bundled metric clone yet (Arimo went variable-only upstream);
   unknown families fall back to Noto Sans/Serif with a painter warning.
 
