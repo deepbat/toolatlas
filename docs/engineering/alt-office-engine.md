@@ -53,6 +53,26 @@ reservation and no cross-origin isolation.
   (pdffonts-verified).
 - `verify-readers.mjs` asserts all of the extraction claims above.
 
+## Integration state (28/11, branch feat/alt-office-engine)
+
+- The painter engine is wired as the on-device converter: `localOffice.ts`
+  opens `office-engine/alt/converter.html` and skips the LibreOffice-specific
+  repair pass for painter output (`engine: 'painter'` in the converted
+  message). The WASM page, its isolation and its tests are untouched.
+- `scripts/build-alt-engine.mjs` bundles `scripts/alt-engine/entry-converter.js`
+  to `public/office-engine/alt/engine.js` (413 KB gzip, converter-popup only)
+  and writes a sha256 font manifest. Fonts are committed under `alt/fonts/`.
+- XLSX goes through the same painter: SheetJS CE tables with print-area
+  exclusion (privacy-asserted by the fixture), header/footer strings read
+  from sheet XML, simple arithmetic formulas evaluated in-page (CE drops
+  uncached formula results). Charts, cell fills/fonts and orientation are
+  still absent.
+- Verified end to end through the real BroadcastChannel protocol in headless
+  Chrome on 7 fixtures. Existing suites green: engine lifecycle, network
+  isolation, asset hashes; tsc clean. Not yet covered: alt-page network
+  isolation assertions (the network test still targets the WASM page),
+  Playwright e2e through the real Suite UI, CI.
+
 ## Known limitations / not yet done
 
 - Painter is bench-grade: multi-run mixed-formatting lines, list markers,
