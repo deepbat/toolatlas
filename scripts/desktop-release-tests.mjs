@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {validateRelease,releaseNotes} from './desktop-release.mjs';
+const sha='a'.repeat(40),repository='deepbat/toolatlas';
+const valid={repository,mainSha:sha,tag:'desktop-1',dispatchRef:'refs/heads/main',run:{id:123,repository:{full_name:repository},path:'.github/workflows/desktop.yml',event:'workflow_dispatch',head_branch:'main',head_sha:sha,status:'completed',conclusion:'success',html_url:'https://github.com/deepbat/toolatlas/actions/runs/123'},jobs:['Windows installer (unsigned)','Linux build (secondary)','Linux smoke test (xvfb, screenshot)','Windows smoke test (install, launch, screenshot)'].map(name=>({name,status:'completed',conclusion:'success'})),artifacts:[{id:456,name:'deepaks-tool-windows-unsigned',expired:false,digest:'sha256:'+'b'.repeat(64),workflow_run:{head_sha:sha}}]};
+assert.equal(validateRelease(valid).id,456);
+const rejects=(change)=>{const x=structuredClone(valid);change(x);assert.throws(()=>validateRelease(x));};
+for(const [key,value]of[['status','in_progress'],['conclusion','failure'],['path','.github/workflows/desktop-release.yml'],['event','push'],['head_branch','other'],['head_sha','c'.repeat(40)]])rejects(x=>x.run[key]=value);
+rejects(x=>x.run.repository.full_name='other/repo');rejects(x=>x.dispatchRef='refs/heads/other');rejects(x=>x.tag='bad; echo unsafe');rejects(x=>x.tag='desktop-../bad');
+rejects(x=>x.jobs.pop());rejects(x=>x.jobs[3].conclusion='failure');rejects(x=>x.jobs.push(x.jobs[0]));rejects(x=>x.artifacts=[]);rejects(x=>x.artifacts.push(x.artifacts[0]));rejects(x=>x.artifacts[0].expired=true);rejects(x=>x.artifacts[0].workflow_run.head_sha='c'.repeat(40));rejects(x=>x.artifacts[0].digest='sha256:invalid');
+const notes=releaseNotes({run:valid.run,installerSha:'b'.repeat(64),filename:'installer.exe'});assert.ok(notes.includes(sha));assert.ok(notes.includes(valid.run.html_url));assert.ok(notes.includes('Hindi and Punjabi OCR are available'));assert.ok(notes.includes('does not claim full Sejda-equivalent'));assert.ok(!notes.includes('OCR are not supported'));
+console.log('PASS desktop release validation rejects wrong source, incomplete/failed jobs, stale/expired/ambiguous artifacts and unsafe tags; notes record current tested scope and provenance');

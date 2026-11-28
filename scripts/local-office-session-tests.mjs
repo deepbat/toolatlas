@@ -1,0 +1,11 @@
+import{readFile}from'node:fs/promises';
+import {chromium} from '@playwright/test';import {spawn} from 'node:child_process';import assert from 'node:assert/strict';
+const mockPdf=Buffer.from(await readFile(new URL('./fixtures/office-engine/exported-docx.pdf',import.meta.url))).toString('base64');
+const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','4193','--strictPort'],{stdio:'ignore'});let browser;
+try{for(let i=0;i<80;i++){try{await fetch('http://127.0.0.1:4193/toolatlas/');break}catch{await new Promise(r=>setTimeout(r,100));}}browser=await chromium.launch();
+ for(const mode of ['success','invalid','failed','timeout','abort','blocked']){
+  const context=await browser.newContext();await context.route(url=>url.pathname.endsWith('/office-engine/converter.html'),route=>{return route.fulfill({contentType:'text/html',body:`<script>const c=new BroadcastChannel('deepak-office-'+location.hash.slice(1));c.onmessage=({data})=>{if(data.type==='convert'){${mode==='success'?`c.postMessage({type:'converted',bytes:Uint8Array.from(atob('${mockPdf}'),c=>c.charCodeAt(0)).buffer})`:mode==='invalid'?"c.postMessage({type:'converted',bytes:new Uint8Array([1,2,3]).buffer})":mode==='failed'?"c.postMessage({type:'failed'})":""}}};setInterval(()=>c.postMessage({type:'ready'}),20)</script>`});});
+  const p=await context.newPage();await p.goto('http://127.0.0.1:4193/toolatlas/');await p.waitForTimeout(700);const result=await p.evaluate(async mode=>{const {convertLocalOffice}=await import('/toolatlas/src/tools/pdfsuite/localOffice.ts');const controller=new AbortController();if(mode==='abort')setTimeout(()=>controller.abort(),200);if(mode==='blocked')window.open=()=>null;try{const b=await convertLocalOffice(new File(['probe'],'sample.docx'),{timeoutMs:4000,signal:controller.signal});return new TextDecoder().decode(b)}catch(e){return e.message}},mode);
+  assert.match(result,mode==='success'?/^%PDF-/:mode==='invalid'?/did not return a PDF/:mode==='failed'?/could not convert/:mode==='timeout'?/timed out/:mode==='abort'?/cancelled/:/Allow the local converter/);console.log('PASS local Office session '+mode);await context.close();
+ }
+}finally{await browser?.close();server.kill()}
