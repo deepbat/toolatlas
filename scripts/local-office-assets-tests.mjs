@@ -1,0 +1,2 @@
+import assert from 'node:assert/strict';import {checked,digest,split} from './local-office-assets.mjs';
+const b=Buffer.from('local-only-engine-probe');assert.deepEqual(checked(b,digest(b)),b);assert.throws(()=>checked(Buffer.from('altered'),digest(b)));const p=split(b,'wasm',8);assert.deepEqual(Buffer.concat(p.map(x=>x.bytes)),b);assert.ok(p.every(x=>x.bytes.length<=8&&digest(x.bytes)===x.sha256));console.log('PASS Office asset mismatch rejection, exact chunk reconstruction and per-part hashes');

@@ -14,3 +14,7 @@ public/tesseract/
 
 # generated at prebuild from @neslinesli93/qpdf-wasm
 public/qpdf/
+
+# Local Office runtime is not cleared for distribution
+public/office-engine/runtime/
+public/office-engine/fonts/
