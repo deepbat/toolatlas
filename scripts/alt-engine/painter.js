@@ -53,17 +53,55 @@ export class Painter {
   }
 
   async paint(container, meta = {}) {
-    this.doc = new PDFDocument({ autoFirstPage: false, margin: 0, info: meta, font: null });
+    this.doc = new PDFDocument({ autoFirstPage: false, bufferPages: true, margin: 0, info: meta, font: null });
     this.uniFont = null;
     const chunks = [];
     this.doc.on('data', c => chunks.push(c));
     const done = new Promise(r => this.doc.on('end', r));
     const sections = container.querySelectorAll('section.docx');
     if (!sections.length) throw new Error('no rendered sections found');
+    this.pageBase = 0;
     for (const section of sections) {
       const sr = section.getBoundingClientRect();
-      this.doc.addPage({ size: [+(sr.width * PX2PT).toFixed(2), +(sr.height * PX2PT).toFixed(2)], margin: 0 });
-      this.origin = { x: sr.left, y: sr.top };
+      // Page geometry comes from the section's inline style: docx-preview
+      // pins width and min-height to the DOCX page size. A section taller
+      // than one page (documents never saved by Word, so without rendered
+      // page-break hints) is paginated here, and header/footer subtrees
+      // repeat on every page.
+      const style = section.getAttribute('style') || '';
+      const wPt = parseFloat((style.match(/width:\s*([\d.]+)pt/) || [])[1]);
+      const hPt = parseFloat((style.match(/min-height:\s*([\d.]+)pt/) || [])[1]);
+      const pageWPx = Number.isFinite(wPt) ? wPt * 96 / 72 : sr.width;
+      const pageHPx = Number.isFinite(hPt) ? hPt * 96 / 72 : sr.height;
+      // Count pages by content extent, not the section's border-box: the
+      // section carries min-height = one page plus vertical padding, which
+      // would otherwise invent a trailing blank page.
+      let maxBottom = 0;
+      const extentWalker = document.createTreeWalker(section, NodeFilter.SHOW_ELEMENT);
+      let ext;
+      while ((ext = extentWalker.nextNode())) {
+        if (ext.closest('header, footer')) continue;
+        const b = ext.getBoundingClientRect().bottom;
+        if (b > maxBottom) maxBottom = b;
+      }
+      const nPages = Math.max(1, Math.ceil(Math.max(maxBottom - sr.top, 1) / pageHPx - 1e-6));
+      for (let p = 0; p < nPages; p++) {
+        this.doc.addPage({ size: [+(pageWPx * PX2PT).toFixed(2), +(pageHPx * PX2PT).toFixed(2)], margin: 0 });
+      }
+      this.sec = { left: sr.left, top: sr.top, hPx: sr.height, pageHPx, nPages, base: this.pageBase };
+      this.pageBase += nPages;
+      this.forcePage = null; this.shiftPx = 0;
+      for (const hf of section.querySelectorAll(':scope > header, :scope > footer')) {
+        const isFooter = hf.tagName === 'FOOTER';
+        for (let p = 0; p < nPages; p++) {
+          this.forcePage = p;
+          this.shiftPx = isFooter ? (sr.height - pageHPx) : 0;
+          this.paintDecorations(hf);
+          await this.paintImages(hf);
+          this.paintText(hf);
+        }
+        this.forcePage = null; this.shiftPx = 0;
+      }
       this.paintDecorations(section);
       await this.paintImages(section);
       this.paintText(section);
@@ -78,79 +116,140 @@ export class Painter {
     return out;
   }
 
-  toPage(r) {
-    return { x: (r.left - this.origin.x) * PX2PT, y: (r.top - this.origin.y) * PX2PT,
-             w: r.width * PX2PT, h: r.height * PX2PT };
+  // Absolute DOM px -> { page, xPt, yPt-on-page }. Honors forcePage/shiftPx
+  // used when repeating headers/footers on every page.
+  locate(absTop) {
+    const relPx = absTop - this.sec.top - this.shiftPx;
+    const page = this.forcePage != null ? this.forcePage
+      : Math.min(this.sec.nPages - 1, Math.max(0, Math.floor(relPx / this.sec.pageHPx)));
+    return { page, yPt: (relPx - page * this.sec.pageHPx) * PX2PT };
   }
 
-  paintDecorations(section) {
-    const walker = document.createTreeWalker(section, NodeFilter.SHOW_ELEMENT);
+  switchPage(page) {
+    if (this.curPage !== page) { this.doc.switchToPage(this.sec.base + page); this.curPage = page; }
+  }
+
+  paintDecorations(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
     let el;
     while ((el = walker.nextNode())) {
+      // Header/footer subtrees are painted by the repeat pass, not here.
+      const hf = el.closest('header, footer');
+      if (hf && hf !== root) continue;
       const cs = getComputedStyle(el);
       if (cs.display === 'none' || cs.visibility === 'hidden') continue;
-      const r = this.toPage(el.getBoundingClientRect());
-      if (r.w <= 0 || r.h <= 0) continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) continue;
       const bg = cs.backgroundColor;
-      if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
-        const [rr, gg, bb] = rgbOf(bg);
-        this.doc.save().fillColor([rr * 255, gg * 255, bb * 255]).rect(r.x, r.y, r.w, r.h).fill().restore();
-      }
+      const hasBg = bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent';
+      const borders = {};
       for (const side of ['Top', 'Right', 'Bottom', 'Left']) {
         const bw = parseFloat(cs['border' + side + 'Width']);
         const bs = cs['border' + side + 'Style'];
-        if (!bw || bs === 'none' || bs === 'hidden') continue;
-        const [rr, gg, bb] = rgbOf(cs['border' + side + 'Color']);
-        this.doc.save().lineWidth(Math.max(bw * PX2PT, 0.25)).strokeColor([rr * 255, gg * 255, bb * 255]);
-        const off = (bw * PX2PT) / 2;
-        if (side === 'Top') this.doc.moveTo(r.x, r.y + off).lineTo(r.x + r.w, r.y + off).stroke();
-        if (side === 'Bottom') this.doc.moveTo(r.x, r.y + r.h - off).lineTo(r.x + r.w, r.y + r.h - off).stroke();
-        if (side === 'Left') this.doc.moveTo(r.x + off, r.y).lineTo(r.x + off, r.y + r.h).stroke();
-        if (side === 'Right') this.doc.moveTo(r.x + r.w - off, r.y).lineTo(r.x + r.w - off, r.y + r.h).stroke();
-        this.doc.restore();
+        if (bw && bs !== 'none' && bs !== 'hidden') borders[side] = { bw, col: rgbOf(cs['border' + side + 'Color']) };
+      }
+      if (!hasBg && !Object.keys(borders).length) continue;
+      const relTop = rect.top - this.sec.top - this.shiftPx;
+      const relBot = relTop + rect.height;
+      const pages = this.forcePage != null ? [this.forcePage] : (() => {
+        const p0 = Math.max(0, Math.floor(relTop / this.sec.pageHPx));
+        const p1 = Math.min(this.sec.nPages - 1, Math.floor((relBot - 1e-6) / this.sec.pageHPx));
+        const out = []; for (let p = p0; p <= p1; p++) out.push(p); return out;
+      })();
+      const xPt = (rect.left - this.sec.left) * PX2PT;
+      const wPt = rect.width * PX2PT;
+      for (const p of pages) {
+        const sliceTop = Math.max(relTop, p * this.sec.pageHPx);
+        const sliceBot = Math.min(relBot, (p + 1) * this.sec.pageHPx);
+        if (sliceBot - sliceTop <= 0.5) continue;
+        this.switchPage(p);
+        const yPt = (sliceTop - p * this.sec.pageHPx) * PX2PT;
+        const hPt = (sliceBot - sliceTop) * PX2PT;
+        if (hasBg) {
+          this.doc.save().fillColor([rgbOf(bg)[0] * 255, rgbOf(bg)[1] * 255, rgbOf(bg)[2] * 255]).rect(xPt, yPt, wPt, hPt).fill().restore();
+        }
+        for (const [side, { bw, col }] of Object.entries(borders)) {
+          // Top/bottom borders only on the slice containing that edge;
+          // left/right borders run on every slice.
+          if (side === 'Top' && sliceTop !== relTop) continue;
+          if (side === 'Bottom' && sliceBot !== relBot) continue;
+          this.doc.save().lineWidth(Math.max(bw * PX2PT, 0.25)).strokeColor([col[0] * 255, col[1] * 255, col[2] * 255]);
+          const off = (bw * PX2PT) / 2;
+          if (side === 'Top') this.doc.moveTo(xPt, yPt + off).lineTo(xPt + wPt, yPt + off).stroke();
+          if (side === 'Bottom') this.doc.moveTo(xPt, yPt + hPt - off).lineTo(xPt + wPt, yPt + hPt - off).stroke();
+          if (side === 'Left') this.doc.moveTo(xPt + off, yPt).lineTo(xPt + off, yPt + hPt).stroke();
+          if (side === 'Right') this.doc.moveTo(xPt + wPt - off, yPt).lineTo(xPt + wPt - off, yPt + hPt).stroke();
+          this.doc.restore();
+        }
       }
     }
   }
 
-  async paintImages(section) {
-    for (const img of section.querySelectorAll('img')) {
-      const r = this.toPage(img.getBoundingClientRect());
-      if (r.w <= 0 || r.h <= 0) continue;
+  async paintImages(root) {
+    for (const img of root.querySelectorAll('img')) {
+      const hf = img.closest('header, footer');
+      if (hf && hf !== root) continue;
+      const rect = img.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) continue;
       try {
         const res = await fetch(img.src);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const bytes = new Uint8Array(await res.arrayBuffer());
         if (bytes.length < 8) throw new Error('empty image');
-        this.doc.image(bytes, r.x, r.y, { width: r.w, height: r.h });
+        const relTop = rect.top - this.sec.top - this.shiftPx;
+        const relBot = relTop + rect.height;
+        const pages = this.forcePage != null ? [this.forcePage] : (() => {
+          const p0 = Math.max(0, Math.floor(relTop / this.sec.pageHPx));
+          const p1 = Math.min(this.sec.nPages - 1, Math.floor((relBot - 1e-6) / this.sec.pageHPx));
+          const out = []; for (let p = p0; p <= p1; p++) out.push(p); return out;
+        })();
+        const xPt = (rect.left - this.sec.left) * PX2PT;
+        for (const p of pages) {
+          const sliceTop = Math.max(relTop, p * this.sec.pageHPx);
+          const sliceBot = Math.min(relBot, (p + 1) * this.sec.pageHPx);
+          if (sliceBot - sliceTop <= 0.5) continue;
+          this.switchPage(p);
+          // clip to the page slice, draw the whole image at its page offset
+          this.doc.save();
+          this.doc.rect(xPt, (sliceTop - p * this.sec.pageHPx) * PX2PT, rect.width * PX2PT, (sliceBot - sliceTop) * PX2PT).clip();
+          this.doc.image(bytes, xPt, (relTop - p * this.sec.pageHPx) * PX2PT, { width: rect.width * PX2PT, height: rect.height * PX2PT });
+          this.doc.restore();
+        }
       } catch (e) {
         this.warnings.push('image skipped: ' + e.message);
       }
     }
   }
 
-  paintText(section) {
+  paintText(root) {
     const measurer = makeMeasurer();
-    const walker = document.createTreeWalker(section, NodeFilter.SHOW_TEXT);
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     let node;
     while ((node = walker.nextNode())) {
       const text = node.nodeValue;
       if (!text || !text.trim()) continue;
       const parent = node.parentElement;
-      if (!parent || !section.contains(parent)) continue;
+      if (!parent || !root.contains(parent)) continue;
+      const hf = parent.closest('header, footer');
+      if (hf && hf !== root) continue;
       const cs = getComputedStyle(parent);
       if (cs.visibility === 'hidden' || cs.display === 'none') continue;
-      for (const line of lineBoxes(node)) this.paintLine(node, line, cs, measurer);
+      for (const line of lineBoxes(node)) {
+        const loc = this.locate(line.top);
+        this.switchPage(loc.page);
+        this.paintLine(node, line, cs, measurer, loc);
+      }
     }
   }
 
-  paintLine(node, line, cs, measurer) {
+  paintLine(node, line, cs, measurer, loc) {
     const sizePx = parseFloat(cs.fontSize);
     const size = sizePx * PX2PT;
     const [cr, cg, cb] = rgbOf(cs.color || 'rgb(0, 0, 0)');
     const fontCSS = `${cs.fontStyle} normal ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
     const ascentPx = measurer(fontCSS, line.text);
-    const baseY = (line.top - this.origin.y + ascentPx) * PX2PT;
-    const lineLeftPx = line.left - this.origin.x;
+    const baseY = loc.yPt + ascentPx * PX2PT;
+    const lineLeftPx = line.left - this.sec.left;
 
     // char index (within line.text) -> grapheme cluster left in px (absolute DOM)
     const cLeft = clusterLefts(node, line.start, line.text);
@@ -201,7 +300,7 @@ export class Painter {
       const absXPt = new Array(n);
       for (let i = 0; i < n; i++) {
         const lineCharIdx = segCharBase + gChar[i];
-        const clusterLeftPx = cLeft[lineCharIdx] - this.origin.x;
+        const clusterLeftPx = cLeft[lineCharIdx] - this.sec.left;
         absXPt[i] = (clusterLeftPx + (intra[i] + positions[i].xOffset) * (sizePx / 1000)) * PX2PT;
       }
       const logicalOrder = [...Array(n).keys()].sort((a, b) => gChar[a] - gChar[b]);
@@ -239,7 +338,7 @@ export class Painter {
         // reorder it; spaces are real characters with real advance.
         if (!this.uniFont) this.uniFont = new BlankUnicodeFont(this.doc);
         if (this.doc.page.fonts['FUni'] == null) this.doc.page.fonts['FUni'] = this.uniFont.ref;
-        const segLeftPt = (cLeft[segCharBase] - this.origin.x) * PX2PT;
+        const segLeftPt = (cLeft[segCharBase] - this.sec.left) * PX2PT;
         const uniHex = this.uniFont.encode(seg.text);
         ops.push(`/FUni ${size.toFixed(3)} Tf`, '3 Tr');
         ops.push(`1 0 0 -1 ${segLeftPt.toFixed(3)} ${baseY.toFixed(3)} Tm <${uniHex}> Tj`);
