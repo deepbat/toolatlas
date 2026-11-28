@@ -305,7 +305,12 @@ export class Painter {
       }
       const logicalOrder = [...Array(n).keys()].sort((a, b) => gChar[a] - gChar[b]);
       const reordered = logicalOrder.some((v, idx) => v !== idx);
-      if (!reordered) {
+      // Indic runs always take the vector-path + invisible-layer route, even
+      // when shaping kept logical order: extraction from a shaped subset is
+      // not stable across readers (fake spaces, split words), while the
+      // exact-text layer is exact by construction.
+      const isIndic = SCRIPT_FONTS.some((sf) => sf.key === seg.script);
+      if (!reordered && !isIndic) {
         // Normal visible text: visual order is logical order.
         if (curFontId !== ef.id) { ops.push(`/${ef.id} ${size.toFixed(3)} Tf`); curFontId = ef.id; curX = null; }
         for (let i = 0; i < n; i++) {
@@ -340,9 +345,22 @@ export class Painter {
         if (this.doc.page.fonts['FUni'] == null) this.doc.page.fonts['FUni'] = this.uniFont.ref;
         const segLeftPt = (cLeft[segCharBase] - this.sec.left) * PX2PT;
         const uniHex = this.uniFont.encode(seg.text);
-        ops.push(`/FUni ${size.toFixed(3)} Tf`, '3 Tr');
+        // Base characters advance 1000 units in the blank font and combining
+        // marks zero; fit the run to the painted segment box with Tz (same
+        // trick as unicodeLayer.ts) or readers invent spaces and split words
+        // at larger sizes.
+        const segCpsAll = [...seg.text].map((c) => c.codePointAt(0));
+        const advCount = Math.max(1, segCpsAll.filter((cp) => !zeroAdvanceCp(cp) && !(cp < 0x20 && cp !== 0x09) && cp !== 0x7f).length);
+        const segLen = segCpsAll.length;
+        const segEndChar = segCharBase + segLen;
+        const lastG = n - 1;
+        const lastRightPx = cLeft[segCharBase + gChar[lastG]] + (intra[lastG] + positions[lastG].xOffset + positions[lastG].xAdvance) * (sizePx / 1000);
+        const segRightPx = segEndChar < cLeft.length ? cLeft[segEndChar] : lastRightPx;
+        const segWidthPt = Math.max(0.5, (segRightPx - cLeft[segCharBase]) * PX2PT);
+        const tz = Math.max(1, Math.min(10000, (segWidthPt / (advCount * size)) * 100));
+        ops.push(`/FUni ${size.toFixed(3)} Tf`, '3 Tr', `${tz.toFixed(2)} Tz`);
         ops.push(`1 0 0 -1 ${segLeftPt.toFixed(3)} ${baseY.toFixed(3)} Tm <${uniHex}> Tj`);
-        ops.push('0 Tr');
+        ops.push('100 Tz', '0 Tr');
         curFontId = 'FUni'; curX = segLeftPt;
       }
       segCharBase += [...seg.text].length;

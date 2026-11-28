@@ -1,5 +1,5 @@
 const base=new URL('./',self.location.href);
-const allow=/^(?:converter\.html|engine\.(?:js|css)|office-worker\.js|zetaHelper\.js|zeta\.js|isolation-sw\.js|notices\.html|runtime\/(?:manifest\.json|soffice\.js|soffice\.data\.js\.metadata|(?:data|wasm)-[0-9]+\.bin)|licenses\/[A-Za-z0-9._-]+|fonts\/(?:hindi|punjabi)\.ttf)$/;
+const allow=/^(?:converter\.html|engine\.(?:js|css)|office-worker\.js|zetaHelper\.js|zeta\.js|isolation-sw\.js|notices\.html|runtime\/(?:manifest\.json|soffice\.js|soffice\.data\.js\.metadata|(?:data|wasm)-[0-9]+\.bin)|licenses\/[A-Za-z0-9._-]+|fonts\/(?:hindi|punjabi)\.ttf|alt\/(?:converter\.html|engine\.js|manifest\.json|fonts\/[A-Za-z0-9._-]+\.ttf))$/;
 self.addEventListener('install',()=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',event=>{
  if(event.request.cache==='only-if-cached'&&event.request.mode!=='same-origin')return;

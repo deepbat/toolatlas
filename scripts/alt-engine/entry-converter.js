@@ -279,6 +279,27 @@ window.convertXlsx = async (buf) => {
   window.__warnings = painter.warnings;
   return bytes;
 };
+/* Isolation: the shared office-engine service worker scopes this page's
+   network access to its own allowlisted files (no document leaves the
+   device, enforced here as well as promised in the copy). The page works
+   without it (file:// and SW-less browsers), so registration is best-effort
+   and never blocks conversion. */
+const isolationReady = (async () => {
+  try {
+    if (!('serviceWorker' in navigator)) return;
+    const reg = await navigator.serviceWorker.register('../isolation-sw.js', { scope: './' });
+    if (reg.active) return;
+    await new Promise((resolve) => {
+      const done = () => (reg.active ? resolve() : undefined);
+      reg.addEventListener('updatefound', () => {
+        reg.installing?.addEventListener('statechange', () => { if (reg.active) resolve(); });
+      });
+      done();
+      setTimeout(resolve, 3000);
+    });
+  } catch { /* best effort: conversion must not fail because isolation did */ }
+})();
+
 /* ---- Converter window protocol (same channel contract as the WASM engine) ---- */
 const status = document.getElementById('status');
 const token = location.hash.slice(1);
@@ -308,6 +329,9 @@ channel.onmessage = async ({ data }) => {
   started = true; clearInterval(ready); clearTimeout(orphan);
   try {
     phase('Converting your document locally...', 120000);
+    // Fonts load over the network next; wait for the isolation worker so
+    // those fetches are covered too. Best-effort, never fatal.
+    await isolationReady;
     const bytes = data.extension === 'docx'
       ? await window.convertDocx(new Uint8Array(data.bytes))
       : await window.convertXlsx(new Uint8Array(data.bytes));

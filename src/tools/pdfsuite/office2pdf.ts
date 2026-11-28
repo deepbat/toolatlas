@@ -378,3 +378,174 @@ export function openPrintView(title: string, cssHtml: string, bodyHtml: string):
   }, 500);
   return Promise.resolve(null);
                                  }
+
+/* ---- Spreadsheet painter route: print areas, formulas, header/footer ----
+   Built for the painter engine (officePainter.ts). Beyond the basic table
+   route above, this keeps the sheet's print area (defined names), evaluates
+   simple arithmetic formulas (SheetJS CE has no calc engine and drops
+   uncached results), and reads header/footer strings from the sheet XML,
+   which SheetJS CE does not parse. Charts, cell fills/fonts and orientation
+   remain out of scope. */
+
+const colToIdx2 = (letters: string): number => { let n = 0; for (const ch of letters) n = n * 26 + (ch.charCodeAt(0) - 64); return n - 1; };
+const idxToCol2 = (i: number): string => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = (i - m - 1) / 26; } return s; };
+const parseCellRef2 = (ref: string): { c: number; r: number } | null => { const m = /^([A-Z]+)(\d+)$/.exec(ref.replace(/\$/g, '')); return m ? { c: colToIdx2(m[1]), r: +m[2] - 1 } : null; };
+const parseAreaRef = (ref: string): { s: { c: number; r: number }; e: { c: number; r: number } } | null => {
+  const [a, b] = (ref.split('!').pop() ?? '').replace(/'/g, '').split(':');
+  const s = parseCellRef2(a);
+  const e = b ? parseCellRef2(b) : s;
+  return s && e ? { s, e } : null;
+};
+
+interface FormulaEvaluator {
+  valueOf: (ref: string, depth: number) => number | null;
+  evalFormula: (f: string, depth: number) => number | null;
+}
+
+/* Tiny evaluator for the common spreadsheet formulas: cell refs, numbers,
+   + - * / % and parentheses. Anything else stays blank (documented limit);
+   formulas are parsed token by token, never eval'd. */
+function makeEvaluator(ws: Record<string, any>): FormulaEvaluator {
+  const cache = new Map<string, number | null>();
+  const valueOf = (ref: string, depth: number): number | null => {
+    if (depth > 20) return null;
+    if (cache.has(ref)) return cache.get(ref) ?? null;
+    const cell = ws[ref];
+    if (!cell) { cache.set(ref, 0); return 0; }
+    if (typeof cell.v === 'number') { cache.set(ref, cell.v); return cell.v; }
+    if (cell.f) { const v = evalFormula(cell.f, depth + 1); cache.set(ref, v); return v; }
+    const n = parseFloat(cell.v);
+    const v = Number.isFinite(n) ? n : 0;
+    cache.set(ref, v); return v;
+  };
+  const evalFormula = (f: string, depth: number): number | null => {
+    const tokens = String(f).replace(/^=/, '').match(/([A-Z]+\d+|\d+(?:\.\d+)?|[+\-*/()%])/g);
+    if (!tokens || tokens.join('').length !== String(f).replace(/^=/, '').replace(/\s/g, '').length) return null;
+    let pos = 0;
+    const peek = (): string | undefined => tokens[pos];
+    const primary = (): number => {
+      const t = tokens[pos++] ?? '';
+      if (t === '(') { const v = expr(); if (peek() === ')') pos++; return v; }
+      if (t === '-') return -primary();
+      if (/^[A-Z]+\d+$/.test(t)) { const v = valueOf(t, depth); return v == null ? 0 : v; }
+      const n = parseFloat(t); return Number.isFinite(n) ? n : 0;
+    };
+    const term = (): number => { let v = primary(); while (peek() === '*' || peek() === '/' || peek() === '%') { const op = tokens[pos++]; const r = primary(); v = op === '*' ? v * r : op === '/' ? v / r : v % r; } return v; };
+    const expr = (): number => { let v = term(); while (peek() === '+' || peek() === '-') { const op = tokens[pos++]; const r = term(); v = op === '+' ? v + r : v - r; } return v; };
+    const out = expr();
+    return Number.isFinite(out) ? out : null;
+  };
+  return { valueOf, evalFormula };
+}
+
+const fmtNum = (n: number): string => (Number.isInteger(n) ? String(n) : String(Math.round(n * 1e10) / 1e10));
+
+function cellText2(ws: Record<string, any>, ev: FormulaEvaluator, ref: string): string {
+  const cell = ws[ref];
+  if (!cell) return '';
+  if (cell.f && (cell.t === 'z' || cell.v === undefined || cell.v === 0)) {
+    const v = ev.evalFormula(cell.f, 0);
+    return v == null ? '' : fmtNum(v);
+  }
+  if (cell.w != null) return String(cell.w);
+  if (cell.v != null) return String(cell.v);
+  return '';
+}
+
+/* Header/footer strings live in the sheet XML, which SheetJS CE does not
+   parse; read them from the zip directly. &C/&L/&R sections, &P page, &N pages. */
+async function readSheetHeaderFooter(buf: Uint8Array, sheetIndex: number): Promise<{ header?: string; footer?: string }> {
+  try {
+    const JSZip = (await import('jszip')).default;
+    const zip = await JSZip.loadAsync(buf);
+    const xml = await zip.file(`xl/worksheets/sheet${sheetIndex + 1}.xml`)?.async('string');
+    if (!xml) return {};
+    const hf = /<headerFooter[^>]*>([\s\S]*?)<\/headerFooter>/.exec(xml);
+    if (!hf) return {};
+    const grab = (tag: string): string => {
+      const m = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`).exec(hf[1]);
+      if (!m) return '';
+      // Field markers arrive entity-escaped (&amp;C for the center section):
+      // unescape first, then split sections and substitute page fields.
+      const body = m[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+      const sec = (re: RegExp): string => { const mm = re.exec(body); return mm ? mm[1] : ''; };
+      const text = sec(/&C(.*?)(?=&[LR]|$)/s) || sec(/&L(.*?)(?=&[LR]|$)/s) || sec(/&R(.*?)(?=&[LR]|$)/s) || (/&[LR]/.test(body) ? '' : body);
+      return text.replace(/&P/g, '1').replace(/&N/g, '1').replace(/&"[^"]*"/g, '').replace(/&\d+/g, '').trim();
+    };
+    return { header: grab('oddHeader'), footer: grab('oddFooter') };
+  } catch { return {}; }
+}
+
+/* Styles for the painter spreadsheet route: layout is carried inline on the
+   section; this covers table chrome only. */
+export const SHEET_PAINT_CSS = `
+section.sheetpaint{font-family:Calibri,Arial,sans-serif;background:#fff;color:#111;}
+section.sheetpaint table{border-collapse:collapse;}
+section.sheetpaint td{padding:1pt 6pt 1pt 0;font-size:10pt;}
+section.sheetpaint h2{font-size:14pt;margin:0 0 6pt;font-weight:600;}
+section.sheetpaint p.sheet-hf{text-align:center;font-size:9pt;color:#444;margin:4pt 0;}
+`.trim();
+
+/**
+ * One section.docx element's worth of HTML per workbook, for the painter
+ * route: values, merged cells, column widths, Indic text, the sheet's print
+ * area, header/footer strings and simple arithmetic formulas. Throws when
+ * every sheet is empty. The section carries an explicit page size in its
+ * inline style, which the painter reads for its page geometry.
+ */
+export async function workbookToPaintHtml(wb: any, bytes: Uint8Array): Promise<string> {
+  const parts: string[] = [];
+  const names: string[] = wb.SheetNames ?? [];
+  for (let si = 0; si < names.length; si++) {
+    const name = names[si];
+    const ws = wb.Sheets[name] as Record<string, any>;
+    if (!ws || !ws['!ref']) continue;
+    // Print area: a defined name _xlnm.Print_Area scoped to this sheet.
+    let range = null as { s: { c: number; r: number }; e: { c: number; r: number } } | null;
+    for (const dn of ((wb.Workbook && wb.Workbook.Names) || []) as { Sheet?: number; Name?: string; Ref?: string }[]) {
+      if (dn.Sheet === si && /Print_Area/.test(dn.Name ?? '')) { range = parseAreaRef(dn.Ref ?? ''); break; }
+    }
+    if (!range) {
+      range = parseAreaRef(String(ws['!ref']));
+      if (!range) continue;
+    }
+    const ev = makeEvaluator(ws);
+    const colWidths: string[] = [];
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const col = ((ws['!cols'] ?? []) as { wpx?: number; wch?: number }[])[c];
+      const px = col?.wpx ?? (col?.wch ? Math.round(col.wch * 7.5) : 0);
+      colWidths.push(px ? `<col style="width:${px}px">` : '<col>');
+    }
+    const merges = ((ws['!merges'] || []) as { s: { r: number; c: number }; e: { r: number; c: number } }[]).filter(
+      (m) => m.s.r <= range!.e.r && m.e.r >= range!.s.r && m.s.c <= range!.e.c && m.e.c >= range!.s.c,
+    );
+    const covered = new Set<string>();
+    const spanAt = new Map<string, { rs: number; cs: number }>();
+    for (const m of merges) {
+      spanAt.set(`${m.s.r},${m.s.c}`, { rs: m.e.r - m.s.r + 1, cs: m.e.c - m.s.c + 1 });
+      for (let r = m.s.r; r <= m.e.r; r++) for (let c = m.s.c; c <= m.e.c; c++) if (r !== m.s.r || c !== m.s.c) covered.add(`${r},${c}`);
+    }
+    const rows: string[] = [];
+    for (let r = range.s.r; r <= range.e.r; r++) {
+      const cells: string[] = [];
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        if (covered.has(`${r},${c}`)) continue;
+        const sp = spanAt.get(`${r},${c}`);
+        const text = cellText2(ws, ev, idxToCol2(c) + (r + 1));
+        const attrs = sp ? `${sp.cs > 1 ? ` colspan="${sp.cs}"` : ''}${sp.rs > 1 ? ` rowspan="${sp.rs}"` : ''}` : '';
+        cells.push(`<td${attrs}>${esc(text)}</td>`);
+      }
+      rows.push(`<tr>${cells.join('')}</tr>`);
+    }
+    const hf = await readSheetHeaderFooter(bytes, si);
+    const head = hf.header ? `<p class="sheet-hf">${esc(hf.header)}</p>` : '';
+    const foot = hf.footer ? `<p class="sheet-hf">${esc(hf.footer)}</p>` : '';
+    parts.push(`${head}<h2>${esc(name)}</h2><table><colgroup>${colWidths.join('')}</colgroup>${rows.join('')}</table>${foot}`);
+  }
+  if (!parts.length) throw new Error('Every worksheet in this workbook is empty, so there is nothing to convert.');
+  // One section per worksheet: the painter paginates by section, so every
+  // sheet starts on a fresh page, matching spreadsheet print behaviour.
+  return parts
+    .map((part) => `<section class="docx sheetpaint" style="width:732pt;min-height:540pt;padding:36pt;box-sizing:border-box;"><div class="docx-wrapper">${part}</div></section>`)
+    .join('');
+}

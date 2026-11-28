@@ -8,14 +8,14 @@ const pkg = JSON.parse(await readFile('package.json', 'utf8'));
 const walk = async (d) => (await Promise.all((await readdir(d, { withFileTypes: true })).map((e) => (e.isDirectory() ? walk(d + '/' + e.name) : [d + '/' + e.name])))).flat();
 
 await check('runtime dependencies use permissive licences', async () => {
-  const ok = /^(MIT|ISC|Apache-2\.0|BSD-[23]-Clause|OFL-1\.1|MPL-2\.0|\(MPL-2\.0 OR Apache-2\.0\)|0BSD)$/;
+  const ok = /^(MIT|ISC|Apache-2\.0|BSD-[23]-Clause|OFL-1\.1|MPL-2\.0|\(MPL-2\.0 OR Apache-2\.0\)|0BSD|\(MIT OR GPL-3\.0-or-later\))$/; // jszip is dual MIT/GPL; we take MIT
   for (const d of Object.keys(pkg.dependencies)) {
     const lic = JSON.parse(await readFile(`node_modules/${d}/package.json`, 'utf8')).license;
     assert.ok(ok.test(String(lic)), `${d} has licence ${lic}`);
   }
 });
 await check('no new runtime dependencies beyond the reviewed list', () => {
-  const reviewed = ['@fontsource/dm-sans', '@fontsource/ibm-plex-mono', '@fontsource/space-grotesk', 'dompurify', 'lucide-react', 'marked', 'pdf-lib', 'pdfjs-dist', 'qrcode', 'react', 'react-dom', 'react-router-dom', 'tesseract.js', 'three', '@neslinesli93/qpdf-wasm', 'docx-preview', 'jszip', 'xlsx'];
+  const reviewed = ['@fontsource/dm-sans', '@fontsource/ibm-plex-mono', '@fontsource/space-grotesk', 'dompurify', 'lucide-react', 'marked', 'pdf-lib', 'pdfjs-dist', 'qrcode', 'react', 'react-dom', 'react-router-dom', 'tesseract.js', 'three', '@neslinesli93/qpdf-wasm', 'docx-preview', 'jszip', 'xlsx', 'pdfkit'];
   const extra = Object.keys(pkg.dependencies).filter((d) => !reviewed.includes(d));
   assert.deepEqual(extra, [], 'review the licence and size of: ' + extra.join(', '));
 });

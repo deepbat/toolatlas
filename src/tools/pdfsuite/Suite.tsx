@@ -12,10 +12,11 @@ import { pageImages } from './pdfImages';
 import { gridsFromLines, pageLines } from './rulings';
 import { ocrDone, ocrPageItems } from './ocrItems';
 import { buildDocx, itemsToParagraphs, type Para, type TextItem } from './docx';
-import { nativePdfSaveActive, openPrintView, renderDocx, sectionsToPdf, tablesToSections, workbookToTables, SHEET_CSS } from './office2pdf';
+import { nativePdfSaveActive, openPrintView, renderDocx, workbookToPaintHtml, SHEET_PAINT_CSS } from './office2pdf';
 import { pdfjs } from '../pdf-editor/pdfjs';
 import { PDFDocument } from 'pdf-lib';
 import { applyActualText, pageActualTexts } from './actualtext';
+import DOMPurify from 'dompurify';
 
 /** Shared shell: pick one PDF, run an operation, download the result. */
 function Shell({ verb, help, outSuffix, outExt = 'pdf', mime = 'application/pdf', run, children, ready = true, lenient = false, onInspect, onFileChange }: {
@@ -441,26 +442,37 @@ function OfficeToPdf({ kind }: { kind: 'word' | 'excel' }) {
       let bodyHtml = '';
       let dispose = () => {};
       if (word) {
+        // The painter measures against the bundled faces, so they must be
+        // loaded before docx-preview lays out the pages. Imported on demand
+        // so pdfkit stays out of the suite chunk until a conversion runs.
+        if (mode === 'image') await (await import('./officePainterEngine')).ensurePainterFonts();
         const rendered = await renderDocx(bytes);
         pages = rendered.pages; cssHtml = rendered.cssHtml; bodyHtml = rendered.bodyHtml; dispose = rendered.dispose;
       } else {
         const XLSX = await import('xlsx');
-        const wb = XLSX.read(bytes, { type: 'array' });
-        const tables = workbookToTables(wb.SheetNames, wb.Sheets as never);
-        if (!tables.length) throw Error('This workbook has no sheets.');
+        // cellFormula + sheetStubs keep formula cells readable so the paint
+        // route can evaluate simple arithmetic SheetJS CE would drop.
+        const wb = XLSX.read(bytes, { type: 'array', cellFormula: true, sheetStubs: true });
+        const paintHtml = await workbookToPaintHtml(wb, bytes);
         const host = document.createElement('div');
         host.style.cssText = 'position:fixed;left:-100000px;top:0;';
         host.setAttribute('aria-hidden', 'true');
         document.body.appendChild(host);
-        pages = tablesToSections(tables, host);
-        cssHtml = `<style>${SHEET_CSS}</style>`;
+        host.innerHTML = DOMPurify.sanitize(paintHtml);
+        const style = document.createElement('style');
+        style.textContent = SHEET_PAINT_CSS;
+        host.appendChild(style);
+        pages = Array.from(host.querySelectorAll('section.docx')) as HTMLElement[];
+        cssHtml = `<style>${SHEET_PAINT_CSS}</style>`;
         bodyHtml = host.innerHTML;
         dispose = () => host.remove();
       }
       try {
         if (mode === 'image') {
-          const out = await sectionsToPdf(pages, cssHtml);
-          const blob = new Blob([out as unknown as BlobPart], { type: 'application/pdf' });
+          const { paintSections } = await import('./officePainterEngine');
+          const painted = await paintSections(pages, { Title: base });
+          if (painted.warnings.length) console.warn('Office painter warnings:', painted.warnings);
+          const blob = new Blob([painted.bytes as unknown as BlobPart], { type: 'application/pdf' });
           downloadBlob(`${base}-deepakstool.pdf`, blob);
           setDone(`Saved ${formatBytes(blob.size)}. The download should have started.`);
         } else {
@@ -495,7 +507,7 @@ function OfficeToPdf({ kind }: { kind: 'word' | 'excel' }) {
         <div className="space-y-2 text-sm">
           <label className="flex items-start gap-2">
             <input type="radio" name="office2pdf-mode" className="mt-1" checked={mode === 'image'} onChange={() => setMode('image')} />
-            <span><strong>Image PDF (recommended).</strong> Each page is drawn as an image from this app's own rendering, with Indic scripts shown when the fonts are available. An invisible text layer is added so you can search and copy; in our tests with Hindi and Punjabi text, poppler, MuPDF and pdf.js read it back letter for letter. Other readers are untested.</span>
+            <span><strong>PDF with real text (recommended).</strong> Pages are drawn as vector graphics with fonts bundled in this app, so the text stays selectable, searchable and copies letter for letter, including Hindi and Punjabi, in every reader we tested (poppler, MuPDF and pdf.js). Other readers are untested.</span>
           </label>
           <label className="flex items-start gap-2">
             <input type="radio" name="office2pdf-mode" className="mt-1" checked={mode === 'print'} onChange={() => setMode('print')} />
@@ -506,7 +518,7 @@ function OfficeToPdf({ kind }: { kind: 'word' | 'excel' }) {
           <Note>
             {word
               ? 'This app renders the document itself, so layout can differ from Word: fonts may be substituted and some features, such as text boxes or charts, may be missing. Page breaks stored in the file are honoured.'
-              : 'Every worksheet that has cells becomes its own section with merged cells and column widths preserved. A worksheet with no cells is skipped. Charts and embedded images are not included.'}
+              : 'Every worksheet that has cells becomes its own section. Merged cells, column widths, print areas, header and footer text and simple arithmetic formulas are kept; a worksheet with no cells is skipped. Charts and embedded images are not included.'}
           </Note>
           {mode === 'print' && (
             <div className="mt-2">

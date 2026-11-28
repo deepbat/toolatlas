@@ -9,5 +9,17 @@ try{
   const out=[];for(const [url,method]of [['engine.css','GET'],['../index.html','GET'],['engine.js?probe=1','GET'],['engine.js','POST'],['https://example.invalid/probe','GET']]){try{const r=await fetch(url,{method});out.push({url,status:r.status,csp:r.headers.get('content-security-policy'),coop:r.headers.get('cross-origin-opener-policy'),coep:r.headers.get('cross-origin-embedder-policy')});}catch{out.push({url,blocked:true});}}
   const worker=await new Promise(resolve=>{const w=new Worker(URL.createObjectURL(new Blob([`fetch('https://example.invalid/worker').then(()=>postMessage(false),()=>postMessage(true));`],{type:'text/javascript'})));w.onmessage=e=>{w.terminate();resolve(e.data);};setTimeout(()=>{w.terminate();resolve('timeout');},5000);});return{out,worker};
  });
+ const pa=await c.newPage();
+ await pa.goto('http://127.0.0.1:4194/toolatlas/office-engine/alt/converter.html#'+'b'.repeat(64));
+ await pa.waitForFunction(()=>!!navigator.serviceWorker.controller,null,{timeout:15000});
+ const alt=await pa.evaluate(async()=>{
+  const out=[];for(const [url,method]of [['engine.js','GET'],['manifest.json','GET'],['fonts/Carlito-Regular.ttf','GET'],['../index.html','GET'],['engine.js?probe=1','GET'],['engine.js','POST'],['https://example.invalid/probe','GET']]){try{const r=await fetch(url,{method});out.push({url,status:r.status,csp:r.headers.get('content-security-policy')});}catch{out.push({url,blocked:true});}}
+  const worker=await new Promise(resolve=>{const w=new Worker(URL.createObjectURL(new Blob([`fetch('https://example.invalid/worker').then(()=>postMessage(false),()=>postMessage(true));`],{type:'text/javascript'})));w.onmessage=e=>{w.terminate();resolve(e.data);};setTimeout(()=>{w.terminate();resolve('timeout');},5000);});return{out,worker};
+ });
+ assert.equal(alt.out[0].status,200,'alt engine.js reachable');assert.match(alt.out[0].csp,/connect-src 'self'/,'alt responses carry the CSP');
+ assert.equal(alt.out[1].status,200,'alt font manifest reachable');assert.equal(alt.out[2].status,200,'alt bundled font reachable');
+ for(const r of alt.out.slice(3,6))assert.equal(r.status,403,`alt page denies ${r.url}`);
+ assert.equal(alt.out[6].blocked,true,'alt page external fetch blocked');assert.equal(alt.worker,true,'alt page blob worker external fetch denied');
+ console.log('PASS alt engine page isolation, allowlist and external fetch denial');
  assert.equal(results.out[0].status,200);assert.equal(results.out[0].coop,'same-origin');assert.equal(results.out[0].coep,'require-corp');assert.match(results.out[0].csp,/connect-src 'self'/);for(const r of results.out.slice(1,4))assert.equal(r.status,403);assert.equal(results.out[4].blocked,true);assert.equal(results.worker,true);assert.equal(remote,0);console.log('PASS real browser isolation, same-origin path/query/method denial and page/blob-worker external fetch denial');
 }finally{await browser?.close();server.kill();}

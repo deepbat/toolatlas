@@ -10,5 +10,16 @@ export default defineConfig({
     target: 'es2020',
     outDir: 'dist',
     chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        // The on-demand Office painter pulls in pdfkit and its shaping stack;
+        // keeping fontkit in its own chunk holds every chunk under the 600 kB
+        // budget while both load in parallel when a conversion starts.
+        manualChunks(id: string) {
+          if (/node_modules\/(fontkit|unicode-trie|dfa|brotli)\//.test(id)) return 'fontkit';
+          return undefined;
+        },
+      },
+    },
   },
 });
